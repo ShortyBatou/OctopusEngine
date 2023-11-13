@@ -14,10 +14,10 @@ add_library(${PROJECT_NAME} STATIC
         imgui/imstb_textedit.h
         imgui/imstb_truetype.h
 
-        imgui/examples/imgui_impl_glfw.cpp
-        imgui/examples/imgui_impl_glfw.h
-        imgui/examples/imgui_impl_opengl3.cpp
-        imgui/examples/imgui_impl_opengl3.h
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_glfw.h
+        imgui/backends/imgui_impl_opengl3.cpp
+        imgui/backends/imgui_impl_opengl3.h
 )
 
 # Add alias
