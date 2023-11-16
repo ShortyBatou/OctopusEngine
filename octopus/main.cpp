@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "HUD/Application.h"
+#include "UI/Application.h"
 
 int main()
 {

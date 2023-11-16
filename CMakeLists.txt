@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
-project (template-opengl LANGUAGES CXX)
+project (octopus-engine LANGUAGES CXX)
 
 # Options
 option(TOBANTEGAMING_TEMPLATE_OPENGL_EXAMPLES  "Build examples" ON)

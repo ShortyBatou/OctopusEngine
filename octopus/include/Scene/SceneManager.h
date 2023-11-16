@@ -27,6 +27,9 @@ public:
 
         std::cout << "Init Scene" << std::endl;
         Engine::Instance().init();
+
+        std::cout << "Late Init Scene" << std::endl;
+        Engine::Instance().late_init();
     }
 
     virtual ~SceneManager()

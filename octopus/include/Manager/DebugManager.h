@@ -6,10 +6,10 @@
 #include "Rendering/GL_Graphic.h"
 #include "Rendering/GL_DisplayMode.h"
 #include "Manager/Debug.h"
-class DebugManager : public Behaviour
+class DebugManager : public Renderer
 {
 public:
-    DebugManager() : _default_color(ColorBase::Grey(0.8))
+    DebugManager() : _default_color(ColorBase::Grey(0.8)), _pause(false)
     {
         _graphic = new GL_Graphic();
         _graphic->set_multi_color(true);
@@ -34,18 +34,37 @@ public:
     }
 
     virtual void update() override { 
-        Debug::Axis(Unit3D::up() * scalar(0.005f), scalar(1.f));
-        Debug::Instance().SetColor(ColorBase::Red());
-        Debug::Cube(Vector3(0.05f), scalar(0.1f));
-        Debug::Instance().SetColor(_default_color);
-        Debug::UnitGrid(5);
+        if (!_pause) {
+            Debug::Axis(Unit3D::up() * scalar(0.005f), scalar(1.f));
+            Debug::Instance().SetColor(ColorBase::Red());
+            Debug::Cube(Vector3(0.05f), scalar(0.1f));
+            Debug::Instance().SetColor(_default_color);
+            Debug::UnitGrid(5);
+        }
     }
 
-    virtual void late_update() override { 
+    virtual void draw() override {
+    }
+
+    virtual void after_draw() override { 
+        if(!_pause) clear();
+    }
+
+    virtual void clear() {
         Debug::Instance().clear();
     }
 
+    void play() {
+        clear();
+        _pause = false;
+    }
+
+    void pause() {
+        _pause = true;
+    }
+
 protected:
+    bool _pause;
     Color _default_color;
     GL_Graphic* _graphic;
     GL_DisplayMesh* _display_mode;

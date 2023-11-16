@@ -3,7 +3,7 @@
 #include "Entity.h"
 #include "Pattern.h"
 class Engine : public Singleton<Engine>, public Behaviour {
-    std::vector<Entity*> _entities;
+    std::vector<Entity*> _entities; 
 public:
 
     virtual void init() override
@@ -12,12 +12,16 @@ public:
             _entities[i]->init();  
     }
 
+    virtual void late_init() override {
+        for (unsigned int i = 0; i < _entities.size(); ++i)
+            _entities[i]->late_init();
+    }
+
     virtual void update() override
     {
         for (unsigned int i = 1; i < _entities.size(); ++i)
-            if (_entities[i]->active()) 
-                _entities[i]->update();           
-
+            if (_entities[i]->active()) _entities[i]->update();  
+        
         _entities[0]->update(); // always update root at the end
     }
 
@@ -53,10 +57,12 @@ public:
         return nullptr;
     }
     
-    static Entity* GetEntity(unsigned int i) {
+    static Entity* GetEntity(unsigned int id) {
         auto& engine = Engine::Instance();
-        if(i >= engine._entities.size()) return nullptr;
-        return engine._entities[i];
+        for (unsigned int i = 0; i < engine._entities.size(); ++i) 
+            if (id == engine._entities[i]->id()) 
+                return engine._entities[i];
+        return nullptr;
     }
 
     static std::vector<Entity*>& GetEntities()

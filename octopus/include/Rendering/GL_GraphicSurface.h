@@ -7,7 +7,7 @@
 class GL_GraphicSurface : public GL_Graphic
 {
 public:
-    GL_GraphicSurface() : GL_Graphic(Color(0.8, 0.4, 0.4, 1.0))
+    GL_GraphicSurface(const Color& color = Color(0.8, 0.4, 0.4, 1.0)) : GL_Graphic(color)
     {
         _converters[Line]     = new LineConverter();
         _converters[Triangle] = new TriangleConverter();

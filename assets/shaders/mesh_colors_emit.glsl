@@ -19,12 +19,13 @@ layout(location = 1) in vec4 color;
 
 #endif
 
-
 #ifdef FRAGMENT_SHADER
+
     in vec4 f_color;
     out vec4 fragment_color;
     void main( )
     {  
+
         fragment_color = f_color;
     }
 #endif

@@ -1,11 +1,17 @@
 #pragma once
-#include <map>
 
 #include "Core/Pattern.h"
+#include <Core/Engine.h>
 #include "Tools/Color.h"
-#include "HUD/AppInfo.h"
+
 #include "Rendering/Camera.h"
-#include "Rendering/GL_DisplayMode.h"
+#include "Rendering/Renderer.h"
+
+#include "UI/AppInfo.h"
+
+#include <map>
+#include <iostream>
+
 class OpenGLManager : public Behaviour
 {
 public: 
@@ -20,17 +26,17 @@ public:
         std::cout << "Init OpenglManager" << std::endl;
         for (Entity* e : Engine::GetEntities())
         {
-            std::cout << "Search Display Mode in " << e->name() << std::endl;
-            GL_DisplayMode* display_mode = e->getComponent<GL_DisplayMode>();
-            if (display_mode != nullptr)
+            std::cout << "Search Renderers in " << e->name() << std::endl;
+            std::vector<Renderer*> renderers = e->getComponents<Renderer>();
+            if (renderers.size() > 0)
             {
-                renderers.push_back(display_mode);
-                std::cout << "display_mode found" << std::endl;
+                _renderers.insert(_renderers.begin(), renderers.begin(), renderers.end());
+                std::cout << "Renderers Found = " << renderers.size() << std::endl;
             }
         }
     }
     
-    virtual void update() override
+    virtual void late_update() override
     { 
         // Render
         glClearColor(_background.r, _background.g, _background.b, _background.a);
@@ -38,11 +44,18 @@ public:
         glEnable(GL_DEPTH_TEST);  
         glDepthFunc(GL_LESS);
 
-        for (GL_DisplayMode* renderer : renderers)
+        for (Renderer* renderer : _renderers)
         {
             if (renderer->active())
                 renderer->draw();
         }
+
+        for (Renderer* renderer : _renderers)
+        {
+            if (renderer->active())
+                renderer->after_draw();
+        }
+
 
         glfwSwapBuffers(AppInfo::Window());  // glFibish();
         glfwPollEvents();
@@ -50,7 +63,9 @@ public:
 
     virtual ~OpenGLManager() {  }
 
+    Color& background() {return _background;}
+
 protected:
-    std::vector<GL_DisplayMode*> renderers;
+    std::vector<Renderer*> _renderers;
     Color _background;
 };

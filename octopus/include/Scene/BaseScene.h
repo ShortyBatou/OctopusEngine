@@ -5,6 +5,7 @@
 #include "Manager/CameraManager.h"
 #include "Manager/InputManager.h"
 #include "Manager/DebugManager.h"
+#include "Manager/UI_Manager.h"
 
 #include "Mesh/Mesh.h"
 #include "Mesh/Generator/PrimitiveGenerator.h"
@@ -14,6 +15,9 @@
 #include "Rendering/GL_GraphicElement.h"
 #include "Rendering/GL_DisplayMode.h"
 #include "Rendering/GL_GraphicSurface.h"
+
+#include "Script/Dynamic/XPBD_FEM_Dynamic.h"
+#include "Script/Dynamic/FEM_Dynamic.h"
 
 struct BaseScene : public Scene
 {
@@ -29,23 +33,33 @@ struct BaseScene : public Scene
         root->addBehaviour(new InputManager());
         root->addBehaviour(new CameraManager());
         root->addBehaviour(new DebugManager());
-        root->addBehaviour(new OpenGLManager(Color(0.7,0.7,0.95,1.)));
+        root->addBehaviour(new UI_Manager());
+        root->addBehaviour(new OpenGLManager(Color(0.9,0.9,0.9,1.)));
     }
 
     // build scene's entities
     virtual void build_entities() override
     { 
-        Vector3I cells(6, 2, 2);
-        Vector3 sizes(2, 1, 1);
+        Vector3I cells(16, 4, 4);
+        Vector3 sizes(4, 1, 1);
         Entity* e    = Engine::CreateEnity();
-        Vector3 pmin = Vector3(-0.5, 2, -0.5);
-        Vector3 pmax  = Vector3(0.5, 2.5, 0.5);
-        PyramidBeamGenerator tm2(cells, sizes);
-        Mesh* mesh = tm2.build();  // generate mesh
+        TetraBeamGenerator tm(cells, sizes);
+        Mesh* mesh = tm.build();  // generate mesh
+
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
-        GL_GraphicSurface* graphic = new GL_GraphicSurface();
-        e->addComponent(graphic);
+        e->addComponent(new XPBD_FEM_Dynamic());
+        e->addComponent(new GL_GraphicSurface(Color(0.7, 0.3, 0.3, 1.)));
+        e->addComponent(new GL_DisplayMesh());
+
+
+        e = Engine::CreateEnity();
+        tm.setTransform(glm::translate(Matrix::Identity4x4(), Vector3(0., 0., 1.5)));
+        mesh = tm.build();  // generate mesh
+        mesh->set_dynamic_geometry(true);
+        e->addBehaviour(mesh);
+        e->addComponent(new FEM_Dynamic());
+        e->addComponent(new GL_GraphicSurface(Color(0.3, 0.3, 0.7, 1.)));
         e->addComponent(new GL_DisplayMesh());
     }
 };

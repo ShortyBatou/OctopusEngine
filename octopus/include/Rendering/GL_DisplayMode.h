@@ -1,11 +1,12 @@
 #pragma once
 #include "Core/Component.h"
-#include "HUD/AppInfo.h"
+#include "UI/AppInfo.h"
 #include "Rendering/GL_Graphic.h"
 #include "Rendering/GL_Program.h"
 #include "Rendering/Camera.h"
 #include "Manager/TimeManager.h"
-class GL_DisplayMode : public Component
+#include "Rendering/Renderer.h"
+class GL_DisplayMode : public Renderer
 {
 public:
     GL_DisplayMode() : _graphic(nullptr) { }
@@ -20,7 +21,6 @@ public:
         }
     }
     std::vector<std::string> shader_path() { return _paths; }
-    virtual void draw() = 0;
     virtual ~GL_DisplayMode() { 
         for (GL_Program* prog : _programs) delete prog;   
         _programs.clear();
@@ -39,7 +39,8 @@ public:
     GL_DisplayMesh() : _wireframe(true), _surface(true), _point(true) { 
     }
 
-    virtual void update() override { } // called before drawing anything
+    virtual void update() override {
+    } // called before drawing anything
 
     virtual void draw() override
     {
@@ -82,11 +83,14 @@ public:
     void draw_surface(bool state) { _surface = state; }
     void draw_points(bool state) { _point = state; }
 
+
 protected:
     virtual void set_shaders_path(std::vector<std::string>& paths) override
     {
-        paths.push_back("shaders/mesh.glsl");
-        paths.push_back("shaders/mesh_colors.glsl");
+        paths.push_back("shaders/mesh_emit.glsl");
+        paths.push_back("shaders/mesh_colors_emit.glsl");
+        paths.push_back("shaders/mesh_flat.glsl");
+        paths.push_back("shaders/mesh_colors_flat.glsl");
     }
 
     virtual void draw_vertices(GL_Buffer<Vector3>* b_vertices)
@@ -95,7 +99,7 @@ protected:
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         
         if (shader_id == 0)
-            this->_programs[0]->uniform("mesh_color", ColorBase::Grey(0.2));
+            this->_programs[shader_id]->uniform("color", GL_Graphic::vertice_color);
  
         glPointSize(5.f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
@@ -109,10 +113,11 @@ protected:
         unsigned int shader_id = this->_graphic->use_multi_color() && !_surface;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 0)
-            this->_programs[0]->uniform("mesh_color", ColorBase::Grey(0.8));
+            this->_programs[shader_id]->uniform("color", this->_graphic->color() * GL_Graphic::wireframe_intencity);
+
         b_line->bind_to_target(GL_ELEMENT_ARRAY_BUFFER);
         glEnable(GL_LINE_SMOOTH);
-        glLineWidth(3.f);
+        glLineWidth(2.f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDrawElements(GL_LINES, b_line->nb_element(), GL_UNSIGNED_INT, 0);
         glDisable(GL_LINE_SMOOTH);
@@ -123,14 +128,16 @@ protected:
 
     virtual void draw_triangles(GL_Buffer<unsigned int>* b_triangle) {
         unsigned int shader_id = this->_graphic->use_multi_color();
+        shader_id += 2;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
-        if (shader_id == 0)
-            this->_programs[0]->uniform("mesh_color", _graphic->color());
+        if (shader_id == 2)
+            this->_programs[shader_id]->uniform("color", _graphic->color());
 
         b_triangle->bind_to_target(GL_ELEMENT_ARRAY_BUFFER);
         glEnable(GL_LINE_SMOOTH);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glDrawElements(GL_TRIANGLES, b_triangle->nb_element(), GL_UNSIGNED_INT, 0);
+        glDisable(GL_LINE_SMOOTH);
         b_triangle->unbind();
         this->_programs[shader_id]->unbind();
     }
@@ -140,11 +147,12 @@ protected:
         unsigned int shader_id = this->_graphic->use_multi_color() && !_surface;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 0)
-            this->_programs[0]->uniform("mesh_color", ColorBase::Grey(0.8));
+            this->_programs[0]->uniform("color", this->_graphic->color() * GL_Graphic::wireframe_intencity);
 
         b_triangle->bind_to_target(GL_ELEMENT_ARRAY_BUFFER);            
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glLineWidth(3.f);
+        glLineWidth(2.f);
+        glEnable(GL_LINE_SMOOTH);
         glDrawElements(GL_TRIANGLES, b_triangle->nb_element(), GL_UNSIGNED_INT, 0);
         glDisable(GL_LINE_SMOOTH);
         glLineWidth(1.f);
@@ -157,3 +165,5 @@ protected:
     Matrix4x4 _v, _p;
     Vector3 _pos;
 };
+
+

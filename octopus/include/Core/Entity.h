@@ -17,6 +17,11 @@ struct Entity : public Behaviour, public ID_Creator<Entity> {
 
     }
 
+    virtual void late_init() override {
+        for (unsigned int i = 0; i < _components.size(); ++i)
+            _components[i]->late_init();
+    }
+
     virtual void update() override
     {
         for (unsigned int i = 0; i < _components.size(); ++i)
@@ -34,13 +39,34 @@ struct Entity : public Behaviour, public ID_Creator<Entity> {
         for (unsigned int i = 0; i < _components.size(); ++i)
         {
             if (typeid(*_components[i]) == typeid(T))
-                return static_cast<T*>(_components[i]);
+                return dynamic_cast<T*>(_components[i]);
             
             T* _c = dynamic_cast<T*>(_components[i]);
             if (_c != nullptr) return _c;
         }
             
         return nullptr;
+    }
+
+    template<class T>
+    std::vector<T*> getComponents() {
+        std::vector<T*> compontents;
+        for (unsigned int i = 0; i < _components.size(); ++i)
+        {
+            if (typeid(*_components[i]) == typeid(T)) {
+                compontents.push_back(static_cast<T*>(_components[i]));
+            }
+            else {
+                T* _c = dynamic_cast<T*>(_components[i]);
+                if (_c != nullptr)
+                    compontents.push_back(_c);
+            }
+                
+
+            
+            
+        }
+        return compontents;
     }
 
     template<class T>

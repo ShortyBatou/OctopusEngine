@@ -15,7 +15,7 @@
 #include "Core/Pattern.h"
 #include "Core/Base.h"
 #include "Scene/SceneManager.h"
-#include "HUD/AppInfo.h"
+#include "UI/AppInfo.h"
 
 class Application : public Behaviour
 {
@@ -28,10 +28,13 @@ public:
     }
 
     ~Application() { 
-        glfwTerminate();
         Engine::Instance().clear();  // clear engine
         Engine::Delete();
         AppInfo::Delete();
+        glfwTerminate();
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
         delete _scene_manager;
     }
 

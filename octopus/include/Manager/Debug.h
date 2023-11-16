@@ -81,9 +81,9 @@ void Debug::UnitGrid(unsigned int _size)
 void Debug::Axis(const Vector3& p = Unit3D::Zero(), scalar length = 1.) { 
     Color color = Instance()._current_color; 
     SetColor(ColorBase::Red());
-    Vector(p, Unit3D::up() * length);
-    SetColor(ColorBase::Green());
     Vector(p, Unit3D::right() * length);
+    SetColor(ColorBase::Green());
+    Vector(p, Unit3D::up() * length);
     SetColor(ColorBase::Blue());
     Vector(p, Unit3D::forward() * length);
     SetColor(color);

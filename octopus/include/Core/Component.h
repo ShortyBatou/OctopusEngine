@@ -4,9 +4,9 @@
 struct Entity;
 
 struct Component : Behaviour {
-    friend Entity;
+    friend Entity; 
 
-    Component() : _entity(nullptr) { }
+    Component(Entity* entity = nullptr) : _entity(entity) { }
 
     inline Entity* entity() { return _entity; }
 

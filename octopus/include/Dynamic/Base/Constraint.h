@@ -1,0 +1,56 @@
+#pragma once
+#include "Core/Base.h"
+#include "Dynamic/Base/Effect.h"
+#include <vector>
+
+/// Effect applied on some particles
+struct Constraint : public Effect {
+    Constraint(std::vector<unsigned int> ids, scalar stiffness = 1., bool active = true) : Effect(stiffness, active), _ids(ids) {}
+    virtual void init(const std::vector<Particle*>& particles) override { };
+    virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override = 0;
+    unsigned int nb() { return _ids.size(); }
+    const std::vector<unsigned int>& ids() { return _ids; }
+    virtual ~Constraint() {}
+protected:
+    std::vector<unsigned int> _ids; // particles that are conserned by this PBD_Constraint
+};
+
+struct FixPoint : public Constraint {
+    FixPoint(unsigned int id, scalar stiffness = scalar(1.), bool active = true) : Constraint({ id }, stiffness, active) {}
+
+    virtual void apply(const std::vector<Particle*>& parts, const scalar) override {
+        parts[this->_ids[0]]->reset();
+    }
+};
+
+struct RB_Fixation : public Constraint {
+    Matrix3x3 rot;
+    Vector3 com;
+    RB_Fixation(std::vector<unsigned int> ids, scalar stiffness = scalar(1.),  bool active = true) : Constraint(ids, stiffness,active), rot(Matrix::Identity3x3()) {}
+
+    virtual void init(const std::vector<Particle*>& parts) override {
+        Vector3 sum_position(0.0f, 0.0f, 0.0f);
+        scalar sum_mass = 0.0f;
+        for (unsigned int i = 0; i < this->nb(); i++) {
+            Particle* part = parts[this->_ids[i]];
+            sum_position += part->position * part->mass;
+            sum_mass += part->mass;
+        }
+        com = sum_position / sum_mass;
+    }
+
+    virtual void apply(const std::vector<Particle*>& parts, const scalar) override {
+        Debug::SetColor(ColorBase::Blue());
+        for (unsigned int i = 0; i < this->nb(); i++) {
+            Particle* part = parts[this->_ids[i]];
+            Vector3 target = com + rot * (part->init_position - com);
+            part->position += (target - part->position) * this->_stiffness;
+            part->velocity *= 0;
+            part->force *= 0;
+            Debug::Cube(parts[this->_ids[i]]->position, 0.02f);
+        }
+    }
+
+};
+
+

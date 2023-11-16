@@ -7,7 +7,7 @@ class CameraManager : public Behaviour
 {
 public:
     CameraManager(const Vector3 target = Unit3D::Zero(), scalar distance = 0.0)
-        : _speed(1.0), _mouse_sensitivity(0.02), _zoom(25.)
+        : _speed(1.0), _mouse_sensitivity(0.01), _zoom(25.)
     {
         Camera::Instance();
     }
@@ -58,7 +58,8 @@ public:
         Matrix4x4 x_rotate = glm::rotate(
             Matrix::Identity4x4(), offset.y,
             glm::normalize(glm::cross(lookDir, Unit3D::up())));
-            
+        Vector3 rotv = glm::normalize(glm::cross(lookDir, Unit3D::up()));
+        
         Vector3 p_temp(x_rotate * Vector4(camera->position(), 0.f));
 
         scalar sign_x = glm::dot(p_temp, Unit3D::right());
@@ -72,7 +73,7 @@ public:
                                             Unit3D::up());
         camera->position()
             = Vector3(y_rotate * Vector4(camera->position(), 0.f));
-        
+
     }
 
     void zoom_camera(Camera* camera)

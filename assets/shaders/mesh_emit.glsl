@@ -17,12 +17,13 @@
 
 
 #ifdef FRAGMENT_SHADER
-    uniform vec4 mesh_color= vec4(1, 0, 0, 1);
 
+
+    uniform vec4 color = vec4(1, 0, 0, 1);
+    
     out vec4 fragment_color;
-
     void main( )
     {  
-        fragment_color = mesh_color;
+        fragment_color = color;
     }
 #endif

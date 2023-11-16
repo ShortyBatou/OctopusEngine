@@ -14,14 +14,7 @@ public:
         _converters[Prysm]    = new PrysmConverter();
         _converters[Hexa]     = new HexaConverter();
         for (auto& elem : _converters) elem.second->init();
-
-        _element_colors[Line]     = ColorBase::Red();
-        _element_colors[Triangle] = ColorBase::Blue();
-        _element_colors[Quad]     = ColorBase::Green();
-        _element_colors[Tetra]    = Color(0.3,0.3,0.9,1.0);
-        _element_colors[Pyramid]  = Color(0.9, 0.5, 0.1, 1.0);
-        _element_colors[Prysm]    = Color(0.9, 0.3, 0.3, 1.0);
-        _element_colors[Hexa]     = Color(0.3, 0.9, 0.3, 1.0);
+        this->_multi_color = true;
     }
 
     virtual void update_buffer_geometry() override
@@ -67,13 +60,24 @@ public:
         {
             Element type = elem.first;
             unsigned int nb_vertices = elem.second.size();
-            std::vector<Color> elem_colors(nb_vertices, _element_colors[type]);
+            std::vector<Color> elem_colors(nb_vertices, element_colors[type]);
             this->_colors.insert(this->_colors.end(), elem_colors.begin(), elem_colors.end());
         }
         _b_color->load_data(_colors);
     }
 
+    static std::map<Element, Color> element_colors;
+
 protected:
-    std::map<Element, Color> _element_colors;
     std::map<Element, MeshConverter*> _converters;
+};
+
+std::map<Element, Color> GL_GraphicElement::element_colors = {
+    {Line, ColorBase::Red()},
+    {Triangle, ColorBase::Blue()},
+    {Quad, ColorBase::Green()},
+    {Tetra, Color(0.3, 0.3, 0.9, 1.0)},
+    {Pyramid, Color(0.9, 0.5, 0.1, 1.0)},
+    {Prysm, Color(0.9, 0.3, 0.3, 1.0)},
+    {Hexa, Color(0.3, 0.9, 0.3, 1.0)}
 };

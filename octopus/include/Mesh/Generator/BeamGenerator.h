@@ -16,6 +16,7 @@ struct BeamMeshGenerator : public MeshGenerator
     {
         Mesh* mesh = new Mesh();
         buildGeometryGrid(mesh->geometry());
+        apply_transform(mesh->geometry());
         unsigned int ids[8];
         for (unsigned int z = 0; z < _subdivisions.z - 1; ++z)
         for (unsigned int y = 0; y < _subdivisions.y - 1; ++y)
@@ -77,7 +78,8 @@ public:
 
     virtual void buildTopoAtCell(unsigned int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
-        for (unsigned i = 0; i < 8; ++i) topologies[Hexa].push_back(ids[i]);
+        for (unsigned i = 0; i < 8; ++i) 
+            topologies[Hexa].push_back(ids[i]);
     }
 
     virtual ~HexaBeamGenerator() { }

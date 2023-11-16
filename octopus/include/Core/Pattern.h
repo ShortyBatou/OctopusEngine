@@ -1,16 +1,18 @@
 #pragma once
 #include <cassert>
 class Behaviour {
+protected:
     bool _active;
 public:
     Behaviour() : _active(true) {}
     virtual void init() {}
+    virtual void late_init() {}
     virtual void update() {}
     virtual void late_update() { }
     inline bool active() {return _active;}
-    inline void setActive(bool state) {_active = state;}
-    inline void enable() {_active = true;}
-    inline void disable() {_active = false;}
+    inline void setActive(bool state) { _active = state; std::cout << "set active " << state << std::endl; }
+    virtual inline void enable() { _active = true; }
+    virtual inline void disable() { _active = false;}
     virtual ~Behaviour() { }
 };
 
@@ -21,7 +23,9 @@ class ID_Creator {
 
 public:
     ID_Creator()
-    { _id = ++COUNT;}
+    {
+        _id = COUNT; COUNT++;
+    }
     virtual ~ID_Creator() { }
     inline unsigned int id() { return _id;}
 };

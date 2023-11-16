@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 #include "Core/Pattern.h"
 #include "Tools/Axis.h"
-#include "HUD/AppInfo.h"
+#include "UI/AppInfo.h"
 enum ProjectionType{ Persective, Orthographic };
 
 class Camera : public Singleton<Camera>

@@ -46,6 +46,10 @@ public:
         _vao->unbind();
     }
 
+    virtual void late_init() override {
+        update();
+    }
+
     virtual void update() override
     { 
         if (_mesh->need_update() || _mesh->has_dynamic_geometry())
@@ -84,6 +88,9 @@ public:
         delete _b_quad;
     }
 
+    static scalar wireframe_intencity;
+    static Color vertice_color;
+
 protected:
     virtual void update_buffer_geometry()
     {
@@ -116,3 +123,6 @@ protected:
     GL_Buffer<Color>* _b_color;
     GL_Buffer<unsigned int> *_b_line, *_b_triangle, *_b_quad;
 };
+
+scalar GL_Graphic::wireframe_intencity = 0.7;
+Color GL_Graphic::vertice_color = ColorBase::Grey(0.1);
