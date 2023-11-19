@@ -41,6 +41,7 @@ public:
 
     static void SetColor(const Color& color);
     static void Axis(const Vector3& p, scalar length);
+    static void Axis(const Vector3& p, const Matrix4x4 rot, scalar length);
     static void Line(const Vector3& a, const Vector3& b);
     static void Vector(const Vector3& p, const Vector3& direction, scalar length);
     static void UnitGrid(unsigned int _size);
@@ -78,15 +79,20 @@ void Debug::UnitGrid(unsigned int _size)
     }
 }
 
-void Debug::Axis(const Vector3& p = Unit3D::Zero(), scalar length = 1.) { 
-    Color color = Instance()._current_color; 
+void Debug::Axis(const Vector3& p, const Matrix4x4 rot, scalar length = 1.) {
+    Matrix3x3 r = rot;
+    Color color = Instance()._current_color;
     SetColor(ColorBase::Red());
-    Vector(p, Unit3D::right() * length);
+    Vector(p, r * Unit3D::right() * length);
     SetColor(ColorBase::Green());
-    Vector(p, Unit3D::up() * length);
+    Vector(p, r * Unit3D::up() * length);
     SetColor(ColorBase::Blue());
-    Vector(p, Unit3D::forward() * length);
+    Vector(p, r * Unit3D::forward() * length);
     SetColor(color);
+}
+
+void Debug::Axis(const Vector3& p, scalar length = 1.) { 
+    Debug::Axis(p, Matrix::Identity4x4(), length);
 }
 
 void Debug::Cube(const Vector3& p = Unit3D::Zero(), scalar size = scalar(1.f))

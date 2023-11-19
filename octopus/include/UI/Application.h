@@ -15,34 +15,46 @@
 #include "Core/Pattern.h"
 #include "Core/Base.h"
 #include "Scene/SceneManager.h"
+#include "Scene/BaseScene.h"
+
 #include "UI/AppInfo.h"
+#include "UI/UI_Editor.h"
+#include "UI/UI_Component.h"
 
 class Application : public Behaviour
 {
 public: 
-    Application(unsigned int width = 1280, unsigned int height = 720)
-        : _scene_manager(new SceneManager())
+    Application(unsigned int width = 1600, unsigned int height = 900) : _editor(nullptr)
     {
         auto& info = AppInfo::Instance(); // init app info
         info.set_window_size(width, height);
+        
+
+
+        Engine::Instance();
+        SceneManager::Instance();
+        SceneManager::Add(new BaseScene());
+        SceneManager::SetScene(0);
     }
 
-    ~Application() { 
+    ~Application() {
+        delete _editor;
         Engine::Instance().clear();  // clear engine
         Engine::Delete();
         AppInfo::Delete();
+        SceneManager::Delete();
         glfwTerminate();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        delete _scene_manager;
     }
 
     virtual void init() override { 
         init_glfw();
         init_imgui();
         Engine::Instance();  // init engine
-        _scene_manager->build(); // build the default scene
+        _editor = new UI_Editor();
+        build_editor();
     }
 
     /// Create Opengl Context
@@ -107,12 +119,37 @@ public:
         ImGui_ImplOpenGL3_Init(glsl_version);
     }
 
+    virtual void build_editor() {
+        
+        _editor->add_core_ui(new UI_SceneManager());
+        _editor->init();
+    }
+
     virtual void update() override {
+        if (SceneManager::Instance().need_to_load()) {
+            _editor->clear();
+            SceneManager::Instance().load_scene(_editor);
+            build_editor();
+        }
+
+        // init hud
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+
         Engine::Instance().update();
+        _editor->draw();
+        
         Engine::Instance().late_update();
+
+        ImGui::ShowDemoWindow();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glfwSwapBuffers(AppInfo::Window());  // glFibish();
+        glfwPollEvents();
     }
 
 protected:
-   
-    SceneManager* _scene_manager;
+    UI_Editor* _editor;
 };

@@ -48,14 +48,8 @@ struct PBD_System : public ParticleSystem {
     }
 
     virtual ~PBD_System() {
-        clear();
-        delete _solver;
-    }
-
-    virtual void clear() override {
-        ParticleSystem::clear();
         clear_xpbd_constraints();
-    };
+    }
 
     void clear_xpbd_constraints() {
         for (XPBD_Constraint* c : _xpbd_constraints) delete c;
@@ -65,6 +59,12 @@ struct PBD_System : public ParticleSystem {
     unsigned int add_xpbd_constraint(XPBD_Constraint* constraint) {
         _xpbd_constraints.push_back(constraint);
         return _xpbd_constraints.size();
+    }
+
+    void draw_debug_xpbd() {
+        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
+            xpbd->draw_debug(this->_particles);
+        }
     }
 
 protected:

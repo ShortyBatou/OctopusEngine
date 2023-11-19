@@ -6,7 +6,7 @@
 #include "Rendering/GL_Graphic.h"
 #include "Rendering/GL_DisplayMode.h"
 #include "Manager/Debug.h"
-class DebugManager : public Renderer
+class DebugManager : public Behaviour
 {
 public:
     DebugManager() : _default_color(ColorBase::Grey(0.8)), _pause(false)
@@ -15,8 +15,8 @@ public:
         _graphic->set_multi_color(true);
 
         _display_mode = new GL_DisplayMesh();
-        _display_mode->draw_points(false);
-        _display_mode->draw_surface(false);
+        _display_mode->point() = false;
+        _display_mode->surface() = false;
 
         _mesh = new Mesh();
         _mesh->set_dynamic_geometry(true);
@@ -43,11 +43,8 @@ public:
         }
     }
 
-    virtual void draw() override {
-    }
-
-    virtual void after_draw() override { 
-        if(!_pause) clear();
+    virtual void late_update() {
+        if (!_pause) clear();
     }
 
     virtual void clear() {

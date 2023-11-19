@@ -4,11 +4,11 @@
 #include "Pattern.h"
 #include "Component.h"
 
-struct Entity : public Behaviour, public ID_Creator<Entity> {
-    Entity() {
-        _name = "Entity_" + std::to_string(this->id());
+struct Entity : public Behaviour {
+    Entity(unsigned int id) : _id(id) {
+        _name = "Entity_" + std::to_string(id);
     }
-    Entity(std::string name) : _name(name) {}
+    Entity(std::string name, unsigned int id) : _name(name), _id(id) {}
 
     virtual void init() override
     {
@@ -91,9 +91,10 @@ struct Entity : public Behaviour, public ID_Creator<Entity> {
         }
         _components.clear();
     }
-
+    inline unsigned int id() { return _id; }
     std::string& name() {return _name;}
 protected: 
+    unsigned int _id;
     std::string _name;
     std::vector<Behaviour*> _components;
 };

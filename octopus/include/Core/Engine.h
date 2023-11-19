@@ -36,7 +36,7 @@ public:
     static Entity* CreateEnity()
     {
         auto& engine = Engine::Instance();
-        Entity* e = new Entity();
+        Entity* e = new Entity(engine._entities.size());
         engine._entities.push_back(e);
         return e;
     }
@@ -44,7 +44,7 @@ public:
     static Entity* CreateEnity(const std::string& name)
     {
         auto& engine = Engine::Instance();
-        Entity* e    = new Entity(name);
+        Entity* e    = new Entity(name, engine._entities.size());
         engine._entities.push_back(e);
         return e;
     }

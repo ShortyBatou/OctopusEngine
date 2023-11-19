@@ -4,11 +4,8 @@
 class GL_GraphicElement : public GL_Graphic
 {
 public:
-    GL_GraphicElement() : GL_Graphic(Color(0.9, 0.3, 0.3, 1.0))
+    GL_GraphicElement(scalar scale = 0.7) : GL_Graphic(Color(0.9, 0.3, 0.3, 1.0)), _scale(scale)
     {
-        _converters[Line]     = new LineConverter();
-        _converters[Triangle] = new TriangleConverter();
-        _converters[Quad]     = new QuadConverter();
         _converters[Tetra]    = new TetraConverter();
         _converters[Pyramid]  = new PyramidConverter();
         _converters[Prysm]    = new PrysmConverter();
@@ -26,7 +23,7 @@ public:
             if (_converters.find(type) == _converters.end()) continue;
             _converters[type]->build_scaled_geometry(this->_mesh->geometry(),
                                             this->_mesh->topologies(),
-                                            elem_geometry, 0.7f);
+                                            elem_geometry, _scale);
         }
 
         this->_b_vertex->load_data(elem_geometry);
@@ -35,9 +32,9 @@ public:
     virtual void update_buffer_topology() override
     {
         std::map<Element, Mesh::Topology> elem_topologies;
-        elem_topologies[Line]  = Mesh::Topology();
-        elem_topologies[Triangle] = Mesh::Topology();
-        elem_topologies[Quad] = Mesh::Topology();
+        elem_topologies[Line]  = this->_mesh->topology(Line);
+        elem_topologies[Triangle] = this->_mesh->topology(Triangle);
+        elem_topologies[Quad] = this->_mesh->topology(Quad);
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
@@ -69,6 +66,7 @@ public:
     static std::map<Element, Color> element_colors;
 
 protected:
+    scalar _scale;
     std::map<Element, MeshConverter*> _converters;
 };
 

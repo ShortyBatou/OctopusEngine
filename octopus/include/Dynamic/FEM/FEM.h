@@ -27,14 +27,8 @@ public:
     }
 
     virtual ~FEM_System() {
-        clear();
-        delete _solver;
-    }
-
-    virtual void clear() override {
-        ParticleSystem::clear();
         clear_fem();
-    };
+    }
 
     void clear_fem() {
         for (Constraint* c : _fems) delete c;

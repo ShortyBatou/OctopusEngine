@@ -77,6 +77,11 @@ struct Input : public Singleton<Input>
         }
     }
 
+    virtual ~Input() {
+        delete _keyboard;
+        delete _mouse;
+    }
+
 protected: 
     friend InputManager;
     friend Singleton<Input>;

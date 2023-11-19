@@ -2,6 +2,7 @@
 
 #include "Core/Base.h"
 #include "Dynamic/Base/Effect.h"
+#include "Manager/Debug.h"
 #include <vector>
 
 // Effect applied on all particles
@@ -9,6 +10,7 @@ struct Effect {
 	Effect(scalar stiffness = 1., bool active = true) : _stiffness(stiffness), _active(active) {};
 	virtual void init(const std::vector<Particle*>& particles) { }
 	virtual void apply(const std::vector<Particle*>& particles, const scalar dt) = 0;
+	virtual void draw_debug(const std::vector<Particle*>& parts) { }
 
 	bool active() { return _active; }
 	void set_active(bool active) { _active = active; }

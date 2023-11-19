@@ -1,71 +1,38 @@
 #pragma once
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_glfw.h>
-
-#include "Core/Base.h"
-#include "Core/Pattern.h"
-#include "UI/UI_Display.h"
-#include "Rendering/Renderer.h"
-
 #include <map>
-#include <vector>
-
-class UI_Manager : public Renderer {
+#include <Core/Entity.h>
+#include <Manager/DebugManager.h>
+#include "UI/UI_Primitive.h"
+class UI_Editor : public UI_Display {
 public:
-	virtual void init() {
-        ImGui::CaptureMouseFromApp(true);
-        _step = false;
-	}
+    UI_Editor() : _step(true) { }
 
-    virtual void late_init() {
-        _entities_ui[0].push_back(new UI_Time(Engine::GetEntity(0)));
-        _entities_ui[0].push_back(new UI_SceneColor(Engine::GetEntity(0)));
+    char* name() {
+        return "Editor";
+    }
 
-        for (Entity* entity : Engine::GetEntities()) 
-            for (UI_Display* ui : _entities_ui[entity->id()])
-                ui->init();
-
-        for (Entity* entity : Engine::GetEntities())
-            for (UI_Display* ui : _entities_ui[entity->id()])
-                ui->late_init();
-
+    void init() override {
+        for (UI_Display* ui : _core_ui) ui->init();
+        for (UI_Component* ui : _managers_ui) ui->init();
+        for (UI_Component* ui : _components_ui) ui->init();
         _step = true;
     }
 
-	virtual void update() {
-        for (Entity* entity : Engine::GetEntities())
-            for (UI_Display* ui : _entities_ui[entity->id()])
-                ui->update();
-	}
-
-    virtual void late_update() { 
-        for (Entity* entity : Engine::GetEntities())
-            for (UI_Display* ui : _entities_ui[entity->id()])
-                ui->late_update();      
-    }
-
-    virtual void draw() override {
+    void draw() override {
         if (_step) {
-            _step = false;
             stop();
+            _step = false;
         }
-    }
-    
-	virtual void after_draw() override {
         
-
         unsigned int wx, wy;
         AppInfo::Window_sizes(wx, wy);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2(450, wy - 20));
-        ImGui::Begin("Editor");
+        ImGui::SetNextWindowSize(ImVec2(500, wy - 20));
+        ImGui::Begin(name());
         if (ImGui::Button("Pause")) {
-            _step = false;
-            stop();
+            _step = true;
         }
         ImGui::SameLine();
         if (ImGui::Button("Step")) {
@@ -78,68 +45,62 @@ public:
             _step = false;
             play();
         }
-            
+
+        for (UI_Display* ui : _core_ui) {
+            ui->draw();
+        }
+        
+        if (ImGui::CollapsingHeader("Global", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            Entity* root = Engine::GetEntity(0);
+            for (UI_Component* ui : _managers_ui) {
+                if (!ui->can_draw(root)) continue;
+
+                if (ImGui::TreeNodeEx(ui->name(), ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ui->draw(root);
+                    ImGui::TreePop();
+                    ImGui::Spacing();
+                }
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Entities"))
+        {
+            for (Entity* entity : Engine::GetEntities()) {
+                if (entity->id() == 0) continue;
+                if (!ImGui::TreeNodeEx(entity->name().c_str())) continue;
+
+                for (UI_Component* ui : _components_ui) {
+                    if (!ui->can_draw(entity)) continue;
+                    if (!ImGui::TreeNodeEx(ui->name())) continue;
+                    ui->draw(entity);
+                    ImGui::TreePop();
+                    ImGui::Spacing();
+                }
+                ImGui::TreePop();
+                ImGui::Spacing();
+            }
+        }
 
         if (ImGui::CollapsingHeader("Exemple"))
         {
             example();
         }
-        if (ImGui::CollapsingHeader("Global", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            for (UI_Display* ui : _entities_ui[0]) {
-                if (ImGui::TreeNodeEx(ui->name(), ImGuiTreeNodeFlags_DefaultOpen)) {
-                    ui->draw();
-                    ImGui::TreePop();
-                    ImGui::Spacing();
-                }
-                
-            }
-                
-        }
-
-        if (ImGui::CollapsingHeader("Entities"))
-        {
-            auto& entities = Engine::GetEntities();
-            for (unsigned int i = 1; i < entities.size(); ++i) {
-                for (UI_Display* ui : _entities_ui[entities[i]->id()])
-                    ui->late_update();
-            }
-                
-        }
 
         ImGui::End();
 
-        ImGui::ShowDemoWindow();
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	}
-
-    void stop() {
-        for (Entity* entity : Engine::GetEntities()) {
-            if (entity->id() == 0) {
-                TimeManager* time_manager = entity->getComponent<TimeManager>();
-                if (time_manager) time_manager->disable();
-
-                DebugManager* debug_manager = entity->getComponent<DebugManager>();
-                if (debug_manager) debug_manager->pause();
-            }
-            entity->disable();
-        }
     }
 
-    void play() {
-       
-        for (Entity* entity : Engine::GetEntities()) {
-            if (entity->id() == 0) {
-                TimeManager* time_manager = entity->getComponent<TimeManager>();
-                if (time_manager) time_manager->enable();
-                
-                DebugManager* debug_manager = entity->getComponent<DebugManager>();
-                if (debug_manager) debug_manager->play();
-            }
-            entity->enable();
-        }
+    void add_manager_ui(UI_Component* manager_ui) {
+        _managers_ui.push_back(manager_ui);
+    }
+
+    void add_component_ui(UI_Component* component_ui) {
+        _components_ui.push_back(component_ui);
+    }
+
+    void add_core_ui(UI_Display* core_ui) {
+        _core_ui.push_back(core_ui);
     }
 
     void example() {
@@ -297,9 +258,50 @@ public:
         }
     }
 
+    void clear() {
+        for (UI_Component* ui : _managers_ui) delete ui;
+        for (UI_Component* ui : _components_ui) delete ui;
+        for (UI_Display* ui : _core_ui) delete ui;
+        _managers_ui.clear();
+        _components_ui.clear();
+        _core_ui.clear();
+    }
+
+    virtual ~UI_Editor() {
+        clear();
+    }
 
 protected:
-    std::map<unsigned int, std::vector<UI_Display*>> _entities_ui;
-    bool _step;
+    void stop() {
+        for (Entity* entity : Engine::GetEntities()) {
+            if (entity->id() == 0) {
+                TimeManager* time_manager = entity->getComponent<TimeManager>();
+                if (time_manager) time_manager->disable();
 
+                DebugManager* debug_manager = entity->getComponent<DebugManager>();
+                if (debug_manager) debug_manager->pause();
+            }
+            entity->disable();
+        }
+    }
+
+    void play() {
+
+        for (Entity* entity : Engine::GetEntities()) {
+            if (entity->id() == 0) {
+                TimeManager* time_manager = entity->getComponent<TimeManager>();
+                if (time_manager) time_manager->enable();
+
+                DebugManager* debug_manager = entity->getComponent<DebugManager>();
+                if (debug_manager) debug_manager->play();
+            }
+            entity->enable();
+        }
+    }
+
+protected:
+    std::vector<UI_Display*> _core_ui;
+    std::vector<UI_Component*> _managers_ui;
+    std::vector<UI_Component*> _components_ui;
+    bool _step;
 };

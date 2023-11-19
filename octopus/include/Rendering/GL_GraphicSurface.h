@@ -9,9 +9,6 @@ class GL_GraphicSurface : public GL_Graphic
 public:
     GL_GraphicSurface(const Color& color = Color(0.8, 0.4, 0.4, 1.0)) : GL_Graphic(color)
     {
-        _converters[Line]     = new LineConverter();
-        _converters[Triangle] = new TriangleConverter();
-        _converters[Quad]     = new QuadConverter();
         _converters[Tetra]    = new TetraConverter();
         _converters[Pyramid]  = new PyramidConverter();
         _converters[Prysm]    = new PrysmConverter();
@@ -23,7 +20,7 @@ public:
     virtual void update_buffer_topology() override
     {
         std::map<Element, Mesh::Topology> elem_topologies;
-        elem_topologies[Line] = Mesh::Topology();
+        
         elem_topologies[Triangle] = Mesh::Topology();
         elem_topologies[Quad]     = Mesh::Topology();
         for (const auto& elem : this->_mesh->topologies())
@@ -37,33 +34,31 @@ public:
 
         // revome duplicate faces
         get_surface<3>(elem_topologies[Triangle]);
-        get_surface<6>(elem_topologies[Quad]); // quad = 2 triangle here
+        get_surface<4>(elem_topologies[Quad]); // quad = 2 triangle here
 
-        std::vector<unsigned int> ids(2);
-        for (unsigned int i = 0; i < elem_topologies[Quad].size(); i += 6)
+        elem_topologies[Line] = Mesh::Topology(elem_topologies[Quad].size() / 4 * 8);
+        Mesh::Topology quad_triangles(elem_topologies[Quad].size() / 4 * 6);
+
+        unsigned int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
+        unsigned int quad_triangle[6] = { 0,1,3, 3,1,2 };
+
+        for (unsigned int i = 0; i < elem_topologies[Quad].size()/4; i ++)
         {
-            // find the common edge between the 2 quad's triangles
-            Face<2> edge = find_edge(elem_topologies[Quad], i);
-            for (unsigned int j = 0; j < 3; ++j)
-            for (unsigned int k = 0; k < 4; k += 3)
-            {
-                ids[0] = elem_topologies[Quad][i + j + k];
-                ids[1] = elem_topologies[Quad][i + (j + 1) % 3 + k];
-                Face<2> line(ids);
-                // if the line is the common edge, ignore. Else, add it
-                if (line != edge)
-                    elem_topologies[Line].insert(
-                        elem_topologies[Line].begin(), line._ids.begin(),
-                        line._ids.end());
-            }
+            for (unsigned int j = 0; j < 8; ++j) 
+                elem_topologies[Line][i*8+j] = elem_topologies[Quad][i*4 + quad_lines[j]];
+
+            for (unsigned int j = 0; j < 6; ++j)
+                quad_triangles[i * 6 + j] = elem_topologies[Quad][i * 4 + quad_triangle[j]];
         }
+
+        get_surface<2>(elem_topologies[Line]); // quad = 2 triangle here
 
         if (elem_topologies[Line].size() > 0)
             this->_b_line->load_data(elem_topologies[Line]);
         if (elem_topologies[Triangle].size() > 0)
             this->_b_triangle->load_data(elem_topologies[Triangle]);
-        if (elem_topologies[Quad].size() > 0)
-            this->_b_quad->load_data(elem_topologies[Quad]);
+        if (quad_triangles.size() > 0)
+            this->_b_quad->load_data(quad_triangles);
     }
 
 protected:

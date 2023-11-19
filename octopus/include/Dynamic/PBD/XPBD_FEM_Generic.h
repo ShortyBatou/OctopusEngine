@@ -7,8 +7,7 @@ class XPBD_FEM_Generic : public XPBD_Constraint {
 public:
     XPBD_FEM_Generic(unsigned int* ids, PBD_ContinuousMaterial* material, FEM_Shape* shape)
         : XPBD_Constraint(std::vector<unsigned int>(ids, ids + shape->nb) , material->getStiffness()), _material(material), _shape(shape)
-    {
-    }
+    { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(this->nb());
@@ -68,6 +67,14 @@ public:
         }
 
         return true;
+    }
+
+    void draw_debug(const std::vector<Particle*>& particles) override {
+        std::vector<Vector3> pts(this->nb());
+        for (unsigned int i = 0; i < this->nb(); ++i) {
+            pts[i] = particles[this->_ids[i]]->position;
+        }
+        _shape->debug_draw(pts);
     }
 protected:
     std::vector<std::vector<Vector3>> _dN;

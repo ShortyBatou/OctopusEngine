@@ -50,6 +50,15 @@ struct RB_Fixation : public Constraint {
             Debug::Cube(parts[this->_ids[i]]->position, 0.02f);
         }
     }
+    virtual void draw_debug(const std::vector<Particle*>& parts) {
+        Debug::Axis(com, rot, 0.1);
+        Debug::SetColor(ColorBase::Blue());
+        for (unsigned int i = 0; i < this->nb(); i++) {
+            Particle* part = parts[this->_ids[i]];
+            Debug::Cube(parts[this->_ids[i]]->position, 0.02f);
+        }
+    }
+
 
 };
 

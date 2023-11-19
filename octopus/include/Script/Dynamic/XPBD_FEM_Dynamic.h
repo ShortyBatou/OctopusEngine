@@ -19,7 +19,14 @@ public:
 
         Time::Tic();
         _pbd->step(Time::Fixed_DeltaTime());
-        std::cout << "PBD : " << Time::Tac() * 1000. << " ms" << std::endl;
+        //std::cout << "PBD : " << Time::Tac() * 1000. << " ms" << std::endl;
+
+        _pbd->draw_debug_constraints();
+        _pbd->draw_debug_effects();
+        _pbd->draw_debug_particles();
+        _pbd->draw_debug_xpbd();
+
+
         if (Input::Loop(Key::C)) {
             _c_lock->set_active(false);
         }
@@ -41,6 +48,7 @@ public:
             case Pyramid: return new Pyramid_5(); break;
             case Prysm: return new Prysm_6(); break;
             case Hexa: return new Hexa_8(); break;
+            case Tetra10: return new Tetra_10(); break;
             default: std::cout << "build_element : element not found " << type << std::endl; return nullptr;
         }
     }
@@ -80,18 +88,23 @@ public:
                 for (unsigned int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
-                _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new Stable_NeoHooke_First(young, poisson), get_shape(type)));
-                _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new Stable_NeoHooke_Second(young, poisson), get_shape(type)));
+                _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new StVK_First(young, poisson), get_shape(type)));
+                _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new StVK_Second(young, poisson), get_shape(type)));
             }
 
         }
         _pbd->init();
     }
+
+    virtual ~XPBD_FEM_Dynamic() {
+        delete _pbd;
+    }
+
 protected:
     unsigned int _nb_x;
     unsigned int _nb_y;
-    Mesh* _mesh;
     PBD_System* _pbd;
-    PBD_System* _pbd_cloth;
+
+    Mesh* _mesh;
     RB_Fixation* _c_lock;
 };

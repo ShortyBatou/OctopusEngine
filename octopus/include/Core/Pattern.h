@@ -16,23 +16,6 @@ public:
     virtual ~Behaviour() { }
 };
 
-template<typename T>
-class ID_Creator {
-    static unsigned int COUNT;
-    unsigned int _id; 
-
-public:
-    ID_Creator()
-    {
-        _id = COUNT; COUNT++;
-    }
-    virtual ~ID_Creator() { }
-    inline unsigned int id() { return _id;}
-};
-
-template<typename T>
-unsigned int ID_Creator<T>::COUNT = 0;
-
 
 template<typename T>
 class Singleton {

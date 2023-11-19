@@ -17,13 +17,13 @@ public:
 
     virtual void init() override {
         _mesh = this->_entity->getComponent<Mesh>();
-        build_obj_fem(10000, 0.4);
+        build_obj_fem(100000, 0.45);
     }
 
     virtual void update() override {
         Time::Tic();
         _fem->step(Time::Fixed_DeltaTime());
-        std::cout << "FEM : " << Time::Tac() * 1000. << " ms" << std::endl;
+        //std::cout << "FEM : " << Time::Tac() * 1000. << " ms" << std::endl;
 
         if (Input::Loop(Key::C)) {
             _c_lock->set_active(false);
@@ -79,7 +79,7 @@ public:
     }
 
     void build_obj_fem(scalar young, scalar poisson) {
-        _fem = new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.9999), 80);
+        _fem = new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.999), 80);
         add_particles();
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;

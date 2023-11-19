@@ -28,12 +28,16 @@ public:
         _height = h;
     }
     void set_window(GLFWwindow* window) { _window = window; }
+    void set_scene(unsigned int scene) {
+        _scene = scene;
+    }
 
     protected :
     unsigned int _width, _height;
     GLFWwindow* _window = nullptr;
     static const std::string _path_to_assets; 
     bool _exit;
+    unsigned int _scene;
 };
 
 const std::string AppInfo::_path_to_assets = "assets/";

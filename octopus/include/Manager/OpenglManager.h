@@ -56,9 +56,6 @@ public:
                 renderer->after_draw();
         }
 
-
-        glfwSwapBuffers(AppInfo::Window());  // glFibish();
-        glfwPollEvents();
     }
 
     virtual ~OpenGLManager() {  }

@@ -7,9 +7,10 @@ class CameraManager : public Behaviour
 {
 public:
     CameraManager(const Vector3 target = Unit3D::Zero(), scalar distance = 0.0)
-        : _speed(1.0), _mouse_sensitivity(0.01), _zoom(25.)
+        : _speed(0.5), _zoom(45.)
     {
         Camera::Instance();
+        _zoom_range = Vector2(1, 90);
     }
 
     virtual void init() override {
@@ -30,16 +31,18 @@ public:
 
     virtual void move_camera(Camera* camera)
     {
-        //Vector3 direction = Unit3D::Zero();
-        //if (Input::Loop(Key::A)) direction.x = -1;
-        //if (Input::Loop(Key::D)) direction.x = 1;
-        //if (Input::Loop(Key::S)) direction.z = -1;
-        //if (Input::Loop(Key::Z)) direction.z = 1;
-        //if (Input::Loop(Key::Q)) direction.y = -1;
-        //if (Input::Loop(Key::E)) direction.y = 1;
+        if (!Input::Loop(M_RIGHT)) return;
+        Vector2 offset = Input::MouseOffset() * _speed * scalar(0.01);
+        if (offset.x == 0 && offset.y == 0) return;
 
-        //camera->target() += direction * _speed * Time::DeltaTime();
-        //camera->position() += direction * _speed * Time::DeltaTime();
+        Vector3 direction = Unit3D::Zero();
+        Vector3 front = glm::normalize(camera->position() - camera->target());
+        Vector3 right = glm::cross(front, Unit3D::up());
+        Vector3 up = glm::cross(front, right);
+        direction = (-up * offset.y + right * offset.x);
+
+        camera->target() += direction;
+        camera->position() += direction;
         if (Input::Down(Key::R))
         {
             camera->position() = _init_camera_pos;
@@ -51,13 +54,11 @@ public:
     { 
         if (!Input::Loop(M_LEFT)) return;
 
-        Vector2 offset = Input::MouseOffset() * _mouse_sensitivity;
+        Vector2 offset = Input::MouseOffset() * _speed * scalar(0.01);
         if (offset.x == 0 && offset.y == 0) return;
-        
-        Vector3 lookDir      = camera->position() - camera->target();
-        Matrix4x4 x_rotate = glm::rotate(
-            Matrix::Identity4x4(), offset.y,
-            glm::normalize(glm::cross(lookDir, Unit3D::up())));
+        camera->position() = camera->position() - camera->target();
+        Vector3 lookDir      = camera->position();
+        Matrix4x4 x_rotate = glm::rotate( Matrix::Identity4x4(), offset.y, glm::normalize(glm::cross(lookDir, Unit3D::up())));
         Vector3 rotv = glm::normalize(glm::cross(lookDir, Unit3D::up()));
         
         Vector3 p_temp(x_rotate * Vector4(camera->position(), 0.f));
@@ -72,7 +73,7 @@ public:
         Matrix4x4 y_rotate = glm::rotate(Matrix::Identity4x4(), -offset.x,
                                             Unit3D::up());
         camera->position()
-            = Vector3(y_rotate * Vector4(camera->position(), 0.f));
+            = camera->target() + Vector3(y_rotate * Vector4(camera->position(), 0.f));
 
     }
 
@@ -84,18 +85,22 @@ public:
         {
             _zoom -= (scalar)scroll;
             _zoom = std::max(_zoom, scalar(1.));
-            _zoom = std::min(_zoom, scalar(45.));
-            camera->set_fov(_zoom);
+            _zoom = std::min(_zoom, scalar(90.));
+            
         }
+        camera->set_fov(_zoom);
         
     }
 
+    scalar& speed() { return _speed; }
+    scalar& zoom() { return _zoom; }
+    Vector2& zoom_range() { return _zoom_range; }
 
     virtual ~CameraManager() { Camera::Delete(); }
 
 protected:
+    Vector2 _zoom_range;
     Vector3 _init_camera_pos;
     scalar _speed;
-    scalar _mouse_sensitivity;
     scalar _zoom;
 };

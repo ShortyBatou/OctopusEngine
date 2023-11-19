@@ -70,12 +70,6 @@ public:
         return _constraints.size() - 1;
     }
 
-    virtual void clear() {
-        clear_particles();
-        clear_effects();
-        clear_constraints();
-    }
-
     virtual void clear_particles() {
         for (Particle* p : _particles)
             delete p;
@@ -103,6 +97,30 @@ public:
         return _particles[i];
     }
 
+    virtual void draw_debug_constraints() {
+        for (Constraint* c : _constraints) 
+            c->draw_debug(_particles);
+    }
+
+    virtual void draw_debug_effects() {
+        for (Effect* e : _effects)
+            e->draw_debug(_particles);
+    }
+
+    virtual void draw_debug_particles(const Color& c = ColorBase::Red()) {
+        Debug::SetColor(c);
+        for (Particle* p : _particles)
+        {
+            Debug::Cube(p->position, 0.01);
+        }
+    }
+
+    virtual ~ParticleSystem() {
+        clear_particles();
+        clear_effects();
+        clear_constraints();
+        delete _solver;
+    }
 protected:
     Solver* _solver;
     std::vector<Particle*> _particles;
