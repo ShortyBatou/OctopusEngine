@@ -12,19 +12,19 @@ public:
 
     virtual void init() {
         _mesh = this->_entity->getComponent<Mesh>();
-        build_obj_pbd(10000, 0.4);
+        build_obj_pbd(10000, 0.35);
     }
 
     virtual void update() {
 
         Time::Tic();
         _pbd->step(Time::Fixed_DeltaTime());
-        //std::cout << "PBD : " << Time::Tac() * 1000. << " ms" << std::endl;
+        std::cout << num << " PBD : " << Time::Tac() * 1000. << " ms" << std::endl;
 
-        _pbd->draw_debug_constraints();
-        _pbd->draw_debug_effects();
-        _pbd->draw_debug_particles();
-        _pbd->draw_debug_xpbd();
+        //_pbd->draw_debug_constraints();
+        //_pbd->draw_debug_effects();
+        //_pbd->draw_debug_particles();
+        //_pbd->draw_debug_xpbd()*/;
 
 
         if (Input::Loop(Key::C)) {
@@ -33,7 +33,7 @@ public:
         else {
             _c_lock->set_active(true);
             glm::mat4 r = _c_lock->rot;
-            r = glm::rotate(r, glm::radians(Time::DeltaTime() * 3.14f * 180.f * 0.1f), Unit3D::right());
+            r = glm::rotate(r, glm::radians(Time::Fixed_DeltaTime() * 3.14f * 180.f * 0.1f), Unit3D::right());
             _c_lock->rot = r;
         }
         for (unsigned int i = 0; i < _mesh->nb_vertices(); ++i) {
@@ -88,6 +88,7 @@ public:
                 for (unsigned int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
+                num = element_vertices(type);
                 _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new StVK_First(young, poisson), get_shape(type)));
                 _pbd->add_xpbd_constraint(new XPBD_FEM_Generic(ids.data(), new StVK_Second(young, poisson), get_shape(type)));
             }
@@ -104,7 +105,7 @@ protected:
     unsigned int _nb_x;
     unsigned int _nb_y;
     PBD_System* _pbd;
-
+    unsigned int num;
     Mesh* _mesh;
     RB_Fixation* _c_lock;
 };

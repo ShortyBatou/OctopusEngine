@@ -8,18 +8,27 @@
 template<unsigned int nb>
 struct Face
 {
-    std::vector<unsigned int> _ids;
-    std::vector<unsigned int> _ids_sorted;
-    Face(std::vector<unsigned int> ids)
+    std::vector<unsigned int> ids;
+    std::vector<unsigned int> ids_sorted;
+    std::vector<Vector3> vertices;
+
+    unsigned int element_id;
+    unsigned int face_id;
+
+    Face(const std::vector<unsigned int>& _ids, 
+        const std::vector<Vector3>& _vertices = {},
+        unsigned int _element_id = 0, 
+        unsigned int _face_id = 0) : element_id(_element_id), face_id(_face_id), vertices(_vertices)
     {
-        assert(ids.size() == nb);
-        _ids = ids; 
-        _ids_sorted = _ids;
-        std::sort(_ids_sorted.begin(), _ids_sorted.end());
+        assert(_ids.size() == nb);
+        ids = _ids; 
+        ids_sorted = _ids;
+        std::sort(ids_sorted.begin(), ids_sorted.end());
     }
+
     bool operator<(const Face<nb>& f) const
     {
-        return _ids_sorted < f._ids_sorted;
+        return ids_sorted < f.ids_sorted;
     }
 
     /// \returns true if the other face \p f has the same vertice indices in the
@@ -27,7 +36,7 @@ struct Face
     bool operator==(const Face& f) const
     {
         for (unsigned int i = 0; i < nb; ++i)
-            if (_ids_sorted[i] != f._ids_sorted[i]) return false;
+            if (ids_sorted[i] != f.ids_sorted[i]) return false;
         
         return true;
     }

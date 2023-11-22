@@ -10,7 +10,7 @@ struct FEM_Shape {
     virtual std::vector<scalar> getQuadratureCoordinates() const = 0;
     virtual std::vector<scalar> getWeights() const = 0;
     virtual std::vector<Vector3> build_shape_derivatives(scalar s, scalar t, scalar l) const = 0;
-
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) = 0;
     virtual std::vector<Vector3> convert_dN_to_vector3(scalar* dN) const {
         std::vector<Vector3> dN_v3(nb);
         for (unsigned int i = 0; i < nb; ++i) {
@@ -36,6 +36,9 @@ struct Tetra_4 : public FEM_Shape {
 
     virtual std::vector<scalar> getWeights() const {
         return std::vector<scalar>(1, 1. / 6.);
+    }
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
+        return { 1-s-t-l, s, t, l };
     }
 
     virtual std::vector<Vector3> build_shape_derivatives(scalar, scalar, scalar) const {
@@ -88,7 +91,19 @@ struct Pyramid_5 : public FEM_Shape {
             
         };
 
+        
+
         return this->convert_dN_to_vector3(dN);
+    }
+
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
+        return {
+            (-s + t + l - 1) * (-s - t + l - 1) / (4 * (1 - l)),
+            (-s - t + l - 1) * ( s - t + l - 1) / (4 * (1 - l)),
+            ( s + t + l - 1) * ( s - t + l - 1) / (4 * (1 - l)),
+            ( s + t + l - 1) * (-s + t + l - 1) / (4 * (1 - l)),
+            l,
+        };
     }
 };
 
@@ -115,6 +130,17 @@ struct Prysm_6 : public FEM_Shape {
 
         for (unsigned int i = 0; i < 18; ++i) dN[i] *= 0.5;
         return this->convert_dN_to_vector3(dN);
+    }
+
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
+        return {
+            scalar(0.5) * (1 - s - t) * (1 - l),
+            scalar(0.5) * s * (1 - l),
+            scalar(0.5) * t * (1 - l),
+            scalar(0.5) * (1 - s - t)* (1 + l),
+            scalar(0.5) * s * (1 + l),
+            scalar(0.5) * t * (1 + l),
+        };
     }
 };
 
@@ -143,6 +169,20 @@ struct Hexa_8 : public FEM_Shape {
         for (unsigned int i = 0; i < 24; ++i) dN[i] *= scalar(1. / 8.);
         return this->convert_dN_to_vector3(dN);
     }
+
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
+        const scalar a = scalar(1) / scalar(8);
+        return {
+            a * (1 - s) * (1 - t) * (1 - l),
+            a * (1 + s) * (1 - t) * (1 - l),
+            a * (1 + s) * (1 + t) * (1 - l),
+            a * (1 - s) * (1 + t) * (1 - l),
+            a * (1 - s) * (1 - t) * (1 + l),
+            a * (1 + s) * (1 - t) * (1 + l),
+            a * (1 + s) * (1 + t) * (1 + l),
+            a * (1 - s) * (1 + t) * (1 + l)
+        };
+    }
 };
 
 
@@ -170,7 +210,7 @@ struct Tetra_10 : public FEM_Shape {
     }
 
     // compute N_i(X) 
-    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) {
+    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
         return {
             (1 - s - t - l) * (2.f * (1 - s - t - l) - 1),
             s * (2 * s - 1),
@@ -195,24 +235,25 @@ struct Tetra_10 : public FEM_Shape {
         
         for (unsigned int i = 0; i < edges.size(); i += 2) {
             scalar x = 0;
-        for (unsigned int j = 0; j < sub_dibivision; ++j) {
-            Vector3 a = Unit3D::Zero(), b = Unit3D::Zero();
-            Vector3 p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
-            std::vector<scalar> N = build_shape(p.x, p.y, p.z);
-            for (unsigned int n = 0; n < N.size(); ++n) {
-                a += N[n] * pts[n];
-            }
-            // a = N_i(p) * pts[i]
+            for (unsigned int j = 0; j < sub_dibivision; ++j) {
+                Vector3 a = Unit3D::Zero(), b = Unit3D::Zero();
+                Vector3 p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
+                std::vector<scalar> N = build_shape(p.x, p.y, p.z);
+                for (unsigned int n = 0; n < N.size(); ++n) {
+                    a += N[n] * pts[n];
+                }
+                // a = N_i(p) * pts[i]
             
-            x += step;
-            p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
-            N = build_shape(p.x, p.y, p.z);
-            for (unsigned int n = 0; n < N.size(); ++n) {
-                b += N[n] * pts[n];
+                x += step;
+                p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
+                N = build_shape(p.x, p.y, p.z);
+                for (unsigned int n = 0; n < N.size(); ++n) {
+                    b += N[n] * pts[n];
+                }
+                // b = N_i(p) * pts[i]
+                Debug::Line(a, b);
             }
-            // b = N_i(p) * pts[i]
-            Debug::Line(a, b);
-        }}
+        }
     }
 };
 

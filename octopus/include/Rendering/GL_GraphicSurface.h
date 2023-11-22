@@ -29,7 +29,7 @@ public:
             if (_converters.find(type) == _converters.end()) continue;
 
             // convert all elements into triangles (quad are cuted in 2 triangles)
-            _converters[type]->convert_element( this->_mesh->topologies(), elem_topologies);
+            _converters[type]->convert_element(this->_mesh->topologies(), elem_topologies);
         }
 
         // revome duplicate faces
@@ -80,7 +80,7 @@ protected:
         }
         topology.clear();
         for (auto& face : faces)
-            topology.insert(topology.end(), face._ids.begin(), face._ids.end());
+            topology.insert(topology.end(), face.ids.begin(), face.ids.end());
     }
 
     Face<2> find_edge(Mesh::Topology& topology, unsigned int i_start)

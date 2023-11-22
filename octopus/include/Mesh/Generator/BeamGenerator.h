@@ -164,7 +164,7 @@ void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
 {
     Mesh::Topology tetras = topologies[Tetra];
     topologies[Tetra].clear();
-    topologies[Tetra].clear();
+    topologies[Tetra10].clear();
 
     using Edge = std::pair<unsigned int, unsigned int>;
     unsigned int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };

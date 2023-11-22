@@ -14,6 +14,7 @@
 #include "Rendering/GL_GraphicElement.h"
 #include "Rendering/GL_DisplayMode.h"
 #include "Rendering/GL_GraphicSurface.h"
+#include "Rendering/GL_GraphicHighOrder.h"
 
 #include "Script/Dynamic/XPBD_FEM_Dynamic.h"
 #include "Script/Dynamic/FEM_Dynamic.h"
@@ -58,9 +59,22 @@ struct BaseScene : public Scene
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
         e->addComponent(new XPBD_FEM_Dynamic());
-        e->addComponent(new GL_GraphicSurface(Color(0.7, 0.3, 0.3, 1.)));
+        e->addComponent(new GL_GraphicHighOrder(3, Color(0.7, 0.3, 0.3, 1.)));
         //e->addComponent(new GL_GraphicElement());
         GL_DisplayMesh* display = new GL_DisplayMesh();
+        display->normal() = true;
+        e->addComponent(display);
+
+        cells = Vector3(8, 2, 2);
+        TetraBeamGenerator tm2(cells, sizes);
+        e = Engine::CreateEnity();
+        tm2.setTransform(glm::translate(Matrix::Identity4x4(), Vector3(0, 0, 2)));
+        mesh = tm2.build();  // generate mesh
+        mesh->set_dynamic_geometry(true);
+        e->addBehaviour(mesh);
+        e->addComponent(new XPBD_FEM_Dynamic());
+        e->addComponent(new GL_GraphicSurface(Color(0.3, 0.3, 0.7, 1.)));
+        display = new GL_DisplayMesh();
         display->normal() = true;
         e->addComponent(display);
     }
