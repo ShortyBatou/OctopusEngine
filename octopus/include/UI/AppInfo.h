@@ -7,7 +7,7 @@ struct AppInfo : public Singleton<AppInfo>
 {
 protected:
     friend Singleton<AppInfo>;
-    AppInfo() : _exit(false), _height(0), _width(0)  { }
+    AppInfo() : _exit(false), _height(0), _width(0), _window(nullptr){ }
 
 public:
     static bool Running()
@@ -28,16 +28,12 @@ public:
         _height = h;
     }
     void set_window(GLFWwindow* window) { _window = window; }
-    void set_scene(unsigned int scene) {
-        _scene = scene;
-    }
 
     protected :
     unsigned int _width, _height;
-    GLFWwindow* _window = nullptr;
+    GLFWwindow* _window;
     static const std::string _path_to_assets; 
     bool _exit;
-    unsigned int _scene;
 };
 
 const std::string AppInfo::_path_to_assets = "assets/";

@@ -16,6 +16,7 @@
 #include "Core/Base.h"
 #include "Scene/SceneManager.h"
 #include "Scene/BaseScene.h"
+#include "Scene/XPBD_FEM_Torsion_Scene.h"
 
 #include "UI/AppInfo.h"
 #include "UI/UI_Editor.h"
@@ -28,12 +29,11 @@ public:
     {
         auto& info = AppInfo::Instance(); // init app info
         info.set_window_size(width, height);
-        
-
 
         Engine::Instance();
         SceneManager::Instance();
         SceneManager::Add(new BaseScene());
+        SceneManager::Add(new XPBD_FEM_Torsion_Scene());
         SceneManager::SetScene(0);
     }
 
@@ -100,7 +100,11 @@ public:
         // RESIZE
         glfwSetFramebufferSizeCallback(
             AppInfo::Window(), [](GLFWwindow* window, int width, int height)
-            { glViewport(0, 0, width, height); });
+            { 
+                glViewport(0, 0, width, height); 
+                AppInfo::Instance().set_window_size(width, height);
+            }
+        );
     }
 
     /// <summary>

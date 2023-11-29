@@ -11,14 +11,6 @@ class ParticleSystem {
 public:
     ParticleSystem(Solver* solver) : _solver(solver) { }
 
-    virtual void init() {
-        for (Effect* effect : _effects)
-            effect->init(_particles);
-
-        for (Constraint* constraint : _constraints) 
-            constraint->init(_particles);        
-    }
-
     virtual void step(const scalar dt) {
         step_solver(dt);
         step_effects(dt);
@@ -62,11 +54,13 @@ public:
 
     unsigned int add_constraint(Constraint* constraint) {
         _constraints.push_back(constraint);
+        _constraints.back()->init(this->_particles);
         return _constraints.size() - 1;
     }
 
     unsigned int add_effect(Effect* effect) {
         _effects.push_back(effect);
+        _effects.back()->init(this->_particles);
         return _constraints.size() - 1;
     }
 
@@ -115,6 +109,8 @@ public:
         }
     }
 
+    std::vector<Particle*>& particles() { return _particles; }
+    Solver* solver() { return _solver; }
     virtual ~ParticleSystem() {
         clear_particles();
         clear_effects();

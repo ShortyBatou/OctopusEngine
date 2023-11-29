@@ -50,7 +50,7 @@ public:
     }
 
     static std::vector<Scene*>& Scenes() { return Instance()._scenes; }
-
+    static unsigned int SceneID() { return Instance()._scene_id; }
     static void Add(Scene* scene) { Instance()._scenes.push_back(scene); }
 
     virtual ~SceneManager()

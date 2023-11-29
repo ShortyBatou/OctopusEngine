@@ -74,11 +74,11 @@ struct VolumePreservation : public PBD_ContinuousMaterial {
 
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override
     {
-        // C(F) = det(F)²
+        // C(F) = (det(F) - alpha)²
         // P(F) = 2 det(F) det(F)/dx
         scalar I_3 = glm::determinant(F);
         scalar detF = I_3 - alpha;
-        energy = (detF) * (detF);
+        energy = (detF) * (detF) ;
         Matrix3x3 d_detF; // derivative of det(F) by F
         d_detF[0] = glm::cross(F[1], F[2]);
         d_detF[1] = glm::cross(F[2], F[0]);

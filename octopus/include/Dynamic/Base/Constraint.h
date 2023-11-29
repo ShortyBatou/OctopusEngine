@@ -25,8 +25,8 @@ struct FixPoint : public Constraint {
 
 struct RB_Fixation : public Constraint {
     Matrix3x3 rot;
-    Vector3 com;
-    RB_Fixation(std::vector<unsigned int> ids, scalar stiffness = scalar(1.),  bool active = true) : Constraint(ids, stiffness,active), rot(Matrix::Identity3x3()) {}
+    Vector3 com, offset;
+    RB_Fixation(std::vector<unsigned int> ids, scalar stiffness = scalar(1.), bool active = true) : Constraint(ids, stiffness, active), rot(Matrix::Identity3x3()), offset(Unit3D::Zero()){}
 
     virtual void init(const std::vector<Particle*>& parts) override {
         Vector3 sum_position(0.0f, 0.0f, 0.0f);
@@ -40,14 +40,12 @@ struct RB_Fixation : public Constraint {
     }
 
     virtual void apply(const std::vector<Particle*>& parts, const scalar) override {
-        Debug::SetColor(ColorBase::Blue());
         for (unsigned int i = 0; i < this->nb(); i++) {
             Particle* part = parts[this->_ids[i]];
-            Vector3 target = com + rot * (part->init_position - com);
+            Vector3 target = offset + com + rot * (part->init_position - com);
             part->position += (target - part->position) * this->_stiffness;
             part->velocity *= 0;
             part->force *= 0;
-            Debug::Cube(parts[this->_ids[i]]->position, 0.02f);
         }
     }
     virtual void draw_debug(const std::vector<Particle*>& parts) {

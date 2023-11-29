@@ -9,7 +9,7 @@
 class DebugManager : public Behaviour
 {
 public:
-    DebugManager() : _default_color(ColorBase::Grey(0.8)), _pause(false)
+    DebugManager(bool default_draw = true) : _default_color(ColorBase::Grey(0.8)), _pause(false), _default_draw(default_draw)
     {
         _graphic = new GL_Graphic();
         _graphic->set_multi_color(true);
@@ -34,7 +34,7 @@ public:
     }
 
     virtual void update() override { 
-        if (!_pause) {
+        if (!_pause && _default_draw) {
             Debug::Axis(Unit3D::up() * scalar(0.005f), scalar(1.f));
             Debug::Instance().SetColor(ColorBase::Red());
             Debug::Cube(Vector3(0.05f), scalar(0.1f));
@@ -60,7 +60,12 @@ public:
         _pause = true;
     }
 
+    bool& default_draw() {
+        return _default_draw;
+    }
+
 protected:
+    bool _default_draw;
     bool _pause;
     Color _default_color;
     GL_Graphic* _graphic;

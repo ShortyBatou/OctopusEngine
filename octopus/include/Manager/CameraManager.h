@@ -6,19 +6,18 @@
 class CameraManager : public Behaviour
 {
 public:
-    CameraManager(const Vector3 target = Unit3D::Zero(), scalar distance = 0.0)
-        : _speed(0.5), _zoom(45.)
+    CameraManager(const Vector3& init_pos = -Unit3D::forward() * scalar(8.), const Vector3& target = Unit3D::Zero(), scalar distance = 0.0)
+        : _speed(0.5), _zoom(45.), _init_camera_pos(init_pos)
     {
-        Camera::Instance();
-        _zoom_range = Vector2(1, 90);
+        Camera* camera = Camera::Instance_ptr();
+        camera->position() = _init_camera_pos;
+        camera->target() = target;
+        camera->set_fov(_zoom);
+        camera->update_vp();
     }
 
     virtual void init() override {
-        Camera* camera   = Camera::Instance_ptr();
-        _init_camera_pos = -Unit3D::forward() * scalar(8.);
-        camera->position() = _init_camera_pos;
-        camera->set_fov(_zoom);
-        camera->update_vp();
+        
     }
 
     virtual void update() override { 

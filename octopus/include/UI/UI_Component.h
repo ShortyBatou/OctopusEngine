@@ -19,7 +19,10 @@
 
 class UI_SceneManager : public UI_Display {
 public:
-	UI_SceneManager() : _item_current(0) { }
+	UI_SceneManager() : _item_current(SceneManager::SceneID()) 
+	{ 
+		std::cout << "UI SCENE " << _item_current << std::endl;
+	}
 
 	virtual char* name() override {
 		return "Scene";
@@ -74,6 +77,7 @@ public:
 		change = change + ImGui::ColorEdit3("Pyramid", &GL_GraphicElement::element_colors[Pyramid].x);
 		change = change + ImGui::ColorEdit3("Prysm", &GL_GraphicElement::element_colors[Prysm].x);
 		change = change + ImGui::ColorEdit3("Hexa", &GL_GraphicElement::element_colors[Hexa].x);
+		change = change + ImGui::ColorEdit3("Tetra10", &GL_GraphicElement::element_colors[Tetra10].x);
 		if (change) {
 			for (Entity* e : Engine::GetEntities()) {
 				GL_GraphicElement* gl_elements = e->getComponent<GL_GraphicElement>();

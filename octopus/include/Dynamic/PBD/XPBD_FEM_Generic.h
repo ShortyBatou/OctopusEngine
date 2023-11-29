@@ -23,7 +23,7 @@ public:
         _detJ.resize(_weights.size());
         _JX_inv.resize(_weights.size());
         _JX.resize(_weights.size());
-
+        init_volume = 0;
         for (unsigned int i = 0; i < _weights.size(); ++i) {
             s = coords[i * 3]; t = coords[i * 3 + 1]; l = coords[i * 3 + 2];
             _dN[i] = _shape->build_shape_derivatives(s, t, l);
@@ -32,21 +32,25 @@ public:
                 _JX[i] += glm::outerProduct(X[j], _dN[i][j]);
             }
             _detJ[i] = std::abs(glm::determinant(_JX[i]));
+            init_volume += _detJ[i] * _weights[i];
             _JX_inv[i] = glm::inverse(_JX[i]);
         }
-
+        volume = init_volume;
     }
 
 
     virtual bool  project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) override {
         Matrix3x3 Jx, F, P;
         scalar energy;
-
+        volume = 0;
         for (unsigned int i = 0; i < _weights.size(); ++i) {
             Jx = Matrix::Zero3x3();
             for (unsigned int j = 0; j < this->nb(); ++j) {
                 Jx += glm::outerProduct(x[j]->position, _dN[i][j]);
             }
+
+            volume += std::abs(glm::determinant(Jx)) * _weights[i];
+
             F = Jx * _JX_inv[i];
             _material->getStressTensorAndEnergy(F, P, energy);
 
@@ -58,12 +62,13 @@ public:
             C += energy * _detJ[i] * _weights[i];
         }
 
-        if (C <= scalar(1e-8)) return false;
-        C = std::max(C, scalar(1e-8));
-        C = sqrt(C);
+
+        if (std::abs(C) <= scalar(1e-8)) return false;
+        scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
+        C = sqrt(abs(C));
         scalar C_inv = scalar(1.) / scalar(2. * C);
         for (unsigned int j = 0; j < this->nb(); ++j) {
-            grads[j] *= C_inv;
+            grads[j] *= C_inv * s;
         }
 
         return true;
@@ -76,6 +81,8 @@ public:
         }
         _shape->debug_draw(pts);
     }
+    scalar init_volume;
+    scalar volume;
 protected:
     std::vector<std::vector<Vector3>> _dN;
     std::vector<Matrix3x3> _JX_inv;
@@ -86,5 +93,4 @@ protected:
 
     PBD_ContinuousMaterial* _material;
     FEM_Shape* _shape;
-
 };

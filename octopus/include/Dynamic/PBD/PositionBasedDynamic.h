@@ -13,18 +13,6 @@ struct PBD_System : public ParticleSystem {
         ParticleSystem(solver), _nb_step(nb_step), _nb_substep(nb_substep), _type(solver_type)
     { }
 
-    virtual void init() override {
-        for (Effect* effect : this->_effects)
-            effect->init(this->_particles);
-
-        for (Constraint* constraint : this->_constraints)
-            constraint->init(this->_particles);
-
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            xpbd->init(this->_particles);
-        }
-    }
-
     virtual void step(const scalar dt) override {
         scalar h = dt / (scalar)_nb_substep;
         for (unsigned int i = 0; i < _nb_substep; i++)
@@ -58,6 +46,7 @@ struct PBD_System : public ParticleSystem {
 
     unsigned int add_xpbd_constraint(XPBD_Constraint* constraint) {
         _xpbd_constraints.push_back(constraint);
+        _xpbd_constraints.back()->init(this->_particles);
         return _xpbd_constraints.size();
     }
 

@@ -1,10 +1,14 @@
 #pragma once
 #include "Core/Base.h"
 #include <vector>
+enum Material {
+    Hooke, StVK, Neo_Hooke
+};
 
 struct ContinuousMaterial {
     scalar lambda, mu;
     scalar young, poisson;
+    
 
     ContinuousMaterial(const scalar _young, const scalar _poisson) : young(_young), poisson(_poisson) {
         lambda = computeLambda();

@@ -17,48 +17,38 @@ public:
     }
 
     // find the surface of the mesh (pretty much brute force maybe, there is a better way)
-    virtual void update_buffer_topology() override
+    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) override
     {
-        std::map<Element, Mesh::Topology> elem_topologies;
-        
-        elem_topologies[Triangle] = Mesh::Topology();
-        elem_topologies[Quad]     = Mesh::Topology();
+        Mesh::Topology element_quads;
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
 
             // convert all elements into triangles (quad are cuted in 2 triangles)
-            _converters[type]->convert_element(this->_mesh->topologies(), elem_topologies);
+            _converters[type]->convert_element(this->_mesh->topologies(), triangles, element_quads);
         }
 
         // revome duplicate faces
-        get_surface<3>(elem_topologies[Triangle]);
-        get_surface<4>(elem_topologies[Quad]); // quad = 2 triangle here
+        get_surface<3>(triangles);
+        get_surface<4>(element_quads); // quad = 2 triangle here
 
-        elem_topologies[Line] = Mesh::Topology(elem_topologies[Quad].size() / 4 * 8);
-        Mesh::Topology quad_triangles(elem_topologies[Quad].size() / 4 * 6);
+        lines.resize(element_quads.size() / 4 * 8);
+        quads.resize(element_quads.size() / 4 * 6);
 
         unsigned int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
         unsigned int quad_triangle[6] = { 0,1,3, 3,1,2 };
 
-        for (unsigned int i = 0; i < elem_topologies[Quad].size()/4; i ++)
+        for (unsigned int i = 0; i < element_quads.size()/4; i ++)
         {
             for (unsigned int j = 0; j < 8; ++j) 
-                elem_topologies[Line][i*8+j] = elem_topologies[Quad][i*4 + quad_lines[j]];
+                lines[i*8+j] = element_quads[i*4 + quad_lines[j]];
 
             for (unsigned int j = 0; j < 6; ++j)
-                quad_triangles[i * 6 + j] = elem_topologies[Quad][i * 4 + quad_triangle[j]];
+                quads[i * 6 + j] = element_quads[i * 4 + quad_triangle[j]];
         }
 
-        get_surface<2>(elem_topologies[Line]); // quad = 2 triangle here
-
-        if (elem_topologies[Line].size() > 0)
-            this->_b_line->load_data(elem_topologies[Line]);
-        if (elem_topologies[Triangle].size() > 0)
-            this->_b_triangle->load_data(elem_topologies[Triangle]);
-        if (quad_triangles.size() > 0)
-            this->_b_quad->load_data(quad_triangles);
+        get_surface<2>(lines, false); 
     }
 
 protected:

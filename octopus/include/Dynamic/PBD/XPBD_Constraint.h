@@ -40,7 +40,7 @@ public:
         }
     }
 
-    virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) = 0;
+    virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) { return false; }
 
     virtual ~XPBD_Constraint() {}
 

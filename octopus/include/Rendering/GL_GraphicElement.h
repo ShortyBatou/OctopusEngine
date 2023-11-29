@@ -4,50 +4,36 @@
 class GL_GraphicElement : public GL_Graphic
 {
 public:
-    GL_GraphicElement(scalar scale = 0.7) : GL_Graphic(Color(0.9, 0.3, 0.3, 1.0)), _scale(scale)
+    GL_GraphicElement(scalar scale = 0.9) : GL_Graphic(Color(0.9, 0.3, 0.3, 1.0)), _scale(scale)
     {
         _converters[Tetra]    = new TetraConverter();
         _converters[Pyramid]  = new PyramidConverter();
         _converters[Prysm]    = new PrysmConverter();
         _converters[Hexa]     = new HexaConverter();
+        _converters[Tetra10] = new Tetra10Converter();
         for (auto& elem : _converters) elem.second->init();
         this->_multi_color = true;
     }
 
-    virtual void update_buffer_geometry() override
+    virtual void get_geometry(Mesh::Geometry& geometry) override
     {
-        Mesh::Geometry elem_geometry;
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
-            _converters[type]->build_scaled_geometry(this->_mesh->geometry(),
-                                            this->_mesh->topologies(),
-                                            elem_geometry, _scale);
+            _converters[type]->build_scaled_geometry(this->_mesh->geometry(), this->_mesh->topologies(), geometry, _scale);
         }
 
-        this->_b_vertex->load_data(elem_geometry);
     }
 
-    virtual void update_buffer_topology() override
+    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) override
     {
-        std::map<Element, Mesh::Topology> elem_topologies;
-        elem_topologies[Line]  = this->_mesh->topology(Line);
-        elem_topologies[Triangle] = this->_mesh->topology(Triangle);
-        elem_topologies[Quad] = this->_mesh->topology(Quad);
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
-            _converters[type]->build_scaled_topology(this->_mesh->topologies(),
-                                             elem_topologies);
+            _converters[type]->build_scaled_topology(this->_mesh->topologies(), lines, triangles, quads);
         }
-        if (elem_topologies[Line].size() > 0)
-            this->_b_line->load_data(elem_topologies[Line]);
-        if (elem_topologies[Triangle].size() > 0)
-            this->_b_triangle->load_data(elem_topologies[Triangle]);
-        if (elem_topologies[Quad].size() > 0)
-            this->_b_quad->load_data(elem_topologies[Quad]);
     }
 
     virtual void update_buffer_colors() override
@@ -74,8 +60,9 @@ std::map<Element, Color> GL_GraphicElement::element_colors = {
     {Line, ColorBase::Red()},
     {Triangle, ColorBase::Blue()},
     {Quad, ColorBase::Green()},
-    {Tetra, Color(0.3, 0.3, 0.9, 1.0)},
+    {Tetra, Color(0.9, 0.3, 0.3, 1.0)},
     {Pyramid, Color(0.9, 0.5, 0.1, 1.0)},
-    {Prysm, Color(0.9, 0.3, 0.3, 1.0)},
-    {Hexa, Color(0.3, 0.9, 0.3, 1.0)}
+    {Prysm, Color(0.3, 0.9, 0.5, 1.0)},
+    {Hexa, Color(0.3, 0.9, 0.3, 1.0)},
+    {Tetra10, Color(0.3, 0.3, 0.9, 1.0)}
 };

@@ -94,7 +94,6 @@ public:
             }
 
         }
-        _fem->init();
     }
 
 

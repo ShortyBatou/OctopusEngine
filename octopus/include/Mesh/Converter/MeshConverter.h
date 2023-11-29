@@ -2,11 +2,13 @@
 #include "Mesh/Mesh.h"
 #include "Dynamic/FEM/FEM_Shape.h"
 #include "Manager/Debug.h"
+
 struct MeshConverter
 {
     MeshConverter() { 
         
     }
+
     void init() {
         _shape = get_shape();
         _topo_triangle = get_elem_topo_triangle();
@@ -43,34 +45,51 @@ struct MeshConverter
     }
 
     // use the geometry scaled version to create the topology of the scaled element
-    virtual void build_scaled_topology(std::map<Element, Mesh::Topology>& mesh_topologies,
-                  std::map<Element, Mesh::Topology>& elem_topologies) 
+    virtual void build_scaled_topology(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& triangles, Mesh::Topology& quads)
     {
         Element elem          = get_element_type();
         const unsigned int nb = element_vertices(elem);
         const unsigned int nb_elem = mesh_topologies[elem].size() / nb;
-        resize_topo(nb_elem, _topo_triangle.size(), elem_topologies[Triangle]);
-        resize_topo(nb_elem, _topo_quad.size(), elem_topologies[Quad]);
+        resize_topo(nb_elem, _topo_triangle.size(), triangles);
+        resize_topo(nb_elem, _topo_quad.size(), quads);
         for (unsigned int i = 0; i < nb_elem; ++i)
         {
-            build_scaled_element_topo(i * nb, i, _topo_triangle, elem_topologies[Triangle]);
-            build_scaled_element_topo(i * nb, i, _topo_quad, elem_topologies[Quad]);
+            build_scaled_element_topo(i * nb, i, _topo_triangle, triangles);
+            build_scaled_element_topo(i * nb, i, _topo_quad, quads);
         }
         
     }
 
+    virtual void build_scaled_topology(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads)
+    {
+        Element elem = get_element_type();
+        const unsigned int nb = element_vertices(elem);
+        const unsigned int nb_elem = mesh_topologies[elem].size() / nb;
+        resize_topo(nb_elem, _topo_edge.size(), lines);
+        resize_topo(nb_elem, _topo_triangle.size(), triangles);
+        resize_topo(nb_elem, _topo_quad.size(), quads);
+        for (unsigned int i = 0; i < nb_elem; ++i)
+        {
+            build_scaled_element_topo(i * nb, i, _topo_edge, lines);
+            build_scaled_element_topo(i * nb, i, _topo_triangle, triangles);
+            build_scaled_element_topo(i * nb, i, _topo_quad, quads);
+        }
+
+    }
+
+
     // convert element into quads and triangles
-    virtual void convert_element(std::map<Element, Mesh::Topology>& mesh_topologies, std::map<Element, Mesh::Topology>& elem_topologies)
+    virtual void convert_element(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& triangles, Mesh::Topology& quads)
     {
         Element elem               = get_element_type();
         const unsigned int nb      = element_vertices(elem);
         const unsigned int nb_elem = mesh_topologies[elem].size() / nb;
-        resize_topo(nb_elem, _topo_triangle.size(), elem_topologies[Triangle]);
-        resize_topo(nb_elem, _topo_quad.size(), elem_topologies[Quad]);
+        resize_topo(nb_elem, _topo_triangle.size(), triangles);
+        resize_topo(nb_elem, _topo_quad.size(), quads);
         for (unsigned int i = 0; i < nb_elem; ++i)
         {
-            convert_element_topo(i*nb, i, _topo_triangle, mesh_topologies[elem], elem_topologies[Triangle]);
-            convert_element_topo(i*nb, i, _topo_quad, mesh_topologies[elem], elem_topologies[Quad]);
+            convert_element_topo(i*nb, i, _topo_triangle, mesh_topologies[elem], triangles);
+            convert_element_topo(i*nb, i, _topo_quad, mesh_topologies[elem], quads);
         }
     }
 
@@ -134,7 +153,7 @@ struct TetraConverter : public MeshConverter
     virtual Element get_element_type() override { return Tetra; }
 
     virtual Mesh::Geometry get_elem_base_vertices() override {
-        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(0, 1, 0) };
+        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) };
     }
     virtual Mesh::Topology get_elem_topo_edges() override {
         return { 0,1, 0,2, 0,3, 1,3, 2,3, 1,2 };

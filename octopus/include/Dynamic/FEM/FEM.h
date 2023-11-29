@@ -8,13 +8,6 @@ public:
         ParticleSystem(solver), _nb_substep(nb_substep)
     { }
 
-    virtual void init() override {
-        ParticleSystem::init();
-        for (Constraint* fem : _fems) {
-            fem->init(this->_particles);
-        }
-    }
-
     virtual void step(const scalar dt) override {
         scalar h = dt / (scalar)_nb_substep;
         this->step_effects(dt);
@@ -37,6 +30,7 @@ public:
 
     unsigned int add_fem(Constraint* constraint) {
         _fems.push_back(constraint);
+        _fems.back()->init(this->_particles);
         return _fems.size();
     }
 

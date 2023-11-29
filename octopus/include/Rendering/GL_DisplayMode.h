@@ -62,6 +62,9 @@ public:
         vao->bind();
         if(_point) draw_vertices(b_vertices);
 
+        if (_normal && this->_graphic->normals())
+            draw_vertices_normals(b_vertices);
+
         if (b_line->nb_element() > 0 && _wireframe)
         {
             draw_line(b_line);
@@ -71,13 +74,13 @@ public:
         {
             if (_wireframe) draw_triangles_wireframe(b_triangle);
             if (_surface) draw_triangles(b_triangle);
-            if (_normal) draw_normals(b_triangle);
+            if (_normal && !this->_graphic->normals()) draw_face_normals(b_triangle);
         }
 
         if (b_quad->nb_element() > 0 && _surface)
         {
             draw_triangles(b_quad);
-            if (_normal) draw_normals(b_triangle);
+            if (_normal && !this->_graphic->normals()) draw_face_normals(b_quad);
         }
 
         vao->unbind();
@@ -93,14 +96,22 @@ public:
 protected:
     virtual void set_shaders_path(std::vector<std::string>& paths) override
     {
+        // emit (no shading)
         paths.push_back("shaders/mesh_emit.glsl");
         paths.push_back("shaders/mesh_colors_emit.glsl");
+        
+        // flat shading
         paths.push_back("shaders/mesh_flat.glsl");
         paths.push_back("shaders/mesh_colors_flat.glsl");
+        paths.push_back("shaders/mesh_flat_normal.glsl");
+        
+        // smooth shading
+        paths.push_back("shaders/mesh_smooth.glsl");
+        paths.push_back("shaders/mesh_colors_smooth.glsl");
         paths.push_back("shaders/mesh_normal.glsl");
     }
 
-    virtual void draw_normals(GL_Buffer<unsigned int>* b_triangles) 
+    virtual void draw_face_normals(GL_Buffer<unsigned int>* b_triangles) 
     {
         unsigned int shader_id = 4;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
@@ -114,6 +125,21 @@ protected:
         glLineWidth(1.f);
         glDisable(GL_LINE_SMOOTH);
         b_triangles->unbind();
+        this->_programs[shader_id]->unbind();
+    }
+
+    virtual void draw_vertices_normals(GL_Buffer<Vector3>* b_vertices)
+    {
+        unsigned int shader_id = 7;
+        this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
+
+        this->_programs[shader_id]->uniform("color", _normal_color);
+        this->_programs[shader_id]->uniform("n_length", _normal_length);
+
+        glLineWidth(2.f);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+        glDrawArrays(GL_POINTS, 0, b_vertices->nb_element());
+        glLineWidth(1.f);
         this->_programs[shader_id]->unbind();
     }
 
@@ -152,9 +178,9 @@ protected:
 
     virtual void draw_triangles(GL_Buffer<unsigned int>* b_triangle) {
         unsigned int shader_id = this->_graphic->use_multi_color();
-        shader_id += 2;
+        shader_id += this->_graphic->normals() ? 5 : 2;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
-        if (shader_id == 2)
+        if (shader_id == 2 || shader_id == 5)
             this->_programs[shader_id]->uniform("color", _graphic->color());
 
         b_triangle->bind_to_target(GL_ELEMENT_ARRAY_BUFFER);

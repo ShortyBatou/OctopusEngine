@@ -5,7 +5,8 @@ class Solver {
 public:
 	Solver(const Vector3& gravity = Vector3(0.,-9.81,0.), scalar damping = 1.) : _gravity(gravity), _damping(damping) { }
 	virtual void integrate(Particle* p, const scalar dt) = 0;
-
+	Vector3& gravity() { return _gravity; }
+	scalar& damping() { return _damping; }
 protected:
 	Vector3 _gravity;
 	scalar _damping;
