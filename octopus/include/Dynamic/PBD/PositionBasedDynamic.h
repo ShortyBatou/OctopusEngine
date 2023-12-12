@@ -4,6 +4,7 @@
 #include "Dynamic/Base/Solver.h"
 #include <algorithm>
 #include <random>
+#include <iterator>
 enum PBDSolverType {
     GaussSeidel, Jacobi
 };
@@ -74,10 +75,13 @@ protected:
     virtual void step_constraint_gauss_seidel(const scalar dt) {
         for (XPBD_Constraint* xpbd : _xpbd_constraints) {
             if (!xpbd->active()) continue;
-            xpbd->apply(this->_particles, dt); // if xpbd
 
+            // compute corrections
+            xpbd->apply(this->_particles, dt);
+
+            // apply correction dt_p on particles' position
             for (unsigned int id : xpbd->ids()) {
-                this->_particles[id]->position += this->_particles[id]->force;
+                this->_particles[id]->position += this->_particles[id]->force; 
                 this->_particles[id]->force *= 0;
             }
         }

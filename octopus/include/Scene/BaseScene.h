@@ -47,14 +47,14 @@ struct BaseScene : public Scene
 
     // build scene's entities
     virtual void build_entities() override 
-    { 
-        Vector3I cells(6, 2, 2);
+    {  
         Vector3 size(3, 1, 1);
-        build_xpbd_entity(Vector3(0, 0, -2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10);
-        cells = Vector3(12, 4, 4);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra);
-        cells = Vector3(12, 4, 4);
-        build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa);
+        Vector3I cells(12, 4, 4);
+        //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Hexa, false);
+        cells = Vector3I(6, 2, 2);
+        //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra10, false, true);
+        build_xpbd_entity(Vector3(0, 0, -2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra10, false);
+        
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3I& size, Element element) {
@@ -73,7 +73,7 @@ struct BaseScene : public Scene
         return mesh;
     }
 
-    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element) {
+    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, bool pbd_v1 = false, bool fem = false) {
         Entity* e = Engine::CreateEnity();
         
         Mesh* mesh = get_beam_mesh(pos, cells, size, element);
@@ -82,11 +82,18 @@ struct BaseScene : public Scene
 
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
-        e->addComponent(new XPBD_FEM_Dynamic(100, 10000, 0.4, Neo_Hooke, 1, 20));
+        if (fem) {
+            e->addComponent(new FEM_Dynamic(100, 10000, 0.49, Neo_Hooke, 90));
+        }
+        else {
+            e->addComponent(new XPBD_FEM_Dynamic(100, 10000, 0.4999, Neo_Hooke, 1, 40, GaussSeidel, pbd_v1));
+        }
+       
         e->addComponent(new Constraint_Rigid_Controller(pos + Unit3D::right() * scalar(0.01), -Unit3D::right()));
+        //e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right()));
         GL_Graphic* graphic;
         if (element == Tetra10)
-            graphic = new GL_GraphicHighOrder(3, color);
+            graphic = new GL_GraphicHighOrder(2, color);
         else
             graphic = new GL_GraphicSurface(color);
 

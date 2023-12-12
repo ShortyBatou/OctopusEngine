@@ -12,33 +12,32 @@
 #include "Dynamic/FEM/ContinousMaterial.h"
 #include "Dynamic/FEM/FEM_Generic.h"
 
-class FEM_Dynamic : public Component {
+class FEM_Dynamic : public ParticleSystemDynamic {
 public:
-
-    virtual void init() override {
-        _mesh = this->_entity->getComponent<Mesh>();
-        build_obj_fem(100000, 0.45);
+    FEM_Dynamic(scalar total_mass, scalar young, scalar poisson, Material material, unsigned int sub_iteration = 30)
+        : ParticleSystemDynamic(total_mass), _young(young), _poisson(poisson), _material(material), _sub_iteration(sub_iteration) {
     }
 
     virtual void update() override {
         Time::Tic();
-        _fem->step(Time::Fixed_DeltaTime());
-        //std::cout << "FEM : " << Time::Tac() * 1000. << " ms" << std::endl;
-
-        if (Input::Loop(Key::C)) {
-            _c_lock->set_active(false);
-        }
-        else {
-            _c_lock->set_active(true);
-            glm::mat4 r = _c_lock->rot;
-            r = glm::rotate(r, glm::radians(Time::DeltaTime() * 3.14f * 180.f * 0.1f), Unit3D::right());
-            _c_lock->rot = r;
-        }
+        this->_ps->step(Time::Fixed_DeltaTime());
+        std::cout << "FEM : " << Time::Tac() * 1000. << " ms" << std::endl;
         
         for (unsigned int i = 0; i < _mesh->nb_vertices(); ++i) {
-            _mesh->geometry()[i] = _fem->get(i)->position;
+            _mesh->geometry()[i] = this->_ps->get(i)->position;
         }
+    }
 
+    ContinuousMaterial* getMaterial() {
+        switch (_material)
+        {
+        case Hooke: return new M_Hooke(_young, _poisson);
+        case StVK: return new M_StVK(_young, _poisson);
+        case Neo_Hooke: return new M_NeoHooke(_young, _poisson);
+        default:
+            std::cout << "Material not found" << std::endl;
+            return nullptr;
+        }
     }
 
     FEM_Shape* get_shape(Element type) {
@@ -48,39 +47,18 @@ public:
         case Pyramid: return new Pyramid_5(); break;
         case Prysm: return new Prysm_6(); break;
         case Hexa: return new Hexa_8(); break;
+        case Tetra10: return new Tetra_10(); break;
         default: std::cout << "build_element : element not found " << type << std::endl; return nullptr;
         }
     }
 
-    void add_particles() {
-        float total_weight = 10.;
-        float node_weight = total_weight / _mesh->nb_vertices();
-
-        std::vector<unsigned int> ids;
-        std::vector<unsigned int> ids_end;
-        for (unsigned int i = 0; i < _mesh->nb_vertices(); ++i) {
-            Vector3 p = Vector3(_mesh->geometry()[i]);
-            _fem->add_particle(p, node_weight);
-            if (p.x < 0.1) {
-                ids.push_back(i);
-            }
-
-            if (p.x > 3.95) {
-                ids_end.push_back(i);
-            }
-        }
-
-        RB_Fixation* c_lock = new RB_Fixation(ids);
-        _fem->add_constraint(c_lock);
-
-        _c_lock = new RB_Fixation(ids_end);
-        _fem->add_constraint(_c_lock);
-
+    virtual ParticleSystem* build_particle_system() override {
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.999), _sub_iteration);
     }
 
-    void build_obj_fem(scalar young, scalar poisson) {
-        _fem = new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.999), 80);
-        add_particles();
+
+    virtual void build_dynamic() {
+        FEM_System* s_fem= static_cast<FEM_System*>(this->_ps);
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;
             unsigned int nb = element_vertices(type);
@@ -89,19 +67,16 @@ public:
                 for (unsigned int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
-                ContinuousMaterial* material = new NeoHooke(young, poisson);
-                _fem->add_fem(new FEM_Generic(ids.data(), material, get_shape(type)));
+                s_fem->add_fem(new FEM_Generic(ids.data(), getMaterial(), get_shape(type)));
             }
-
         }
     }
 
 
 
 protected:
-    unsigned int _nb_x;
-    unsigned int _nb_y;
-    Mesh* _mesh;
-    FEM_System* _fem;
-    RB_Fixation* _c_lock;
+    unsigned int nb_step;
+    scalar _young, _poisson;
+    unsigned int _sub_iteration;
+    Material _material;
 };

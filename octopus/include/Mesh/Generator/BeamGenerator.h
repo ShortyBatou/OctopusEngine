@@ -152,9 +152,10 @@ public:
 
     virtual void buildTopoAtCell(unsigned int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
-        static unsigned tetras[24] {0,3,1,4, 4,1,5,3, 3,7,5,4,
-                                    1,2,5,3, 5,2,7,3, 5,7,2,6 };
-        for (unsigned int i = 0; i < 24; ++i) 
+        //static unsigned tetras[24] {0,3,1,4, 4,1,5,3, 3,7,5,4,
+        //                            1,2,5,3, 5,2,7,3, 5,7,2,6 };
+        static unsigned tetras[20]{ 1,6,5,4, 1,2,6,3, 0,1,4,3, 7,6,3,4, 1,3,6,4 };
+        for (unsigned int i = 0; i < 20; ++i) 
             topologies[Tetra].push_back(ids[tetras[i]]);
     }
     virtual ~TetraBeamGenerator() { }

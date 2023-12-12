@@ -49,9 +49,9 @@ struct XPBD_FEM_Torsion_Scene : public Scene
     // build scene's entities
     virtual void build_entities() override
     {
-        Vector3I cells(12, 4, 4);
-        Vector3 size(3, 1, 1);
-        build_xpbd_entity(Vector3(-1.5, -0.5, -0.5), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10);
+        Vector3I cells(8, 4, 4);
+        Vector3 size(2, 1, 1);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3I& size, Element element) {
@@ -62,7 +62,7 @@ struct XPBD_FEM_Torsion_Scene : public Scene
             case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
             case Prysm: generator = new PrysmBeamGenerator(cells, size); break;
             case Hexa: generator = new HexaBeamGenerator(cells, size); break;
-            case Tetra10: generator = new TetraBeamGenerator(cells, size); break;
+            case Tetra10: generator = new TetraBeamGenerator(cells, size); break; 
             default: break;
         }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
@@ -81,7 +81,7 @@ struct XPBD_FEM_Torsion_Scene : public Scene
 
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
-        e->addComponent(new XPBD_FEM_Dynamic(100, 100000, 0.45, Neo_Hooke, 1, 50, GaussSeidel));
+        e->addComponent(new XPBD_FEM_Dynamic(100, 100000, 0.499, Neo_Hooke, 1, 40, GaussSeidel));
         e->addComponent(new Constraint_Rigid_Controller(pos + Unit3D::right() * scalar(0.01), -Unit3D::right()));
         e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right()));
         GL_Graphic* graphic;

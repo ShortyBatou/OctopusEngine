@@ -10,7 +10,6 @@ public:
 	virtual void late_init() override {
 		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
-		ps->solver()->gravity() = Unit3D::Zero();
 		std::vector<unsigned int> ids;
 		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];

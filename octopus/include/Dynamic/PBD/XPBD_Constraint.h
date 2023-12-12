@@ -32,6 +32,7 @@ public:
         if (sum_norm_grad < 1e-6) return;
         scalar alpha = scalar(1.0) / (_stiffness * dt * dt);
         scalar dt_lambda = -(C + alpha * _lambda) / (sum_norm_grad + alpha);
+        
         if (std::abs(dt_lambda) < 1e-6) return;
         _lambda += dt_lambda;
 
@@ -48,7 +49,6 @@ public:
 protected:
     scalar _lambda;
 };
-#include "Manager/Debug.h"
 
 class XPBD_DistanceConstraint : public XPBD_Constraint {
 public:
