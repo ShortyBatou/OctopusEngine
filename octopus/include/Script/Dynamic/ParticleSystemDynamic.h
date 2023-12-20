@@ -7,7 +7,7 @@
 #include "Dynamic/Base/ParticleSystem.h"
 class ParticleSystemDynamic : public Component {
 public:
-    ParticleSystemDynamic(scalar total_mass) : _total_mass(total_mass) { }
+    ParticleSystemDynamic(scalar particle_mass) : _particle_mass(particle_mass) { }
 
     virtual void init() override {
         _mesh = this->entity()->getComponent<Mesh>();
@@ -17,6 +17,7 @@ public:
     }
 
     virtual void update_mesh() {
+        _ps->step(Time::Fixed_DeltaTime());
         for (unsigned int i = 0; i < this->_mesh->nb_vertices(); ++i) {
             _mesh->geometry()[i] = _ps->get(i)->position;
         }
@@ -31,11 +32,10 @@ public:
         delete _ps;
     }
 protected:
-    void build_particles() {
-        scalar node_mass = _total_mass / _mesh->nb_vertices();
+    virtual void build_particles() {
         for (unsigned int i = 0; i < _mesh->nb_vertices(); ++i) {
             Vector3 p = Vector3(_mesh->geometry()[i]);
-            _ps->add_particle(p, node_mass);
+            _ps->add_particle(p, _particle_mass / _mesh->nb_vertices());
         }
     }
 
@@ -44,6 +44,6 @@ protected:
 
 protected:
     Mesh* _mesh;
-    scalar _total_mass;
+    scalar _particle_mass;
     ParticleSystem* _ps;
 };

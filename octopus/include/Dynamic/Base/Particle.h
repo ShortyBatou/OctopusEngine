@@ -28,7 +28,7 @@ struct Particle {
         force = Unit3D::Zero();
         external_forces = Unit3D::Zero();
         mass = _mass;
-        if (mass > 1e-6) {
+        if (mass > 1e-8) {
             inv_mass = scalar(1.) / _mass;
         }
         else {

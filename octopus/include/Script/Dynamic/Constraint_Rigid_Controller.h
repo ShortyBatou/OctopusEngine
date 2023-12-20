@@ -47,6 +47,19 @@ public:
 			_timer = 0;
 		}
 
+		if (Input::Down(Key::NUM_9)) {
+			ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
+			ParticleSystem* ps = ps_dynamic->getParticleSystem();
+			for (unsigned int i = 0; i < ps->particles().size(); ++i) {
+				Particle* part = ps->particles()[i];
+				part->position.y = _plane_pos.y;
+				part->position.x += (scalar(rand()) / scalar(RAND_MAX)) * 3.f - 1.5f;
+				part->position.z += (scalar(rand()) / scalar(RAND_MAX)) * 3.f - 1.5f;
+				part->last_position = part->position;
+				part->velocity = Unit3D::Zero();
+			}
+		}
+
 		if (mode == 1) {
 			Matrix4x4 rot = _fixation->rot;
 			_fixation->rot = glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);

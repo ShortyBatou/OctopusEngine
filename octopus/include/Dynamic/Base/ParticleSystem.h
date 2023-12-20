@@ -110,6 +110,7 @@ public:
     }
 
     std::vector<Particle*>& particles() { return _particles; }
+    unsigned int nb_particles() { return _particles.size(); }
     Solver* solver() { return _solver; }
     virtual ~ParticleSystem() {
         clear_particles();

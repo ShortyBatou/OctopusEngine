@@ -95,9 +95,7 @@ protected:
             xpbd->apply(this->_particles, dt); // if xpbd
 
             for (unsigned int id : xpbd->ids()) {
-                _particles[id]->mutex.lock();
                 counts[id]++;
-                _particles[id]->mutex.unlock();
             }
         }
 

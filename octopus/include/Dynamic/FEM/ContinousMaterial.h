@@ -14,8 +14,8 @@ struct ContinuousMaterial {
         lambda = computeLambda();
         mu = computeMu();
     }
-    scalar computeLambda() { return young * poisson / ((1.0 + poisson) * (1.0 - 2.0 * poisson)); }
-    scalar computeMu() { return young / (2.0 * (1.0 + poisson)); }
+    scalar computeLambda() { return young * poisson / ((1. + poisson) * (1. - 2. * poisson)); }
+    scalar computeMu() { return young / (2. * (1. + poisson)); }
 
     static Matrix3x3 getStrainTensorLinear(const Matrix3x3& F)
     {
@@ -46,7 +46,7 @@ struct M_Hooke : public ContinuousMaterial {
         const auto E = getStrainTensorLinear(F);
         const auto trace = Matrix::Trace(E);
         // Psi(F) = lambda / 2 tr(E)² + mu tr(E^2)
-        return scalar(0.5) * this->lambda * trace * trace + this->mu * Matrix::Trace(E*E);
+        return scalar(0.5) * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
     }
 
     // get all H_kl of dF_i^T H_kl dF_j

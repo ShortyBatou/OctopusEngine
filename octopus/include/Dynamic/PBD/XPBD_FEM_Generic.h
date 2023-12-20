@@ -62,9 +62,9 @@ public:
         }
 
 
-        if (std::abs(C) <= scalar(1e-8)) return false;
+        if (std::abs(C) <= scalar(1e-24)) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
-        C = sqrt(abs(C)) * s;
+        C = sqrt(abs(C)) ;
         scalar C_inv = scalar(1.) / scalar(2. * C);
         for (unsigned int j = 0; j < this->nb(); ++j) {
             grads[j] *= C_inv;
@@ -72,6 +72,8 @@ public:
 
         return true;
     } 
+
+    scalar get_volume() { return volume; }
 
     void draw_debug(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> pts(this->nb());
@@ -136,7 +138,9 @@ public:
             _JX_inv[i] = glm::inverse(JX);
         }
         volume = init_volume;
+
     }
+    
 
     virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override {
         if (_stiffness <= 0) return;
@@ -162,14 +166,20 @@ public:
                 sum_norm_grad += glm::dot(grads[i], grads[i]) * x[i]->inv_mass;
             }
 
-            if (sum_norm_grad < 1e-12) return;
-            scalar alpha = scalar(1.0) / (material->getStiffness() * dt * dt);
+            if (sum_norm_grad < 1e-24) {
+                std::cout << "sum_norm_grad" << std::endl;
+                return;
+            }
+            scalar alpha = scalar(1.0) / (_material->getStiffness() * dt * dt);
             scalar dt_lambda = -C / (sum_norm_grad + alpha);
 
-            if (std::abs(dt_lambda) < 1e-12) return;
+            if (std::abs(dt_lambda) < 1e-24) {
+                std::cout << "dt_lambda = " << dt_lambda << std::endl;
+                return;
+            }
 
             for (unsigned int i = 0; i < this->nb(); ++i) {
-                x[i]->add_force(dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
+                x[i]->add_force(dt_lambda * x[i]->inv_mass * grads[i] * 0.5f) ; // we use force to store dt_x
             }
         }
     }
@@ -203,10 +213,7 @@ public:
             C += energy * _V[i];
         }
 
-        if (abs(C) < scalar(1e-12)) 
-        {
-            return false;
-        }
+        if (abs(C) < scalar(1e-24)) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
         
         C = sqrt(abs(C));

@@ -199,8 +199,22 @@ struct Tetra_10 : public FEM_Shape {
     }
 
     virtual std::vector<scalar> getWeights() const override {
-        return std::vector<scalar>(4, 1. / 4. * 1. / 6.);
+        return std::vector<scalar>(4, scalar(1. / 4. * 1. / 6.));
     }
+
+    //virtual std::vector<scalar> getQuadratureCoordinates() const override {
+    //    std::vector<scalar> coords = {1.,0.,0., 0.,1.,0., 0.,0.,1., 0.,0.,0., 0.5,0.5,0., 0.,0.5,0.5, 0.,0.,0.5, 0.5,0.,0., 0.,0.5,0., 0.5,0.,0.5, 0.25,0.25,0.25};
+    //    return coords;
+    //}
+
+    //virtual std::vector<scalar> getWeights() const override {
+    //    scalar a = 0.0027777778;
+    //    scalar b = 0.0111111111;
+    //    scalar c = 0.0888888889;
+    //    std::vector<scalar> w = {a,a,a,a,b,b,b,b,b,b,c};
+    //    return w;
+    //}
+
 
     virtual std::vector<Vector3> build_shape_derivatives(scalar s, scalar t, scalar l) const override {
         scalar dN[30] = {
@@ -260,6 +274,152 @@ struct Tetra_10 : public FEM_Shape {
 };
 
 
+struct Tetra_20 : public FEM_Shape {
+
+    Tetra_20() : FEM_Shape(20) {}
+
+    virtual std::vector<scalar> getQuadratureCoordinates() const override {
+        std::vector<scalar> coords = {1.,0.,0., 0.,1.,0., 0.,0.,1., 0.,0.,0., 0.5,0.5,0., 0.,0.5,0.5, 0.,0.,0.5, 0.5,0.,0., 0.,0.5,0., 0.5,0.,0.5, 0.25,0.25,0.25};
+        return coords;
+    }
+
+    virtual std::vector<scalar> getWeights() const override {
+        scalar a = 0.0027777778;
+        scalar b = 0.0111111111;
+        scalar c = 0.0888888889;
+        std::vector<scalar> w = {a,a,a,a,b,b,b,b,b,b,c};
+        return w;
+    }
+
+    virtual std::vector<Vector3> build_shape_derivatives(scalar x, scalar y, scalar z) const override {
+        scalar dN[60] = {
+            -(-3 * x - 3 * y - 3 * z + 1) * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) - 1.5 * (-3 * x - 3 * y - 3 * z + 1) * (-x - y - z + 1) - 3 * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) * (-x - y - z + 1), 
+            3 * x * (1.5 * x - 0.5) + 1.5 * x * (3 * x - 2) + (1.5 * x - 0.5) * (3 * x - 2), 
+            0, 
+            0, 
+            -4.5 * x * (3 * x * (-x - y - z + 1) - 1) + x * (-6 * x - 3 * y - 3 * z + 3) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) + (3 * x * (-x - y - z + 1) - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            -4.5 * x * (3 * x - 1) + 3 * x * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) + (3 * x - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            13.5 * x * y + 4.5 * y * (3 * x - 1), 
+            4.5 * y * (3 * y - 1), 
+            -4.5 * y * (3 * y - 1), 
+            -4.5 * y * (3 * x * (-x - y - z + 1) - 1) + y * (-6 * x - 3 * y - 3 * z + 3) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            -4.5 * z * (3 * x * (-x - y - z + 1) - 1) + z * (-6 * x - 3 * y - 3 * z + 3) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            13.5 * x * z + 4.5 * z * (3 * x - 1), 
+            4.5 * z * (3 * y - 1), 
+            -4.5 * z * (3 * z - 1), 
+            4.5 * z * (3 * z - 1), 
+            0, 
+            -27.0 * x * z + z * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0), 
+            27.0 * y * z, 
+            -27.0 * y * z, 
+            -27.0 * x * z + z * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0),
+            -(-3 * x - 3 * y - 3 * z + 1) * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) - 1.5 * (-3 * x - 3 * y - 3 * z + 1) * (-x - y - z + 1) - 3 * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) * (-x - y - z + 1), 
+            0, 
+            3 * y * (1.5 * y - 0.5) + 1.5 * y * (3 * y - 2) + (1.5 * y - 0.5) * (3 * y - 2), 
+            0, 
+            -3 * x * x * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * x * (3 * x * (-x - y - z + 1) - 1), 
+            -4.5 * x * (3 * x - 1), 
+            4.5 * x * (3 * x - 1), 
+            13.5 * x * y + 4.5 * x * (3 * y - 1), 
+            -4.5 * y * (3 * y - 1) + 3 * y * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) + (3 * y - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            -3 * x * y * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * y * (3 * x * (-x - y - z + 1) - 1) + (3 * x * (-x - y - z + 1) - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5),
+            -3 * x * z * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * z * (3 * x * (-x - y - z + 1) - 1), 
+            0, 
+            13.5 * x * z, 
+            -4.5 * z * (3 * z - 1),
+            0, 
+            4.5 * z * (3 * z - 1), 
+            -27.0 * x * z, 
+            27.0 * x * z,
+            -27.0 * y * z + z * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0), 
+            -27.0 * x * z,
+            -(-3 * x - 3 * y - 3 * z + 1) * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) - 1.5 * (-3 * x - 3 * y - 3 * z + 1) * (-x - y - z + 1) - 3 * (-1.5 * x - 1.5 * y - 1.5 * z + 1.0) * (-x - y - z + 1), 
+            0, 
+            0, 
+            3 * z * (1.5 * z - 0.5) + 1.5 * z * (3 * z - 2) + (1.5 * z - 0.5) * (3 * z - 2), 
+            -3 * x * x * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * x * (3 * x * (-x - y - z + 1) - 1), 
+            -4.5 * x * (3 * x - 1), 
+            0, 
+            0, 
+            -4.5 * y * (3 * y - 1), 
+            -3 * x * y * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * y * (3 * x * (-x - y - z + 1) - 1),
+            -3 * x * z * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) - 4.5 * z * (3 * x * (-x - y - z + 1) - 1) + (3 * x * (-x - y - z + 1) - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            4.5 * x * (3 * x - 1), 
+            4.5 * x * (3 * y - 1), 
+            -4.5 * z * (3 * z - 1) + 3 * z * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5) + (3 * z - 1) * (-4.5 * x - 4.5 * y - 4.5 * z + 4.5), 
+            13.5 * x * z + 4.5 * x * (3 * z - 1), 
+            13.5 * y * z + 4.5 * y * (3 * z - 1), 
+            -27.0 * x * z + x * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0), 
+            27.0 * x * y, 
+            -27.0 * y * z + y * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0), 
+            -27.0 * x * z + x * (-27.0 * x - 27.0 * y - 27.0 * z + 27.0)
+        };
+        return this->convert_dN_to_vector3(dN);
+    }
+
+    // compute N_i(X) 
+    virtual std::vector<scalar> build_shape(scalar x, scalar y, scalar z) override {
+        scalar a = scalar(0.5);
+        scalar b = scalar(9. / 2.);
+        scalar c = scalar(27.);
+        return {
+            //corner nodes
+            a * (3 * (1 - x - y - z) - 1) * (3 * (1 - x - y - z) - 2) * (1 - x - y - z),
+            a * (3 * x - 1) * (3 * x - 2) * x,
+            a * (3 * y - 1) * (3 * y - 2) * y,
+            a * (3 * z - 1) * (3 * z - 2) * z,
+            //mid edge nodes
+            b * (1 - x - y - z)* x* (3 * x * (1 - x - y - z) - 1),
+            b * (1 - x - y - z)* x* (3 * x - 1),
+            b * x* y* (3 * x - 1),
+            b * x* y* (3 * y - 1),
+            b * (1 - x - y - z)* y* (3 * y - 1),
+            b * (1 - x - y - z)* y* (3 * x * (1 - x - y - z) - 1),
+            b * (1 - x - y - z)* z* (3 * x * (1 - x - y - z) - 1),
+            b * x* z* (3 * x - 1),
+            b * x* z* (3 * y - 1),
+            b * (1 - x - y - z)* z* (3 * z - 1),
+            b * x* z* (3 * z - 1),
+            b * y* z* (3 * z - 1),
+            //mid face nodes
+            c * (1 - x - y - z) * x * z,
+            c * x * y * z,
+            c * (1 - x - y - z) * y * z,
+            c * (1 - x - y - z) * x * z
+        };
+    }
+
+    void debug_draw(std::vector<Vector3>& pts) override {
+        std::vector<Vector3> vertices = { Vector3(0,0,0), Vector3(1,0,0), Vector3(0,0,1), Vector3(0,1,0) };
+        std::vector<unsigned int> edges = { 0,1,0,2,0,3,1,3,2,3,1,2 };
+        unsigned int sub_dibivision = 8;
+        scalar step = scalar(1) / scalar(sub_dibivision);
+
+        Debug::SetColor(ColorBase::Black());
+
+        for (unsigned int i = 0; i < edges.size(); i += 2) {
+            scalar x = 0;
+            for (unsigned int j = 0; j < sub_dibivision; ++j) {
+                Vector3 a = Unit3D::Zero(), b = Unit3D::Zero();
+                Vector3 p = vertices[edges[i]] * (1.f - x) + vertices[edges[i + 1]] * x;
+                std::vector<scalar> N = build_shape(p.x, p.y, p.z);
+                for (unsigned int n = 0; n < N.size(); ++n) {
+                    a += N[n] * pts[n];
+                }
+                // a = N_i(p) * pts[i]
+
+                x += step;
+                p = vertices[edges[i]] * (1.f - x) + vertices[edges[i + 1]] * x;
+                N = build_shape(p.x, p.y, p.z);
+                for (unsigned int n = 0; n < N.size(); ++n) {
+                    b += N[n] * pts[n];
+                }
+                // b = N_i(p) * pts[i]
+                Debug::Line(a, b);
+            }
+        }
+    }
+};
 
        
 

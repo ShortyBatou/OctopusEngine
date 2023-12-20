@@ -8,15 +8,16 @@
 template<unsigned int nb>
 struct Face
 {
+    using Geometry = std::vector<Vector3>;
     std::vector<unsigned int> ids;
     std::vector<unsigned int> ids_sorted;
-    std::vector<Vector3> vertices;
+    Geometry vertices;
 
     unsigned int element_id;
     unsigned int face_id;
 
     Face(const std::vector<unsigned int>& _ids, 
-        const std::vector<Vector3>& _vertices = {},
+        const Geometry& _vertices = {},
         unsigned int _element_id = 0, 
         unsigned int _face_id = 0) : element_id(_element_id), face_id(_face_id), vertices(_vertices)
     {
