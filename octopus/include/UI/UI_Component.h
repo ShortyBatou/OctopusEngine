@@ -16,6 +16,7 @@
 #include "Scene/SceneManager.h"
 
 #include "Mesh/Mesh.h"
+#include "Script/VTK/VTK_FEM.h"
 
 class UI_SceneManager : public UI_Display {
 public:
@@ -106,6 +107,9 @@ public:
 
 	virtual void draw(Entity* entity) override {
 		ImGui::Text("Time = %.1f s", Time::Timer());
+		ImGui::Text("Fixed Time = %.1f s", Time::Fixed_Timer()); 
+		ImGui::Text("Frames = %d", Time::Frame());
+
 		ImGui::Text("dt = %.2f ms  -  %.1f FPS", Time::DeltaTime() * 1000.0f, 1. / Time::DeltaTime());
 		if (ImGui::DragFloat("Fixed Delta Time", &_fixed_delta_t, 0.00001f, 0.00001f, 1.0f, "%.06f s")) {
 			Time::Instance().set_fixed_deltaTime(_fixed_delta_t);
@@ -174,4 +178,39 @@ public:
 		}
 
 	}
+};
+
+class UI_FEM_Saver : public UI_Component {
+public:
+	UI_FEM_Saver() : UI_Component() {
+		saved = false;
+	}
+
+	virtual char* name() override {
+		return "FEM Mesh Saver";
+	}
+
+
+	bool can_draw(Entity* entity) override {
+		VTK_FEM* vtk_fem = entity->getComponent<VTK_FEM>();
+		if (vtk_fem) return true;
+		return false;
+	}
+
+	virtual void draw(Entity* entity) override {
+		VTK_FEM* vtk_fem = entity->getComponent<VTK_FEM>();
+		ImGui::Text(("File : " + vtk_fem->file_name()).c_str());
+		if (ImGui::Button("Save")) {
+			vtk_fem->save();
+			saved = true;
+			save_frame = Time::Frame();
+		}
+		if (saved) {
+			ImGui::SameLine();
+			ImGui::Text("Last save at frame %d", save_frame);
+		}
+	}
+protected: 
+	bool saved;
+	int save_frame;
 };

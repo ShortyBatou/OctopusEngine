@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 #include <vector>
 enum Material {
-    Hooke, StVK, Neo_Hooke
+    Hooke, StVK, Neo_Hooke, Developed_Neohooke
 };
 
 struct ContinuousMaterial {

@@ -73,6 +73,7 @@ protected:
     }
 
     virtual void step_constraint_gauss_seidel(const scalar dt) {
+
         for (XPBD_Constraint* xpbd : _xpbd_constraints) {
             if (!xpbd->active()) continue;
 

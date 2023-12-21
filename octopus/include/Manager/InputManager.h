@@ -8,7 +8,6 @@
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddInputCharacter(key);
     if (ImGui::GetIO().WantCaptureKeyboard) return;
     if (action == GLFW_PRESS)   Input::Instance().keyboard().set_pressed((Key)key);
     if (action == GLFW_RELEASE) Input::Instance().keyboard().set_released((Key)key);

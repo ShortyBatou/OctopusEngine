@@ -36,6 +36,7 @@ struct BaseScene : public Scene
         editor->add_manager_ui(new UI_SceneColor());
         editor->add_manager_ui(new UI_Camera());
         editor->add_component_ui(new UI_Mesh());
+        editor->add_component_ui(new UI_FEM_Saver());
     }
 
     virtual void build_root(Entity* root) override
@@ -50,13 +51,16 @@ struct BaseScene : public Scene
     // build scene's entities
     virtual void build_entities() override 
     {  
-        Vector3 size(1, 1, 2);
-        Vector3I cells(3, 3, 6);
+        Vector3 size(3, 1, 1);
+        Vector3I cells(12, 4, 4);
         //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra, true);
-        //build_xpbd_entity(Vector3(2., 0., 0), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(1., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa, false);
-        //cells = Vector3I(2, 2, 4);
-        build_xpbd_entity(Vector3(0., 0, 0.), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10, false);
+        //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10, false, true);
+
+        //cells = Vector3I(1, 1, 1);
+        build_xpbd_entity(Vector3(0., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, true);
+
+        //build_xpbd_entity(Vector3(0., 0, 0.), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(2., 0., 0.), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra10, false, true);
     }
 
@@ -69,6 +73,7 @@ struct BaseScene : public Scene
             case Prysm: generator = new PrysmBeamGenerator(cells, size); break;
             case Hexa: generator = new HexaBeamGenerator(cells, size); break;
             case Tetra10: generator = new TetraBeamGenerator(cells, size); break;
+            case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
         default: break; }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = generator->build();
@@ -86,29 +91,36 @@ struct BaseScene : public Scene
         //Mesh* mesh = loader.build();
 
         if(element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+        //if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
 
         scalar density = 100;
         scalar young = 100000;
         scalar poisson = 0.49;
-        Material material = Neo_Hooke;
+        Material material = StVK;
+        unsigned int sub_it = 100;
 
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
         if (fem) {
-            e->addComponent(new FEM_Dynamic(density, young, poisson, material, 200));
+            e->addComponent(new FEM_Dynamic(density, young, poisson, material, 300));
         }
         else {
-            e->addComponent(new XPBD_FEM_Dynamic(density, young, poisson, material, 1, 60, GaussSeidel, pbd_v1));
+            e->addComponent(new XPBD_FEM_Dynamic(density, young, poisson, material, 1, sub_it, GaussSeidel, pbd_v1));
         }
 
-        e->addComponent(new VTK_FEM("test_"
-            + std::to_string(int(density))
-            + "_" + std::to_string(int(young))
-            + "_" + std::to_string(int(poisson * 100))
+        e->addComponent(new VTK_FEM(
+            std::string(element_name(element)) 
+            + "_better_energy" 
+            + "_subit" + std::to_string(int(sub_it)) +
+            + "_p" + std::to_string(int(density))
+            + "_v" + std::to_string(int(young))
+            + "_E" + std::to_string(int(poisson * 100)) + ((pbd_v1) ?"_NeoHooke" : "_Developed_NeoHooke")
         ));
 
-        e->addComponent(new Constraint_Rigid_Controller(Unit3D::forward() * scalar(0.01), -Unit3D::forward()));
-        e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::forward() * scalar(0.01) + size, Unit3D::forward()));
+        //e->addComponent(new VTK_FEM("base"));
+
+        e->addComponent(new Constraint_Rigid_Controller(Unit3D::right() * scalar(0.01), -Unit3D::right()));
+        //e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right()));
         GL_Graphic* graphic;
         if (element == Tetra10)
             graphic = new GL_GraphicHighOrder(2, color);

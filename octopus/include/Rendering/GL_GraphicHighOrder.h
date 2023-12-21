@@ -26,7 +26,7 @@ public:
                 break;
             }
         }
-        unsigned int elem_size = element_vertices(elem);
+        unsigned int elem_size = elem_nb_vertices(elem);
 
         auto& tetras = _mesh->topology(elem);
         FEM_Shape* shape = _converters[elem]->shape();
@@ -55,7 +55,7 @@ public:
                 break;
             }
         }
-        unsigned int elem_size = element_vertices(elem);
+        unsigned int elem_size = elem_nb_vertices(elem);
         Mesh::Topology elem_triangles, elem_quads;
         _converters[elem]->convert_element(_mesh->topologies(), elem_triangles, elem_quads);
 

@@ -16,12 +16,17 @@ public:
         for (UI_Component* ui : _managers_ui) ui->init();
         for (UI_Component* ui : _components_ui) ui->init();
         _step = true;
+        _nb_step = 1;
     }
 
     void draw() override {
         if (_step) {
-            stop();
-            _step = false;
+            _count_step++;
+            if (_count_step >= _nb_step) {
+                stop();
+                _step = false;
+                _count_step = 0;
+            }
         }
         
         unsigned int wx, wy;
@@ -37,6 +42,7 @@ public:
         ImGui::SameLine();
         if (ImGui::Button("Step")) {
             _step = true;
+            _count_step = 0;
             play();
         }
 
@@ -45,6 +51,9 @@ public:
             _step = false;
             play();
         }
+
+        ImGui::InputInt("nb steps", &_nb_step);
+        
 
         for (UI_Display* ui : _core_ui) {
             ui->draw();
@@ -304,4 +313,6 @@ protected:
     std::vector<UI_Component*> _managers_ui;
     std::vector<UI_Component*> _components_ui;
     bool _step;
+    int _nb_step;
+    int _count_step;
 };

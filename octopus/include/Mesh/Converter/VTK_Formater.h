@@ -42,18 +42,19 @@ public:
 		nb_cells = 0;
 		unsigned int nb_indices = 0;
 		for (auto& topo : mesh->topologies()) {
-			nb_cells += topo.second.size() / element_vertices(topo.first);
+			nb_cells += topo.second.size() / elem_nb_vertices(topo.first);
 			nb_indices += topo.second.size();
 		}
 
 		// CELLS n size
-		file << "CELLS " << nb_cells << " " << nb_indices << "\n";
+		file << "CELLS " << nb_cells + 1 << " " << nb_indices << "\n";
 		file << "OFFSETS vtktypeint64\n";
 
 		unsigned int offset = 0;
 		for (auto& topo : mesh->topologies()) {
-			unsigned int element_size = element_vertices(topo.first);
-			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
+			if (topo.second.size() == 0) continue;
+			unsigned int element_size = elem_nb_vertices(topo.first);
+			for (unsigned int i = 0; i <= topo.second.size(); i += element_size) {
 				file << offset << " ";
 				offset += element_size;
 			}
@@ -64,8 +65,8 @@ public:
 
 		// numPoints0 i0 j0 k0 …
 		for (auto& topo : mesh->topologies()) {
-			unsigned int element_size = element_vertices(topo.first);
-			unsigned int nb_elements = topo.second.size() / element_vertices(topo.first);;
+			unsigned int element_size = elem_nb_vertices(topo.first);
+			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
 			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
 				for (unsigned int j = 0; j < element_size; ++j)
 				{
@@ -77,9 +78,9 @@ public:
 
 		file << "CELL_TYPES " << nb_cells << "\n";
 		for (auto& topo : mesh->topologies()) {
-			unsigned int element_size = element_vertices(topo.first);
+			unsigned int element_size = elem_nb_vertices(topo.first);
 			unsigned int element_vtk_id = get_cell_type(topo.first);
-			unsigned int nb_elements = topo.second.size() / element_vertices(topo.first);;
+			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
 			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
 				file << element_vtk_id << " ";
 			}

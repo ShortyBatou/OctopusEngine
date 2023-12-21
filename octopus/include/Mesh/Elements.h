@@ -12,7 +12,7 @@ enum Element
     Tetra20
 };
 
-unsigned int element_vertices(Element elem) {
+unsigned int elem_nb_vertices(Element elem) {
     switch (elem)
     {
         case Line:      return 2;
@@ -26,4 +26,20 @@ unsigned int element_vertices(Element elem) {
         case Tetra20:   return 10;
         default:        return 0;
 	}
+}
+
+char* element_name(Element elem) {
+    switch (elem)
+    {
+    case Line:      return "Line";
+    case Triangle:  return "Triangle";
+    case Quad:      return "Quad";
+    case Tetra:     return "Tetra";
+    case Pyramid:   return "Pyramid";
+    case Prysm:     return "Prysm";
+    case Hexa:      return "Hexa";
+    case Tetra10:   return "Tetra10";
+    case Tetra20:   return "Tetra20";
+    default:        return 0;
+    }
 }

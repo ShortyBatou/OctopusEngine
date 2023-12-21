@@ -42,6 +42,7 @@ public:
         case Hooke: return new M_Hooke(_young, _poisson);
         case StVK: return new M_StVK(_young, _poisson);
         case Neo_Hooke: return new M_NeoHooke(_young, _poisson);
+        case Developed_Neohooke: return new M_NeoHooke(_young, _poisson);
         default:
             std::cout << "Material not found" << std::endl;
             return nullptr;
@@ -61,7 +62,7 @@ public:
     }
 
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.9998), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.9997), _sub_iteration);
     }
 
 
@@ -71,7 +72,7 @@ public:
 
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;
-            unsigned int nb = element_vertices(type);
+            unsigned int nb = elem_nb_vertices(type);
             std::vector<unsigned int> ids(nb);
             for (unsigned int i = 0; i < topo.second.size(); i += nb) {
                 for (unsigned int j = 0; j < nb; ++j) {

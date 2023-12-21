@@ -18,6 +18,10 @@ public:
         nb_step = 0;
     }
 
+    virtual void late_init() override {
+        this->update_mesh();
+    }
+
     virtual void update() {
 
         scalar total_init_volume = 0;
@@ -80,15 +84,12 @@ public:
             materials.push_back(new StVK_Second(_young, _poisson));
             break;
         case Neo_Hooke:
+            materials.push_back(new Stable_NeoHooke_First(_young, _poisson));
+            materials.push_back(new Stable_NeoHooke_Second(_young, _poisson));
+            break;
+        case Developed_Neohooke:
             materials.push_back(new Developed_Stable_NeoHooke_First(_young, _poisson));
             materials.push_back(new Developed_Stable_NeoHooke_Second(_young, _poisson));
-            //materials.push_back(new Sqrt_Anysotropic(_young * 10000000.f, 0.5f, Unit3D::right()));
-            /*materials.push_back(new Material_Union(
-                { 
-                    new Developed_Stable_NeoHooke_Second(_young, _poisson),
-                    new Anysotropic(_young, _poisson, Unit3D::right()) 
-                } ));*/
-
             break;
         default:
             std::cout << "Material not found" << std::endl;
@@ -101,7 +102,7 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {        
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 0.f, 0.995), _iteration, _sub_iteration, _type);
+        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.), 0.999), _iteration, _sub_iteration, _type);
     }
 
     virtual void build_dynamic() {
@@ -111,20 +112,27 @@ protected:
         unsigned int nb_element = 0;
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;
-            unsigned int nb = element_vertices(type);
+            unsigned int nb = elem_nb_vertices(type);
             std::vector<unsigned int> ids(nb);
             nb_element += topo.second.size() / nb;
             for (unsigned int i = 0; i < topo.second.size(); i += nb) {
                 for (unsigned int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
-                num = element_vertices(type);
+                num = elem_nb_vertices(type);
 
                 std::vector<PBD_ContinuousMaterial*> materials;
                 scalar volume = 0;
                 if (_pbd_v1 && type == Tetra) {
-                    materials.push_back(new C_Stable_NeoHooke_First(_young, _poisson));
-                    materials.push_back(new C_Stable_NeoHooke_Second(_young, _poisson));
+                    if (_material == Developed_Neohooke) {
+                        materials.push_back(new C_Developed_Stable_NeoHooke_First(_young, _poisson));
+                        materials.push_back(new C_Developed_Stable_NeoHooke_Second(_young, _poisson));
+                    }
+                    else {
+                        materials.push_back(new C_Stable_NeoHooke_First(_young, _poisson));
+                        materials.push_back(new C_Stable_NeoHooke_Second(_young, _poisson));
+                    }
+                    
                     for (PBD_ContinuousMaterial* m : materials) {
                         XPBD_FEM_Tetra* fem = new XPBD_FEM_Tetra(ids.data(), m);
                         _pbd->add_xpbd_constraint(fem);

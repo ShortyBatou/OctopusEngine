@@ -22,7 +22,7 @@ public:
         std::cout << "MESH : " << _file_path << std::endl;
         std::cout << "NB VERTICES = " << mesh->geometry().size() << std::endl;
         for (auto topo : mesh->topologies()) {
-            int nb = element_vertices(topo.first);
+            int nb = elem_nb_vertices(topo.first);
             std::cout << "NB ELEMENT (" << nb << ") = " << topo.second.size() / nb << std::endl;
         }
 
