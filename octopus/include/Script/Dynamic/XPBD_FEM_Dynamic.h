@@ -102,7 +102,7 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {        
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.), 0.999), _iteration, _sub_iteration, _type);
+        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 0.f, 0.999), _iteration, _sub_iteration, _type);
     }
 
     virtual void build_dynamic() {

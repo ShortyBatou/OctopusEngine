@@ -51,14 +51,14 @@ struct BaseScene : public Scene
     // build scene's entities
     virtual void build_entities() override 
     {  
-        Vector3 size(3, 1, 1);
-        Vector3I cells(12, 4, 4);
+        Vector3 size(2, 1, 1);
+        Vector3I cells(12, 6, 6);
         //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(1., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa, false);
         //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10, false, true);
 
         //cells = Vector3I(1, 1, 1);
-        build_xpbd_entity(Vector3(0., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, true);
+        build_xpbd_entity(Vector3(0., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa, false);
 
         //build_xpbd_entity(Vector3(0., 0, 0.), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(2., 0., 0.), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra10, false, true);
@@ -95,9 +95,9 @@ struct BaseScene : public Scene
 
         scalar density = 100;
         scalar young = 100000;
-        scalar poisson = 0.49;
-        Material material = StVK;
-        unsigned int sub_it = 100;
+        scalar poisson = 0.499;
+        Material material = Developed_Neohooke;
+        unsigned int sub_it = 40;
 
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
@@ -110,17 +110,17 @@ struct BaseScene : public Scene
 
         e->addComponent(new VTK_FEM(
             std::string(element_name(element)) 
-            + "_better_energy" 
+            + "_stretch" 
             + "_subit" + std::to_string(int(sub_it)) +
             + "_p" + std::to_string(int(density))
             + "_v" + std::to_string(int(young))
-            + "_E" + std::to_string(int(poisson * 100)) + ((pbd_v1) ?"_NeoHooke" : "_Developed_NeoHooke")
+            + "_E" + std::to_string(int(poisson * 100)) + "_Developed_NeoHooke"
         ));
 
         //e->addComponent(new VTK_FEM("base"));
 
-        e->addComponent(new Constraint_Rigid_Controller(Unit3D::right() * scalar(0.01), -Unit3D::right()));
-        //e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right()));
+        e->addComponent(new Constraint_Rigid_Controller(Unit3D::right() * scalar(0.01), -Unit3D::right(), 3));
+        e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right(), 3));
         GL_Graphic* graphic;
         if (element == Tetra10)
             graphic = new GL_GraphicHighOrder(2, color);
