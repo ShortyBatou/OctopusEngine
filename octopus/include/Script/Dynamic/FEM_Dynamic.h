@@ -62,7 +62,7 @@ public:
     }
 
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.), 0.9997), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.9997), _sub_iteration);
     }
 
 

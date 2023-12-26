@@ -51,14 +51,14 @@ struct BaseScene : public Scene
     // build scene's entities
     virtual void build_entities() override 
     {  
-        Vector3 size(2, 1, 1);
-        Vector3I cells(12, 6, 6);
+        Vector3 size(1, 1, 4);
+        Vector3I cells(4, 4, 12);
         //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(1., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa, false);
         //build_xpbd_entity(Vector3(0., 0., 0), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra10, false, true);
 
         //cells = Vector3I(1, 1, 1);
-        build_xpbd_entity(Vector3(0., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Hexa, false);
+        build_xpbd_entity(Vector3(0., 0., 0.), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false);
 
         //build_xpbd_entity(Vector3(0., 0, 0.), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, true);
         //build_xpbd_entity(Vector3(2., 0., 0.), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra10, false, true);
@@ -84,20 +84,22 @@ struct BaseScene : public Scene
     void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, bool pbd_v1 = false, bool fem = false) {
         Entity* e = Engine::CreateEnity();
         
-        Mesh* mesh = get_beam_mesh(pos, cells, size, element);
+        //Mesh* mesh = get_beam_mesh(pos, cells, size, element);
 
-        //Msh_Loader loader(AppInfo::PathToAssets() + "/mesh/beam_tetra_12_2_2.msh");
-        //loader.setTransform(glm::scale(Vector3(2.)) * glm::translate(Matrix::Identity4x4(), pos));
-        //Mesh* mesh = loader.build();
+        Msh_Loader loader(AppInfo::PathToAssets() + "/mesh/bar_1300.msh");
+        loader.setTransform(glm::scale(Vector3(0.5)) * glm::translate(Matrix::Identity4x4(), pos + Vector3(0.,0.,4.) ));
+        Mesh* mesh = loader.build();
 
-        if(element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
-        //if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+        if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
 
         scalar density = 100;
         scalar young = 100000;
-        scalar poisson = 0.499;
+        scalar poisson = 0.49;
         Material material = Developed_Neohooke;
-        unsigned int sub_it = 40;
+        unsigned int sub_it = 30;
+        Vector3 dir = Unit3D::forward();
+        unsigned int scenario_1 = 1;
+        unsigned int scenario_2 = 1;
 
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
@@ -110,20 +112,20 @@ struct BaseScene : public Scene
 
         e->addComponent(new VTK_FEM(
             std::string(element_name(element)) 
-            + "_stretch" 
+            + "_quality" 
             + "_subit" + std::to_string(int(sub_it)) +
             + "_p" + std::to_string(int(density))
             + "_v" + std::to_string(int(young))
-            + "_E" + std::to_string(int(poisson * 100)) + "_Developed_NeoHooke"
+            + "_E" + std::to_string(int(poisson * 100)) + "_Developed_NeoHooke_H2"
         ));
 
         //e->addComponent(new VTK_FEM("base"));
 
-        e->addComponent(new Constraint_Rigid_Controller(Unit3D::right() * scalar(0.01), -Unit3D::right(), 3));
-        e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * scalar(0.01) + size, Unit3D::right(), 3));
+        e->addComponent(new Constraint_Rigid_Controller(dir * scalar(0.01), -dir, scenario_1));
+        e->addComponent(new Constraint_Rigid_Controller(pos - dir * scalar(0.01) + size, dir, scenario_2));
         GL_Graphic* graphic;
         if (element == Tetra10)
-            graphic = new GL_GraphicHighOrder(2, color);
+            graphic = new GL_GraphicHighOrder(0, color);
             //graphic = new GL_GraphicElement(1.);
         else
             graphic = new GL_GraphicSurface(color);

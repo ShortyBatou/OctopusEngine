@@ -158,8 +158,8 @@ public:
     virtual ~TetraBeamGenerator() { }
 };
 
-void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies)
-{
+
+void subdive_tetra(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies) {
     Mesh::Topology tetras = topologies[Tetra];
     topologies[Tetra].clear();
     topologies[Tetra10].clear();
@@ -198,9 +198,52 @@ void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
             ++j;
         }
 
-        //for (unsigned int k = 0; k < 32; ++k) {
-        //    topologies[Tetra].push_back(ids[tetra_10_topo[k]]);
-        //}
+        for (unsigned int k = 0; k < 32; ++k) {
+            topologies[Tetra].push_back(ids[tetra_10_topo[k]]);
+        }
+
+    }
+}
+
+void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies)
+{
+    Mesh::Topology tetras = topologies[Tetra];
+    topologies[Tetra].clear();
+    topologies[Tetra10].clear();
+
+    using Edge = std::pair<unsigned int, unsigned int>;
+    Edge tetra_edges[6] = { Edge(0,1), Edge(1,2), Edge(0,2), Edge(0,3), Edge(1,3), Edge(2,3) };
+    unsigned int e1, e2;
+    Edge e;
+    std::map<Edge, unsigned int> edges;
+    for (unsigned int i = 0; i < tetras.size(); i += 4) {
+        unsigned int ids[10];
+        unsigned int j = 0;
+        for (; j < 4; ++j) ids[j] = tetras[i + j];
+
+        for (Edge& tet_e : tetra_edges) {
+            e1 = ids[tet_e.first]; e2 = ids[tet_e.second];
+            if (e1 > e2) std::swap(e1, e2);
+            e.first = e1; e.second = e2;
+
+            unsigned int id;
+            // edge found in map
+            if (edges.find(e) != edges.end()) {
+                id = edges[e];
+            }
+            else {
+                id = geometry.size();
+                Vector3 pa = Vector3(geometry[e1]);
+                Vector3 pb = Vector3(geometry[e2]);
+
+                Vector3 p = scalar(0.5) * (pa + pb);
+                geometry.push_back(p);
+                edges[e] = id;
+            }
+            ids[j] = id;
+            ++j;
+        }
+
         for (unsigned int k = 0; k < 10; ++k) {
             topologies[Tetra10].push_back(ids[k]);
         }
