@@ -10,7 +10,8 @@ public:
         _converters[Pyramid]  = new PyramidConverter();
         _converters[Prysm]    = new PrysmConverter();
         _converters[Hexa]     = new HexaConverter();
-        _converters[Tetra10] = new Tetra10Converter();
+        _converters[Tetra10]  = new Tetra10Converter();
+        _converters[Tetra20] = new Tetra20Converter();
         for (auto& elem : _converters) elem.second->init();
         this->_multi_color = true;
     }
@@ -64,5 +65,6 @@ std::map<Element, Color> GL_GraphicElement::element_colors = {
     {Pyramid, Color(0.9, 0.5, 0.1, 1.0)},
     {Prysm, Color(0.3, 0.9, 0.5, 1.0)},
     {Hexa, Color(0.3, 0.9, 0.3, 1.0)},
-    {Tetra10, Color(0.3, 0.3, 0.9, 1.0)}
+    {Tetra10, Color(0.3, 0.3, 0.9, 1.0)},
+    {Tetra20, Color(0.3, 0.7, 0.9, 1.0)}
 };

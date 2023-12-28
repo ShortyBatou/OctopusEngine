@@ -64,7 +64,7 @@ public:
 
         if (std::abs(C) <= scalar(1e-24)) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
-        C = sqrt(abs(C)) * s ;
+        C = sqrt(abs(C))  ;
         scalar C_inv = scalar(1.) / scalar(2. * C);
         for (unsigned int j = 0; j < this->nb(); ++j) {
             grads[j] *= C_inv;

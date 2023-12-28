@@ -214,3 +214,38 @@ protected:
 	bool saved;
 	int save_frame;
 };
+
+class UI_Graphic_Saver : public UI_Component {
+public:
+	UI_Graphic_Saver() : UI_Component() {
+		saved = false;
+	}
+
+	virtual char* name() override {
+		return "Graphic Mesh Saver";
+	}
+
+
+	bool can_draw(Entity* entity) override {
+		VTK_Graphic* vtk_fem = entity->getComponent<VTK_Graphic>();
+		if (vtk_fem) return true;
+		return false;
+	}
+
+	virtual void draw(Entity* entity) override {
+		VTK_Graphic* vtk_fem = entity->getComponent<VTK_Graphic>();
+		ImGui::Text(("File : " + vtk_fem->file_name()).c_str());
+		if (ImGui::Button("Save")) {
+			vtk_fem->save();
+			saved = true;
+			save_frame = Time::Frame();
+		}
+		if (saved) {
+			ImGui::SameLine();
+			ImGui::Text("Last save at frame %d", save_frame);
+		}
+	}
+protected:
+	bool saved;
+	int save_frame;
+};

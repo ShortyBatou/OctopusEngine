@@ -57,6 +57,7 @@ public:
         case Prysm: return new Prysm_6(); break;
         case Hexa: return new Hexa_8(); break;
         case Tetra10: return new Tetra_10(); break;
+        case Tetra20: return new Tetra_20(); break;
         default: std::cout << "build_element : element not found " << type << std::endl; return nullptr;
         }
     }

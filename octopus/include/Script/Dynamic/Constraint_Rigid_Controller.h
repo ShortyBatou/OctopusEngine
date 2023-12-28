@@ -54,8 +54,8 @@ public:
 			for (unsigned int i = 0; i < ps->particles().size(); ++i) {
 				Particle* part = ps->particles()[i];
 				part->position.y = _plane_pos.y;
-				part->position.x += (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
-				part->position.z += (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
+				part->position.x = _plane_pos.x + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
+				part->position.z = _plane_pos.z + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
 				part->last_position = part->position;
 				part->velocity = Unit3D::Zero();
 			}

@@ -17,6 +17,7 @@ public:
         for (UI_Component* ui : _components_ui) ui->init();
         _step = true;
         _nb_step = 1;
+        _count_step = 0;
     }
 
     void draw() override {

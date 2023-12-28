@@ -30,13 +30,11 @@ struct RB_Fixation : public Constraint {
 
     virtual void init(const std::vector<Particle*>& parts) override {
         Vector3 sum_position(0.0f, 0.0f, 0.0f);
-        scalar sum_mass = 0.0f;
         for (unsigned int i = 0; i < this->nb(); i++) {
             Particle* part = parts[this->_ids[i]];
-            sum_position += part->position * part->mass;
-            sum_mass += part->mass;
+            sum_position += part->position;
         }
-        com = sum_position / sum_mass;
+        com = sum_position / scalar(this->_ids.size());
     }
 
     virtual void apply(const std::vector<Particle*>& parts, const scalar) override {

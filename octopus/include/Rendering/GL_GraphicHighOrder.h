@@ -13,6 +13,7 @@ public:
     {
         _converters[Tetra] = new TetraConverter();
         _converters[Tetra10] = new Tetra10Converter();
+        _converters[Tetra20] = new Tetra20Converter();
         for (auto& elem : _converters) elem.second->init();
     }
 

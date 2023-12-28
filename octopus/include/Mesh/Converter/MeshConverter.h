@@ -5,7 +5,7 @@
 
 struct MeshConverter
 {
-    MeshConverter() { 
+    MeshConverter() : _shape(nullptr) {
         
     }
 
@@ -156,7 +156,7 @@ struct TetraConverter : public MeshConverter
         return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) };
     }
     virtual Mesh::Topology get_elem_topo_edges() override {
-        return { 0,1, 0,2, 0,3, 1,3, 2,3, 1,2 };
+        return { 0,1, 1,2, 2,0, 0,3, 1,3, 2,3 };
     }
     virtual Mesh::Topology get_elem_topo_triangle() override
     {  return {0, 1, 3, 1, 2, 3, 0, 3, 2, 0, 2, 1}; }
@@ -270,4 +270,58 @@ struct Tetra10Converter : public TetraConverter
 
     
     virtual FEM_Shape* get_shape() override { return new Tetra_10(); }
+};
+
+struct Tetra20Converter : public TetraConverter
+{
+    virtual Element get_element_type() override { return Tetra20; }
+
+    virtual Mesh::Geometry get_elem_base_vertices() {
+        scalar a = scalar(1. / 3.);
+        scalar b = scalar(2. / 3.);
+
+        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1), // 0,1,2,3
+                 // edges
+                 Vector3(a, 0, 0), Vector3(b, 0, 0), // 4,5
+                 Vector3(b, a, 0), Vector3(a, b, 0), // 6,7
+                 Vector3(0, b, 0), Vector3(0, a, 0), // 8,9
+                 
+                 Vector3(0, 0, a), Vector3(0, 0, b), //10, 11
+                 
+                 Vector3(b, 0, a), Vector3(a, 0, b), // 12,13 
+                 Vector3(0, b, a), Vector3(0, a, b), // 14, 15
+                 
+                 // faces
+                 Vector3(a, 0, a), // 16 
+                 Vector3(a, a, a), // 17
+                 Vector3(0, a, a), // 18
+                 Vector3(a, a, 0), // 19
+        };
+    }
+
+    virtual Mesh::Topology get_elem_topo_edges() {
+        return 
+        {  
+            0,4, 4,5, 5,1, 1,6, 6,7, 7,2, 2,8, 8,9, 9,0, 
+            0,10, 10,11, 11,3, 3,15, 15,14, 14,2, 1,12, 12,13, 13,3
+        };
+    }
+
+    virtual Mesh::Topology get_elem_topo_triangle() override {
+        return { 
+            10,0,4, 10,4,16, 11,10,16, 11,16,13,  3,11,13, 16,4,5, 16,5,12, 13,16,12, 12,5,1,
+            12,1,6, 12,6,17, 13,12,17, 13,17,15, 3,13,15, 17,6,7, 17,7,14, 15,17,14, 14,7,2,
+            14,2,8, 14,8,18, 15,14,18, 15,18,11, 3,15,11, 18,8,9, 18,9,10, 11,18,10, 10,9,0,
+            4,0,9,  4,9,19,  5,4,19,   5,19,6,   1,5,6,   19,9,8, 19,8,7,  6,19,7,   7,8,2
+
+        };
+    }
+
+    virtual Mesh::Topology get_elem_topo_quad() override
+    {
+        return Mesh::Topology();
+    }
+
+
+    virtual FEM_Shape* get_shape() override { return new Tetra_20(); }
 };

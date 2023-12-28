@@ -28,20 +28,20 @@ public:
 		return *this;
 	}
 
-	VTK_Formater& save_mesh(Mesh* mesh) {
+	VTK_Formater& save_mesh(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies) {
 		file << "DATASET UNSTRUCTURED_GRID\n";
-		nb_vertices = mesh->geometry().size();
+		nb_vertices = geometry.size();
 		// POINTS n dataType
-		file << "POINTS " << mesh->geometry().size() << " float\n";
+		file << "POINTS " << geometry.size() << " float\n";
 		// p0x p0y p0z
-		for (Vector3& v : mesh->geometry()) {
+		for (Vector3& v : geometry) {
 			file << v.x << " " << v.y << " " << v.z << "\n";
 		}
 		file << "\n";
 
 		nb_cells = 0;
 		unsigned int nb_indices = 0;
-		for (auto& topo : mesh->topologies()) {
+		for (auto& topo : topologies) {
 			nb_cells += topo.second.size() / elem_nb_vertices(topo.first);
 			nb_indices += topo.second.size();
 		}
@@ -51,7 +51,7 @@ public:
 		file << "OFFSETS vtktypeint64\n";
 
 		unsigned int offset = 0;
-		for (auto& topo : mesh->topologies()) {
+		for (auto& topo : topologies) {
 			if (topo.second.size() == 0) continue;
 			unsigned int element_size = elem_nb_vertices(topo.first);
 			for (unsigned int i = 0; i <= topo.second.size(); i += element_size) {
@@ -64,7 +64,7 @@ public:
 		file << "CONNECTIVITY vtktypeint64\n";
 
 		// numPoints0 i0 j0 k0 …
-		for (auto& topo : mesh->topologies()) {
+		for (auto& topo : topologies) {
 			unsigned int element_size = elem_nb_vertices(topo.first);
 			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
 			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
@@ -77,7 +77,7 @@ public:
 		}
 
 		file << "CELL_TYPES " << nb_cells << "\n";
-		for (auto& topo : mesh->topologies()) {
+		for (auto& topo : topologies) {
 			unsigned int element_size = elem_nb_vertices(topo.first);
 			unsigned int element_vtk_id = get_cell_type(topo.first);
 			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
@@ -141,6 +141,7 @@ public:
 		case Prysm: return 13;
 		case Hexa: return 12;
 		case Tetra10:return 24;
+		case Tetra20:return 71;
 		default:
 			return 0;
 		}

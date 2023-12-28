@@ -79,3 +79,5 @@ struct BoxMesh : public MeshGenerator
 protected:
     Vector3 _min, _max;
 };
+
+

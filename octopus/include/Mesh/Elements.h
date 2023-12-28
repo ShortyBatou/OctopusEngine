@@ -23,7 +23,7 @@ unsigned int elem_nb_vertices(Element elem) {
         case Prysm:     return 6;
         case Hexa:      return 8;
         case Tetra10:   return 10;
-        case Tetra20:   return 10;
+        case Tetra20:   return 20;
         default:        return 0;
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "Mesh/Generator/MeshGenerator.h"
-
+#include "Mesh/Converter/MeshConverter.h"
 struct BeamMeshGenerator : public MeshGenerator
 {
     BeamMeshGenerator(const Vector3I& subdivisions, const Vector3& sizes)
@@ -250,110 +250,91 @@ void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
 
     }
 }
-//void P1_to_PN(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies, std::vector<scalar>& edges_weights, Element type) {
-//    Mesh::Topology tetras = topologies[Tetra];
-//    topologies[Tetra].clear();
-//    topologies[type].clear();
-//
-//    using Edge = std::pair<unsigned int, unsigned int>;
-//    
-//    Edge tetra_edges[6] = { Edge(0,1), Edge(1,2), Edge(0,2), Edge(0,3), Edge(1,3), Edge(2,3) };
-//    Face<3> tetra_face[4] = { Face<3>({1,2,4}), Face<3>({2,3,4}), Face<3>({3,1,4}), Face<3>({1,3,2}) };
-//
-//    unsigned int e1, e2;
-//    Edge e;
-//    unsigned int nb = element_vertices(type);
-//    std::map<Edge, std::vector<unsigned int>> edges;
-//    for (unsigned int i = 0; i < tetras.size(); i += 4) {
-//        std::vector<unsigned int> ids(nb);
-//        unsigned int j = 0;
-//        for (; j < 4; ++j) ids[j] = tetras[i + j];
-//
-//        for (Edge& tet_e : tetra_edges) {
-//            e1 = ids[tet_e.first]; e2 = ids[tet_e.second];
-//            if (e1 > e2) std::swap(e1, e2);
-//            e.first = e1; e.second = e2;
-//
-//            std::vector<unsigned int> e_ids;
-//            // edge found in map
-//            if (edges.find(e) != edges.end()) {
-//                e_ids = edges[e];
-//            }
-//            else {
-//                for (unsigned int k = 0; k < edges_weights.size(); k++) {
-//                    e_ids.push_back(geometry.size());
-//                    Vector3 pa = Vector3(geometry[e1]);
-//                    Vector3 pb = Vector3(geometry[e2]);
-//
-//                    Vector3 p = edges_weights[k] * (pa + pb);
-//                    geometry.push_back(p);
-//                }
-//                edges[e] = e_ids;
-//            }
-//            for (unsigned int k = 0; k < edges_weights.size(); k++) {
-//                ids[j] = e_ids[k];
-//                ++j;
-//            }
-//
-//        }
-//
-//        for (unsigned int k = 0; k < 20; ++k) {
-//            topologies[Tetra20].push_back(ids[k]);
-//        }
-//
-//    }
-//}
 
-//void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies) {
-//    Mesh::Topology tetras = topologies[Tetra];
-//    topologies[Tetra].clear();
-//    topologies[Tetra10].clear();
-//
-//    using Edge = std::pair<unsigned int, unsigned int>;
-//    unsigned int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };
-//    Edge tetra_edges[6] = { Edge(0,1), Edge(1,2), Edge(0,2), Edge(0,3), Edge(1,3), Edge(2,3) };
-//    std::vector<scalar> edges_weights({ 1. / 3., 2./3. });
-//    unsigned int e1, e2;
-//    Edge e;
-//    std::map<Edge, std::vector<unsigned int>> edges;
-//    for (unsigned int i = 0; i < tetras.size(); i += 4) {
-//        unsigned int ids[20];
-//        unsigned int j = 0;
-//        for (; j < 4; ++j) ids[j] = tetras[i + j];
-//
-//        for (Edge& tet_e : tetra_edges) {
-//            e1 = ids[tet_e.first]; e2 = ids[tet_e.second];
-//            if (e1 > e2) std::swap(e1, e2);
-//            e.first = e1; e.second = e2;
-//
-//            std::vector<unsigned int> ids;
-//            // edge found in map
-//            if (edges.find(e) != edges.end()) {
-//                ids = edges[e];
-//            }
-//            else {
-//                for (unsigned int k = 0; k < edges_weights.size(); k++) {
-//                    ids.push_back(geometry.size());
-//                    Vector3 pa = Vector3(geometry[e1]);
-//                    Vector3 pb = Vector3(geometry[e2]);
-//
-//                    Vector3 p = edges_weights[k] * (pa + pb);
-//                    geometry.push_back(p);
-//                }
-//                edges[e] = ids;
-//            }
-//            for (unsigned int k = 0; k < edges_weights.size(); k++) {
-//                ids[j] = ids[k];
-//                ++j;
-//            }
-//            
-//        }
-//
-//        for (unsigned int k = 0; k < 20; ++k) {
-//            topologies[Tetra20].push_back(ids[k]);
-//        }
-//
-//    }
-//}
+void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies)
+{
+    Mesh::Topology tetras = topologies[Tetra];
+    topologies[Tetra].clear();
+    topologies[Tetra20].clear();
+    unsigned int nb = elem_nb_vertices(Tetra20);
+
+    std::vector<unsigned int> ids(20);
+
+    TetraConverter tetra_converter;
+    Mesh::Topology& tetra_edges = tetra_converter.get_elem_topo_edges();
+    Mesh::Topology& tetra_faces = tetra_converter.get_elem_topo_triangle();
+
+    std::map<Face<2>, std::vector<unsigned int>> existing_edges;
+    std::map<Face<3>, std::vector<unsigned int>> existing_faces;
+
+    std::vector<unsigned int> v_edge_ids(2);
+    std::vector<unsigned int> v_face_ids(1);
+
+    for (unsigned int i = 0; i < tetras.size(); i += 4) {
+        unsigned int j = 0;
+        for (; j < 4; ++j) ids[j] = tetras[i + j];
+
+        // edges
+        for (unsigned int k = 0; k < tetra_edges.size(); k+=2) {
+            unsigned int e_a = ids[tetra_edges[k]];
+            unsigned int e_b = ids[tetra_edges[k+1]];
+            Face<2> edge({ e_a, e_b });
+            
+            auto it = existing_edges.find(edge);
+            // edge found in map
+            if (it != existing_edges.end()) {
+                v_edge_ids = existing_edges[edge];
+               
+                if (edge.ids[0] != it->first.ids[0])
+                    std::reverse(v_edge_ids.begin(), v_edge_ids.end());
+            }
+            else {
+                for (unsigned int w = 0; w < 2; w++) {
+                    scalar weight = scalar(w+1) / scalar(3);
+                    Vector3 p = geometry[e_a] * (scalar(1.) - weight) + geometry[e_b] * weight;
+                    v_edge_ids[w] = geometry.size();
+                    geometry.push_back(p);
+                }
+                existing_edges[edge] = v_edge_ids;
+            }
+
+            for (unsigned int e_id : v_edge_ids) {
+                ids[j] = e_id;
+                ++j;
+            }
+        }
+
+        //faces
+        for (unsigned int k = 0; k < tetra_faces.size(); k += 3) {
+            unsigned int f_a = ids[tetra_faces[k]];
+            unsigned int f_b = ids[tetra_faces[k + 1]];
+            unsigned int f_c = ids[tetra_faces[k + 2]];
+            Face<3> face({ f_a, f_b, f_c });
+            // edge found in map
+            if (existing_faces.find(face) != existing_faces.end()) {
+                v_face_ids = existing_faces[face];
+                // only works for P3 because there is only one point
+            }
+            else {
+                scalar w = scalar(1) / scalar(3);
+                Vector3 p = geometry[f_a] * w + geometry[f_b] * w + geometry[f_c] * w;
+                v_face_ids[0] = geometry.size();
+                geometry.push_back(p);
+                
+                existing_faces[face] = v_face_ids;
+            }
+
+            for (unsigned int f_id : v_face_ids) {
+                ids[j] = f_id;
+                ++j;
+            }
+        }
+
+        for (unsigned int k = 0; k < 20; ++k) {
+            topologies[Tetra20].push_back(ids[k]);
+        }
+    }
+}
+
 
 

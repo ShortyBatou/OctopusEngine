@@ -92,6 +92,12 @@ public:
     GL_Buffer<unsigned int>* b_line() { return _b_line; }
     GL_Buffer<unsigned int>* b_triangle() { return _b_triangle; }
     GL_Buffer<unsigned int>* b_quad() { return _b_quad; }
+
+    Mesh::Topology& get_lines() { return lines; }
+    Mesh::Topology& get_triangles() { return triangles; }
+    Mesh::Topology& get_quads() { return quads; }
+    Mesh::Geometry& get_geometry() { return geometry; }
+
     bool use_multi_color() { return _multi_color; }
     void set_multi_color(bool state)
     {

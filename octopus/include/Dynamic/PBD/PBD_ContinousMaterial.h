@@ -44,7 +44,7 @@ struct StVK_First : public PBD_ContinuousMaterial {
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override {
         const auto trace = Matrix::Trace(getStrainTensor(F));
         // P(F) = 2 tr(E) F 
-        P = scalar(2.) * trace * F;
+        P = scalar(2) * trace * F;
 
         // C(F) = tr(E)^2
         energy = trace * trace;
@@ -59,11 +59,11 @@ struct StVK_Second : public PBD_ContinuousMaterial {
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override {
         const auto E = getStrainTensor(F);
         // P(F) = 2 F E
-        P =  scalar(2.) * F * E;
+        P =  scalar(4) * F * E;
         // C(F) = tr(E^2)
-        energy = Matrix::SquaredTrace(E);
+        energy = scalar(2) * Matrix::SquaredTrace(E);
     }
-    virtual scalar getStiffness() const override { return this->mu * 2.; }
+    virtual scalar getStiffness() const override { return this->mu; }
 };
 
 struct VolumePreservation : public PBD_ContinuousMaterial {
