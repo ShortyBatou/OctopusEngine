@@ -82,11 +82,11 @@ public:
     virtual ~HexaBeamGenerator() { }
 };
 
-class PrysmBeamGenerator : public BeamMeshGenerator
+class PrismBeamGenerator : public BeamMeshGenerator
 {
 public:
 
-    PrysmBeamGenerator(const Vector3I& _subdivisions, const Vector3& _sizes) 
+    PrismBeamGenerator(const Vector3I& _subdivisions, const Vector3& _sizes)
         : BeamMeshGenerator(_subdivisions, _sizes)
     { }
 
@@ -96,10 +96,10 @@ public:
                                     1, 2, 3, 5, 6, 7 
         };
         for (unsigned int i = 0; i < 12; ++i)
-            topologies[Prysm].push_back(ids[prysms[i]]);
+            topologies[Prism].push_back(ids[prysms[i]]);
     }
 
-    virtual ~PrysmBeamGenerator() { }
+    virtual ~PrismBeamGenerator() { }
 };
 
 class PyramidBeamGenerator : public BeamMeshGenerator

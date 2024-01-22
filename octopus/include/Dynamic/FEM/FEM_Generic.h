@@ -18,8 +18,8 @@ public:
         }
 
         scalar s, t, l;
-        std::vector<scalar> coords = _shape->getQuadratureCoordinates();
-        _weights = _shape->getWeights();
+        std::vector<scalar> coords = _shape->get_quadrature_coordinates();
+        _weights = _shape->get_weights();
 
         _dN.resize(_weights.size());
         _dF.resize(_weights.size());
@@ -34,8 +34,8 @@ public:
             for (unsigned int j = 0; j < _shape->nb; ++j) {
                 _JX[i] += glm::outerProduct(X[j], _dN[i][j]);
             }
-            _V[i] =_weights[i];
-            init_volume += _V[i];
+            _V[i] = abs(glm::determinant(_JX[i])) * _weights[i];
+            init_volume +=  _V[i];
 
             _JX_inv[i] = glm::inverse(_JX[i]);
 

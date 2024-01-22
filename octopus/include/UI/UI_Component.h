@@ -16,7 +16,10 @@
 #include "Scene/SceneManager.h"
 
 #include "Mesh/Mesh.h"
-#include "Script/VTK/VTK_FEM.h"
+#include "Script/Record/DataRecorder.h"
+#include "Script/Dynamic/XPBD_FEM_Dynamic.h"
+#include "Script/Dynamic/Constraint_Rigid_Controller.h"
+
 
 class UI_SceneManager : public UI_Display {
 public:
@@ -76,7 +79,7 @@ public:
 		change = change + ImGui::ColorEdit3("Quad", &GL_GraphicElement::element_colors[Quad].x);
 		change = change + ImGui::ColorEdit3("Tetra", &GL_GraphicElement::element_colors[Tetra].x);
 		change = change + ImGui::ColorEdit3("Pyramid", &GL_GraphicElement::element_colors[Pyramid].x);
-		change = change + ImGui::ColorEdit3("Prysm", &GL_GraphicElement::element_colors[Prysm].x);
+		change = change + ImGui::ColorEdit3("Prysm", &GL_GraphicElement::element_colors[Prism].x);
 		change = change + ImGui::ColorEdit3("Hexa", &GL_GraphicElement::element_colors[Hexa].x);
 		change = change + ImGui::ColorEdit3("Tetra10", &GL_GraphicElement::element_colors[Tetra10].x);
 		if (change) {
@@ -180,28 +183,28 @@ public:
 	}
 };
 
-class UI_FEM_Saver : public UI_Component {
+class UI_Data_Recorder : public UI_Component {
 public:
-	UI_FEM_Saver() : UI_Component() {
+	UI_Data_Recorder() : UI_Component() {
 		saved = false;
 	}
 
 	virtual char* name() override {
-		return "FEM Mesh Saver";
+		return "Data Recorder";
 	}
 
 
 	bool can_draw(Entity* entity) override {
-		VTK_FEM* vtk_fem = entity->getComponent<VTK_FEM>();
-		if (vtk_fem) return true;
+		DataRecorder* data_recorder = entity->getComponent<DataRecorder>();
+		if (data_recorder) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		VTK_FEM* vtk_fem = entity->getComponent<VTK_FEM>();
-		ImGui::Text(("File : " + vtk_fem->file_name()).c_str());
+		DataRecorder* data_recorder = entity->getComponent<DataRecorder>();
+		ImGui::Text(("File : " + data_recorder->json_path()).c_str());
 		if (ImGui::Button("Save")) {
-			vtk_fem->save();
+			data_recorder->save();
 			saved = true;
 			save_frame = Time::Frame();
 		}
@@ -248,4 +251,73 @@ public:
 protected:
 	bool saved;
 	int save_frame;
+};
+
+
+class UI_PBD_Dynamic : public UI_Component {
+public:
+	UI_PBD_Dynamic() : UI_Component() {
+	}
+
+	virtual char* name() override {
+		return "PBD";
+	}
+
+
+	bool can_draw(Entity* entity) override {
+		XPBD_FEM_Dynamic* pbd = entity->getComponent<XPBD_FEM_Dynamic>();
+		if (pbd) return true;
+		return false;
+	}
+
+	virtual void draw(Entity* entity) override {
+		XPBD_FEM_Dynamic* pbd = entity->getComponent<XPBD_FEM_Dynamic>();
+		it = pbd->get_iteration();
+		sub_it = pbd->get_sub_iteration();
+		if (ImGui::InputInt("steps", &it) || ImGui::InputInt("sub steps", &sub_it)) {
+			it = std::max(0, it);
+			sub_it = std::max(0, sub_it);
+			pbd->set_iterations(it, sub_it);
+		}
+	}
+protected:
+	int it, sub_it;
+};
+
+
+class UI_Constraint_Rigid_Controller : public UI_Component {
+public:
+	UI_Constraint_Rigid_Controller() : UI_Component() { }
+
+	virtual char* name() override {
+		return "Constraint Rigid";
+	}
+
+
+	bool can_draw(Entity* entity) override {
+		Constraint_Rigid_Controller* rc = entity->getComponent<Constraint_Rigid_Controller>();
+		if (rc) return true;
+		return false;
+	}
+
+	virtual void draw(Entity* entity) override {
+		std::vector<Constraint_Rigid_Controller*> components = entity->getComponents<Constraint_Rigid_Controller>();
+		if (components.size() == 0) return;
+		
+		Constraint_Rigid_Controller* rc = components[0];
+		if (ImGui::InputInt("Mode", &rc->_mode)
+			|| ImGui::InputFloat("Event Rate", &rc->_event_rate)
+			|| ImGui::SliderInt("Smoothing Itetrations", &rc->_smooth_iterations, 1, 30)
+			|| ImGui::InputFloat("Move Speed", &rc->_move_speed)
+			|| ImGui::InputFloat("Rotation Speed", &rc->_rot_speed))
+		{
+			for (unsigned int i = 1; i < components.size(); ++i) {
+				components[i]->_mode = rc->_mode;
+				components[i]->_move_speed = rc->_move_speed;
+				components[i]->_rot_speed = rc->_rot_speed;
+				components[i]->_smooth_iterations = rc->_smooth_iterations;
+				components[i]->_event_rate = rc->_event_rate;
+			}
+		}
+	}
 };

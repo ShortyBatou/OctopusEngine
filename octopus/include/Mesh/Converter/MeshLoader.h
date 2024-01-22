@@ -42,19 +42,19 @@ public:
     Msh_Loader(const std::string& file_path) : MeshLoader(file_path) { }
     void load(std::ifstream& inputFile, Mesh::Geometry& vertices, std::map<Element, Mesh::Topology>& topologies)
     {
-        static std::map< int, int > elemTypeNumMap;
+        static std::map< int, Element > elemTypeNumMap;
         elemTypeNumMap[2] = Line;
         elemTypeNumMap[3] = Triangle;
         elemTypeNumMap[4] = Tetra;
         elemTypeNumMap[5] = Pyramid;
-        elemTypeNumMap[6] = Prysm;
+        elemTypeNumMap[6] = Prism;
         elemTypeNumMap[8] = Hexa;
-        elemTypeNumMap[10] = Tetra10;
-        elemTypeNumMap[20] = Tetra20;
+        elemTypeNumMap[11] = Tetra10;
+        elemTypeNumMap[29] = Tetra20;
 
         std::string line;
-        unsigned int nbElements = 0, eltType, eltNum, n;
-        int eltTag;
+        unsigned int nbElements = 0, eltNum, n;
+        int eltTag, eltType;
         scalar d;
 
         // skip lines untill vertices are found
@@ -100,10 +100,11 @@ public:
             for (unsigned int i = 0; i < n; ++i) {
                 stream >> eltTag;
             }
-            
-            for (int j = 0; j < eltType; ++j) {
+            Element elem = elemTypeNumMap[eltType];
+            unsigned int nb_vertices = elem_nb_vertices(elem);
+            for (int j = 0; j < nb_vertices; ++j) {
                 stream >> n;
-                topologies[Element(elemTypeNumMap[eltType])].push_back(n - off);
+                topologies[elem].push_back(n - off);
             }
             
         }
@@ -188,7 +189,7 @@ public:
         elemTypeFromVTKMap[9] = Quad; //VTK_QUAD
         elemTypeFromVTKMap[10] = Tetra; //VTK_TETRA
         elemTypeFromVTKMap[12] = Hexa; //VTK_HEXA
-        elemTypeFromVTKMap[13] = Prysm; //VTK_WEDGE
+        elemTypeFromVTKMap[13] = Prism; //VTK_WEDGE
         elemTypeFromVTKMap[14] = Pyramid; //VTK_PYRAMID
         elemTypeFromVTKMap[24] = Tetra10; //VTK_QUADRATIC_TETRA
         elemTypeFromVTKMap[71] = Tetra20; //VTK_LAGRANGE_TETRAHEDRON (technically any order but it's not supported beyond T20)
@@ -199,10 +200,6 @@ public:
         std::cout << "NB ELEMENTS = " << nbElements << std::endl;
 
         skip_to(inputFile, line, "CONNECTIVITY vtktypeint64");
-        if (line.compare(0, 12, "CONNECTIVITY") != 0) {
-            std::cerr << "No CONNECTIVITY flag in UNSTRUCTURED_GRID format. ABORT!" << std::endl;
-            return;
-        }
 
         std::vector <unsigned int> ids;
         unsigned int id;
@@ -242,7 +239,7 @@ public:
     void skip_lines(std::ifstream& inputFile, std::string& line) {
         do { //skip end of last line
             if (!std::getline(inputFile, line)) {
-                std::cout << "VTKLoader : getLine Failed" << std::endl;
+                std::cout << "VTKLoader : getLine failed \""<< line<< "\"" << std::endl;
                 break;
             }
         } while (line == "");
@@ -252,7 +249,7 @@ public:
         unsigned int size = s.size();
         do { //skip end of last line
             if (!std::getline(inputFile, line)) {
-                std::cout << "VTKLoader : getLine Failed" << std::endl;
+                std::cout << "VTKLoader : getLine failed \"" << line << "\"" << std::endl;
                 break;
             }
         } while (line.compare(0, s.size(), s) != 0);

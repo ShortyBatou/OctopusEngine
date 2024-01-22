@@ -90,12 +90,9 @@ struct VolumePreservation : public PBD_ContinuousMaterial {
     virtual scalar getStiffness() const override { return this->lambda; }
 };
 
-
-
-
 struct Stable_NeoHooke_First : public VolumePreservation {
-    Stable_NeoHooke_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) { 
-        this->alpha = scalar(1) - this->mu / this->lambda;
+    Stable_NeoHooke_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) {
+        this->alpha = scalar(1) + this->mu / this->lambda;
     }
 };
 
@@ -116,6 +113,7 @@ struct Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
 struct Developed_Stable_NeoHooke_First : public VolumePreservation {
     Developed_Stable_NeoHooke_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) { }
 };
+
 
 struct Developed_Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
     Developed_Stable_NeoHooke_Second(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson) { }
@@ -199,6 +197,7 @@ struct Material_Union : public PBD_ContinuousMaterial {
 };
 
 
+
 //Muller and Macklin neohooke energy for Tetra
 struct C_Stable_NeoHooke_First : public PBD_ContinuousMaterial {
     scalar alpha;
@@ -268,3 +267,31 @@ struct C_Developed_Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
 
     virtual scalar getStiffness() const override { return this->mu; }
 };
+
+
+std::vector<PBD_ContinuousMaterial*> get_pbd_materials(Material material, scalar young, scalar poisson) {
+    std::vector<PBD_ContinuousMaterial*> materials;
+    switch (material)
+    {
+    case Hooke:
+        materials.push_back(new Hooke_First(young, poisson));
+        materials.push_back(new Hooke_Second(young, poisson));
+        break;
+    case StVK:
+        materials.push_back(new StVK_First(young, poisson));
+        materials.push_back(new StVK_Second(young, poisson));
+        break;
+    case Neo_Hooke:
+        materials.push_back(new Stable_NeoHooke_First(young, poisson));
+        materials.push_back(new Stable_NeoHooke_Second(young, poisson));
+        break;
+    case Developed_Neohooke:
+        materials.push_back(new Developed_Stable_NeoHooke_First(young, poisson));
+        materials.push_back(new Developed_Stable_NeoHooke_Second(young, poisson));
+        break;
+    default:
+        std::cout << "Material not found" << std::endl;
+        break;
+    }
+    return materials;
+}

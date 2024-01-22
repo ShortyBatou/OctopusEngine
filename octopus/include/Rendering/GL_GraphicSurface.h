@@ -11,7 +11,7 @@ public:
     {
         _converters[Tetra]    = new TetraConverter();
         _converters[Pyramid]  = new PyramidConverter();
-        _converters[Prysm]    = new PrysmConverter();
+        _converters[Prism]    = new PrysmConverter();
         _converters[Hexa]     = new HexaConverter();
         _converters[Tetra10]  = new Tetra10Converter();
         _converters[Tetra20] = new Tetra20Converter();

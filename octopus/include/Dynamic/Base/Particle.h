@@ -15,10 +15,6 @@ struct Particle {
 	Vector3 force;
     Vector3 external_forces;
 
-    void add_force(const Vector3& f) {
-        mutex.lock(); force += f; mutex.unlock();
-    }
-
     void build(const Vector3& _position, scalar _mass) {
         init_position = _position;
         position = _position;

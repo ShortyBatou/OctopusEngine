@@ -14,10 +14,10 @@ public:
         for (unsigned int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
-
+        energy = 0;
         scalar s, t, l;
-        std::vector<scalar> coords = _shape->getQuadratureCoordinates();
-        _weights = _shape->getWeights();
+        std::vector<scalar> coords = _shape->get_quadrature_coordinates();
+        _weights = _shape->get_weights();
         _dN.resize(_weights.size());
         _V.resize(_weights.size());
         _JX_inv.resize(_weights.size());
@@ -38,7 +38,7 @@ public:
     }
 
 
-    virtual bool  project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) override {
+    virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) override {
         Matrix3x3 Jx, F, P;
         scalar energy;
         volume = 0;
@@ -61,15 +61,14 @@ public:
             C += energy * _V[i];
         }
 
-
+        this->energy = C;
         if (std::abs(C) <= scalar(1e-24)) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
-        C = sqrt(abs(C))  ;
+        C = sqrt(abs(C));
         scalar C_inv = scalar(1.) / scalar(2. * C);
         for (unsigned int j = 0; j < this->nb(); ++j) {
             grads[j] *= C_inv;
         }
-
         return true;
     } 
 
@@ -88,9 +87,10 @@ public:
         delete _shape;
     }
 
+public:
+    scalar energy;
     scalar init_volume;
     scalar volume;
-protected:
     std::vector<Matrix3x3> _JX_inv;
     std::vector<scalar> _V;
 
@@ -117,8 +117,8 @@ public:
         }
 
         scalar s, t, l;
-        std::vector<scalar> coords = _shape->getQuadratureCoordinates();
-        _weights = _shape->getWeights();
+        std::vector<scalar> coords = _shape->get_quadrature_coordinates();
+        _weights = _shape->get_weights();
         _dN.resize(_weights.size());
         _V.resize(_weights.size());
         _JX_inv.resize(_weights.size());
@@ -179,7 +179,7 @@ public:
             }
 
             for (unsigned int i = 0; i < this->nb(); ++i) {
-                x[i]->add_force(dt_lambda * x[i]->inv_mass * grads[i] * 0.5f) ; // we use force to store dt_x
+                x[i]->force += dt_lambda * x[i]->inv_mass * grads[i] * 0.5f; // we use force to store dt_x
             }
         }
     }

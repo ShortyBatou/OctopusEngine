@@ -20,7 +20,7 @@ public:
 	VTK_Formater() {}
 
 	VTK_Formater& open(std::string name) {
-		file.open(AppInfo::PathToAssets() + "/vtk/" + name + ".vtk");
+		file.open(AppInfo::PathToAssets() + name + ".vtk");
 		file << "# vtk DataFile Version 5.1\n";
 		file << "vtk output\n";
 		file << "ASCII\n\n";
@@ -102,10 +102,10 @@ public:
 		return *this;
 	}
 
-	VTK_Formater& add_scalar_data(std::vector<scalar>& data) {
+	VTK_Formater& add_scalar_data(std::vector<scalar>& data, std::string name = "scalars") {
 		if (data_mode == VTK::DATA::POINT) assert(data.size() == nb_vertices);
 		else if (data_mode == VTK::DATA::CELL) assert(data.size() == nb_cells);
-		file << "SCALARS scalars float 1\n";
+		file << "SCALARS " << name << " float 1\n";
 		file << "LOOKUP_TABLE default\n";
 		for (scalar& d : data) {
 			file << d << " ";
@@ -114,10 +114,10 @@ public:
 		return *this;
 	}
 
-	VTK_Formater& add_vector_data(std::vector<Vector3>& data) {
+	VTK_Formater& add_vector_data(std::vector<Vector3>& data, std::string name = "v3_scalars") {
 		if (data_mode == VTK::DATA::POINT) assert(data.size() == nb_vertices);
 		else if (data_mode == VTK::DATA::CELL) assert(data.size() == nb_cells);
-		file << "VECTORS vectors float\n";
+		file << "VECTORS " << name << " float\n";
 		for (Vector3& d : data) {
 			file << d.x << " " << d.y << " " << d.z << "  ";
 		}
@@ -138,7 +138,7 @@ public:
 		case Quad: return 9;
 		case Tetra: return 10;
 		case Pyramid: return 14;
-		case Prysm: return 13;
+		case Prism: return 13;
 		case Hexa: return 12;
 		case Tetra10:return 24;
 		case Tetra20:return 71;

@@ -29,15 +29,12 @@ public:
             sum_norm_grad += glm::dot(grads[i], grads[i]) * x[i]->inv_mass;
         }
 
-        if (sum_norm_grad < 1e-24) return;
         scalar alpha = scalar(1.0) / (_stiffness * dt * dt);
         scalar dt_lambda = -(C + alpha * _lambda) / (sum_norm_grad + alpha);
-        
-        if (std::abs(dt_lambda) < 1e-24) return;
         _lambda += dt_lambda;
 
         for (unsigned int i = 0; i < this->nb(); ++i) {
-            x[i]->add_force(dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
+            x[i]->force += (dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
         }
     }
 

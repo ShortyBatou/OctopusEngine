@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 #include "Mesh/Mesh.h"
 #include "Mesh/Generator/MeshGenerator.h"
-
+#include "Mesh/Generator/BeamGenerator.h"
 struct TriangleMesh : public MeshGenerator {
     TriangleMesh(const Vector3& a, const Vector3& b, const Vector3& c) : _a(a), _b(b), _c(c)
     { }
@@ -80,4 +80,43 @@ protected:
     Vector3 _min, _max;
 };
 
+
+struct TetraSphere : public MeshGenerator {
+    TetraSphere(Element order) : _order(order) {}
+
+    virtual Mesh* build() override {
+        Mesh* mesh = new Mesh();
+        Mesh::Geometry geometry;
+        std::map<Element, Mesh::Topology> topologies;
+        topologies[Tetra] = { 0, 1, 2, 3 };
+
+
+        geometry.push_back(Vector3(0, 0, -sqrt(6.f) / 4.f));
+        geometry.push_back(Vector3(sqrt(3.f) / 3.f, 0, sqrt(6.f) / 12.f));
+        geometry.push_back(Vector3(-sqrt(3.f)/6, 0.5, sqrt(6.f) / 12.f));
+        geometry.push_back(Vector3(-sqrt(3.f) / 6, -0.5, sqrt(6.f) / 12.f));
+        
+        switch (_order)
+        {
+            case Tetra10: tetra4_to_tetra10(geometry, topologies); break;
+            case Tetra20: tetra4_to_tetra20(geometry, topologies); break;
+            default: break;
+        }
+
+        Vector3 c = (geometry[0] + geometry[1] + geometry[2] + geometry[3]) * scalar(0.25);
+
+
+        for (unsigned int i = 4; i < elem_nb_vertices(_order); ++i) {
+            geometry[i] = glm::normalize(geometry[i] - c) * 0.5f;
+        }
+
+        apply_transform(geometry);
+        mesh->setGeometry(geometry);
+        mesh->setTopology(_order, topologies[_order]);
+        return mesh;
+    }
+
+protected:
+    Element _order;
+};
 

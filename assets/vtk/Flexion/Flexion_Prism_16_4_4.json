@@ -1,0 +1,28 @@
+{
+  "flexion_error": {
+    "error": 0.00144788,
+    "p": [ 3.92904, -0.232026, 0.500048 ],
+    "target": [ 3.92212, -0.269443, 0.500002 ]
+  },
+  "mesh": {
+    "Prism": 420,
+    "vertices": 425
+  },
+  "Time": {
+    "frame": 360,
+    "time": 36.3733,
+    "dt": 0.0964116,
+    "fixed_Time": 6.00002,
+    "fixed_dt": 0.0166667
+  },
+  "vtk_file": "assets/vtk/Flexion_Prysm_16_4_4.vtk",
+  "XPBD_FEM_Dynamic": {
+    "mean_cost": 49.8516,
+    "material": "Stable Neo-Hooke",
+    "poisson": 0.4,
+    "young": 5e+06,
+    "iteration": 1,
+    "sub_itetrations": 50,
+    "density": 1000
+  }
+}

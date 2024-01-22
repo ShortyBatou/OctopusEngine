@@ -48,3 +48,5 @@ print(d_diff)
 #print(d_shape_r0)
 #print(d_shape_r1)
 #print(d_shape_r2)
+exit()
+

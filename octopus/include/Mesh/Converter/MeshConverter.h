@@ -14,7 +14,7 @@ struct MeshConverter
         _topo_triangle = get_elem_topo_triangle();
         _topo_quad     = get_elem_topo_quad();
         _topo_edge = get_elem_topo_edges();
-        _ref_element = get_elem_base_vertices();
+        _ref_element = _shape->get_vertices();
     }
 
     // create for each element a scaled version of its geometry
@@ -115,10 +115,6 @@ protected:
 
     // get the edges in reference element 
     virtual Mesh::Topology get_elem_topo_edges() = 0;
-
-    // get the reference element vertices 
-    virtual Mesh::Geometry get_elem_base_vertices() = 0;
-
     
 
     virtual void resize_topo(unsigned int nb_elem, unsigned int elem_topo_size, Mesh::Topology& topo) {
@@ -152,9 +148,6 @@ struct TetraConverter : public MeshConverter
 {
     virtual Element get_element_type() override { return Tetra; }
 
-    virtual Mesh::Geometry get_elem_base_vertices() override {
-        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1) };
-    }
     virtual Mesh::Topology get_elem_topo_edges() override {
         return { 0,1, 1,2, 2,0, 0,3, 1,3, 2,3 };
     }
@@ -169,9 +162,6 @@ struct PyramidConverter : public MeshConverter
 {
     virtual Element get_element_type() override { return Pyramid; }
 
-    virtual Mesh::Geometry get_elem_base_vertices() {
-        return { Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, -1), Vector3(0, 1, 0) }; // not sure
-    }
 
     virtual Mesh::Topology get_elem_topo_edges() {
         return { 0,1,1,2,2,3,0,4,1,4,2,4,3,4 };
@@ -191,16 +181,14 @@ struct PyramidConverter : public MeshConverter
 
 struct PrysmConverter : public MeshConverter
 {
-    virtual Element get_element_type() override { return Prysm; }
+    virtual Element get_element_type() override { return Prism; }
 
     virtual Mesh::Topology get_elem_topo_triangle() override
     {
         return {0, 1, 2, 3, 5, 4};
     }
 
-    virtual Mesh::Geometry get_elem_base_vertices() {
-        return { Vector3(0, -1, 0), Vector3(1, -1, 0), Vector3(0, -1, 1), Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(0, 1, 1) }; // not sure
-    }
+
 
     virtual Mesh::Topology get_elem_topo_edges() {
         return { 0,1, 1,2, 2,0, 0,3, 1,4, 2,5, 3,4, 4,5, 5,3 };
@@ -210,7 +198,7 @@ struct PrysmConverter : public MeshConverter
     {
         return {3,4,1,0, 2,5,3,0, 1,4,5,2};
     }
-    virtual FEM_Shape* get_shape() override { return new Prysm_6(); }
+    virtual FEM_Shape* get_shape() override { return new Prism_6(); }
     virtual ~PrysmConverter() { } 
 };
 
@@ -218,11 +206,7 @@ struct HexaConverter : public MeshConverter
 {
     virtual Element get_element_type() override { return Hexa; }
 
-    virtual Mesh::Geometry get_elem_base_vertices() {
-        return { Vector3(-1, -1, -1), Vector3(1, -1, -1), Vector3(1, 1, -1), Vector3(-1, 1, -1),
-                 Vector3(-1, -1,  1), Vector3(1,  -1, 1), Vector3(1, 1, 1), Vector3(-1,  1, 1) 
-        };
-    }
+
 
     virtual Mesh::Topology get_elem_topo_edges() {
         return { 0,1, 1,2, 2,3, 3,0, 0,4, 1,5, 2,6, 3,7, 4,5, 5,6, 6,7, 7,4 }; 
@@ -243,12 +227,7 @@ struct Tetra10Converter : public TetraConverter
 {
     virtual Element get_element_type() override { return Tetra10; }
 
-    virtual Mesh::Geometry get_elem_base_vertices() {
-        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
-                 Vector3(0.5, 0, 0), Vector3(0.5, 0.5, 0.), Vector3(0., 0.5, 0.),
-                 Vector3(0, 0, 0.5), Vector3(0.5, 0., 0.5),   Vector3(0., 0.5, 0.5)
-        };
-    }
+
 
     virtual Mesh::Topology get_elem_topo_edges() {
         return { 0,4, 4,1, 1,5, 5,2, 0,6, 6,2, 0,7, 7,3, 1,8, 8,3, 2,9, 9,3 };
@@ -276,28 +255,6 @@ struct Tetra20Converter : public TetraConverter
 {
     virtual Element get_element_type() override { return Tetra20; }
 
-    virtual Mesh::Geometry get_elem_base_vertices() {
-        scalar a = scalar(1. / 3.);
-        scalar b = scalar(2. / 3.);
-
-        return { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1), // 0,1,2,3
-                 // edges
-                 Vector3(a, 0, 0), Vector3(b, 0, 0), // 4,5
-                 Vector3(b, a, 0), Vector3(a, b, 0), // 6,7
-                 Vector3(0, b, 0), Vector3(0, a, 0), // 8,9
-                 
-                 Vector3(0, 0, a), Vector3(0, 0, b), //10, 11
-                 
-                 Vector3(b, 0, a), Vector3(a, 0, b), // 12,13 
-                 Vector3(0, b, a), Vector3(0, a, b), // 14, 15
-                 
-                 // faces
-                 Vector3(a, 0, a), // 16 
-                 Vector3(a, a, a), // 17
-                 Vector3(0, a, a), // 18
-                 Vector3(a, a, 0), // 19
-        };
-    }
 
     virtual Mesh::Topology get_elem_topo_edges() {
         return 

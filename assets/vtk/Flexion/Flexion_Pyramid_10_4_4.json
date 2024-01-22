@@ -1,0 +1,28 @@
+{
+  "flexion_error": {
+    "error": 0.00463583,
+    "p": [ 3.9341, -0.202419, 0.500365 ],
+    "target": [ 3.92212, -0.269443, 0.500002 ]
+  },
+  "mesh": {
+    "Pyramid": 960,
+    "vertices": 435
+  },
+  "Time": {
+    "frame": 320,
+    "time": 47.5833,
+    "dt": 0.14054,
+    "fixed_Time": 5.33335,
+    "fixed_dt": 0.0166667
+  },
+  "vtk_file": "assets/vtk/Flexion_Pyramid_10_4_4.vtk",
+  "XPBD_FEM_Dynamic": {
+    "mean_cost": 73.5787,
+    "material": "Stable Neo-Hooke",
+    "poisson": 0.4,
+    "young": 5e+06,
+    "iteration": 1,
+    "sub_itetrations": 50,
+    "density": 1000
+  }
+}

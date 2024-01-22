@@ -60,7 +60,7 @@ struct XPBD_FEM_Torsion_Scene : public Scene
         {
             case Tetra: generator = new TetraBeamGenerator(cells, size); break;
             case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
-            case Prysm: generator = new PrysmBeamGenerator(cells, size); break;
+            case Prism: generator = new PrismBeamGenerator(cells, size); break;
             case Hexa: generator = new HexaBeamGenerator(cells, size); break;
             case Tetra10: generator = new TetraBeamGenerator(cells, size); break; 
             default: break;

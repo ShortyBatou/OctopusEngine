@@ -54,7 +54,7 @@ public:
         switch (type) {
         case Tetra: return new Tetra_4(); break;
         case Pyramid: return new Pyramid_5(); break;
-        case Prysm: return new Prysm_6(); break;
+        case Prism: return new Prism_6(); break;
         case Hexa: return new Hexa_8(); break;
         case Tetra10: return new Tetra_10(); break;
         case Tetra20: return new Tetra_20(); break;
@@ -63,7 +63,7 @@ public:
     }
 
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.9997), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.9995f), _sub_iteration);
     }
 
 

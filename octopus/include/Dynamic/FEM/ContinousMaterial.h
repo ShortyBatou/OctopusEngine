@@ -5,6 +5,17 @@ enum Material {
     Hooke, StVK, Neo_Hooke, Developed_Neohooke
 };
 
+std::string get_material_name(Material material) {
+    switch (material)
+    {
+        case Hooke: return "Hooke";
+        case StVK: return "SaintVenant";
+        case Neo_Hooke: return "Stable Neo-Hooke";
+        case Developed_Neohooke: return "Stable Neo-Hooke";
+        default: return "";
+    }
+}
+
 struct ContinuousMaterial {
     scalar lambda, mu;
     scalar young, poisson;
