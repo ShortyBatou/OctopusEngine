@@ -1,45 +1,118 @@
 import numpy as np
-
+import json
 import matplotlib.pyplot as plt
 
 import matplotlib.patches as patches
 from matplotlib.path import Path
-#tetra10_distance = [ 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1, 0.0625, 0.1875, 0.3125, 0.4375, 0.5625, 0.6875, 0.8125, 0.9375 ]
-#tetra10_angles = [ 0, 21.9086, 44.7718, 67.6426, 90.2583, 112.996, 135.741, 158.372, 180, 10.4484, 33.3096, 56.1495, 78.8915, 101.589, 124.295, 146.979, 169.469 ]
-tetra10_errors = []
-tetra10_distance = [ 0, 0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375, 1, 0.03125, 0.09375, 0.15625, 0.21875, 0.28125, 0.34375, 0.40625, 0.46875, 0.53125, 0.59375, 0.65625, 0.71875, 0.78125, 0.84375, 0.90625, 0.96875 ]
-tetra10_angles = [ 0, 5.00621, 10.8845, 16.6166, 22.2934, 27.9731, 33.6609, 39.3377, 45.0282, 50.7173, 56.3904, 62.0884, 67.7803, 73.4752, 79.2025, 85.0514, 90, 2.2365, 7.95932, 13.7617, 19.4614, 25.1386, 30.822, 36.5043, 42.1852, 47.8758, 53.5575, 59.2451, 64.9377, 70.6289, 76.3346, 82.116, 87.7547 ]
 
-#tetra10_distance = [ 0, 0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375, 1, 0.03125, 0.09375, 0.15625, 0.21875, 0.28125, 0.34375, 0.40625, 0.46875, 0.53125, 0.59375, 0.65625, 0.71875, 0.78125, 0.84375, 0.90625, 0.96875 ]
-#tetra10_angles = [ 0, 10.178, 21.8643, 33.2888, 44.6425, 55.9787, 67.3094, 78.6535, 89.9918, 101.323, 112.684, 124.087, 135.454, 146.821, 158.276, 169.932, 180, 4.59888, 16.0471, 27.5977, 38.9783, 50.3207, 61.6533, 72.9891, 84.3278, 95.6662, 107.014, 118.392, 129.774, 141.145, 152.547, 164.082, 175.371 ]
 
-tetra_distance = [ 0, 0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375, 1 ]
-tetra_angles = [ 0, 8.11557, 17.6924, 27.7461, 38.1362, 48.7901, 59.6856, 70.8769, 82.3789, 94.1858, 106.241, 118.454, 130.717, 142.939, 155.064, 167.142, 180 ]
+def get_rotation_error_data(file_path):
+    f = open(file_path)
+    data = json.load(f)
+    distances = data["rotation_error"]["distance"]
+    angles = data["rotation_error"]["angles"]
+    n = len(distances) - 1
+    for i in range(n): 
+        for j in range(n):
+            if(distances[j] > distances[j+1]):
+                distances[j], distances[j+1] = distances[j+1], distances[j]
+                angles[j], angles[j+1] = angles[j+1], angles[j]
 
-lin_dist = [0,1]
-lin_angle = [0, 90]
+    return distances, angles
 
-for i in range(len(tetra10_distance)-1):
-    for j in range(len(tetra10_distance)-1):
-        if tetra10_distance[j] > tetra10_distance[j+1]:
-            temp = tetra10_distance[j+1]
-            tetra10_distance[j+1] = tetra10_distance[j]
-            tetra10_distance[j] = temp
+def diff_with_ref(ref_dists, ref_angles, elem_dists, elem_angles):
+    diff = []
+    for i in range(len(elem_dists)):
+        for j in range(len(ref_dists)):
+            if(abs(elem_dists[i] - ref_dists[j]) < 1e-4):
+                diff.append(abs(ref_angles[j] - elem_angles[i]))
 
-            temp = tetra10_angles[j+1]
-            tetra10_angles[j+1] = tetra10_angles[j]
-            tetra10_angles[j] = temp
+    return diff
 
-for i in range(len(tetra10_distance)):
-    tetra10_errors.append(abs(tetra10_angles[i] - 90 * tetra10_distance[i]))
+def diff_with_interpolation(elem_dists, elem_angles):
+    diff = []
+    for i in range(len(elem_dists)):
+        lin_angle = elem_dists[i] * 180.0
+        diff.append(abs(lin_angle - elem_angles[i]))
+    return diff
 
-plt.style.use('_mpl-gallery')
+ref_path = '../result/vtk/Torsion/Torsion_Hexa_64_16_16_ref.json'
+ref_distance, ref_angles = get_rotation_error_data(ref_path)
+
+
+hexa_path = '../result/vtk/Torsion/Torsion_Hexa_16_4_4.json'
+hexa_distance, hexa_angles = get_rotation_error_data(hexa_path)
+
+tetra_path = '../result/vtk/Torsion/Torsion_Tetra_16_4_4.json'
+tetra_distance, tetra_angles = get_rotation_error_data(tetra_path)
+
+tetra10_path = '../result/vtk/Torsion/Torsion_Tetra10_8_2_2.json'
+tetra10_distance, tetra10_angles = get_rotation_error_data(tetra10_path)
+
+tetra20_path = '../result/vtk/Torsion/Torsion_Tetra20_4_2_2.json'
+tetra20_distance, tetra20_angles = get_rotation_error_data(tetra20_path)
+
+bad_tetra_path = '../result/vtk/Torsion/Torsion_Bad_MeshTetra_16_4_4.json'
+bad_tetra_distance, bad_tetra_angles = get_rotation_error_data(bad_tetra_path)
+
+bad_tetra10_path = '../result/vtk/Torsion/Torsion_Bad_MeshTetra10_8_2_2.json'
+bad_tetra10_distance, bad_tetra10_angles = get_rotation_error_data(bad_tetra10_path)
+
+bad_tetra20_path = '../result/vtk/Torsion/Torsion_Bad_MeshTetra20_4_2_2.json'
+bad_tetra20_distance, bad_tetra20_angles = get_rotation_error_data(bad_tetra20_path)
+
+#tetra20_diff = diff_with_ref(ref_distance, ref_angles, tetra20_distance, tetra20_angles)
+#tetra10_diff = diff_with_ref(ref_distance, ref_angles, tetra10_distance, tetra10_angles)
+#tetra10_diff2 = diff_with_ref(ref_distance, ref_angles, tetra10_distance2, tetra10_angles2)
+#tetra_diff = diff_with_ref(ref_distance, ref_angles, tetra_distance, tetra_angles)
+#hexa_diff = diff_with_ref(ref_distance, ref_angles, hexa_distance, hexa_angles)
+
+tetra_diff = diff_with_interpolation(tetra_distance, tetra_angles)
+tetra10_diff = diff_with_interpolation(tetra10_distance, tetra10_angles)
+tetra20_diff = diff_with_interpolation(tetra20_distance, tetra20_angles)
+
+bad_tetra_diff = diff_with_interpolation(bad_tetra_distance, bad_tetra_angles)
+bad_tetra10_diff = diff_with_interpolation(bad_tetra10_distance, bad_tetra10_angles)
+bad_tetra20_diff = diff_with_interpolation(bad_tetra20_distance, bad_tetra20_angles)
+
+#hexa_diff = diff_with_interpolation(hexa_distance, hexa_angles)
+#prism_diff = diff_with_interpolation(prism_distance, prism_angles)
+#pyramid_diff = diff_with_interpolation(pyramid_distance, pyramid_angles)
+#ref_diff = diff_with_interpolation(ref_distance, ref_angles)
+
+#plt.style.use('_mpl-gallery')
 # make data
 
 # plot
 fig, ax = plt.subplots()
+ax.grid()
+ax.set(xlabel='Depth (%)', ylabel='Angle in degree', title='Non-biased Mesh')
+ax.plot(tetra_distance, tetra_angles, '#e74c3c', label = 'P1')
+ax.plot(tetra10_distance, tetra10_angles, '#c266e8', label = 'P2')
+ax.plot(tetra20_distance, tetra20_angles, '#19e0b9', label = 'P3')
+plt.legend()
+fig.savefig("good_torsion.png", dpi=300)
 
-ax.plot(tetra10_distance, tetra10_errors, 'purple')
+fig2, ax2 = plt.subplots()
+ax2.set(xlabel='Depth (%)', ylabel='Angle in degree', title='Biased Mesh')
+ax2.grid()
+ax2.plot(bad_tetra_distance, bad_tetra_angles, '#ab350a', label = 'P1')
+ax2.plot(bad_tetra10_distance, bad_tetra10_angles, '#701196', label = 'P2')
+ax2.plot(bad_tetra20_distance, bad_tetra20_angles, '#068c52', label = 'P3')
+plt.legend()
+fig2.savefig("bad_torsion.png", dpi=300)
 
+fig3, ax3 = plt.subplots()
+ax3.set(xlabel='Depth (%)', ylabel='Angle deviation from linear interpolation', title='')
+ax3.grid()
+ax3.plot(tetra_distance, tetra_diff, '#e74c3c', label = 'P1')
+ax3.plot(tetra10_distance, tetra10_diff, '#c266e8', label = 'P2')
+ax3.plot(tetra20_distance, tetra20_diff, '#19e0b9', label = 'P3')
+
+ax3.plot(bad_tetra_distance, bad_tetra_diff, '#ab350a', label = 'P1 (biased)')
+ax3.plot(bad_tetra10_distance, bad_tetra10_diff, '#701196', label = 'P2 (biased)')
+ax3.plot(bad_tetra20_distance, bad_tetra20_diff, '#068c52', label = 'P3 (biased)')
+plt.legend()
+fig3.savefig("diff_linear_torsion.png", dpi=300)
 
 plt.show()

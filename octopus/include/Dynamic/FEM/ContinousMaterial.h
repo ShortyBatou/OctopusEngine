@@ -101,7 +101,7 @@ struct M_NeoHooke : public ContinuousMaterial {
         d_detF[0] = glm::cross(F[1], F[2]);
         d_detF[1] = glm::cross(F[2], F[0]);
         d_detF[2] = glm::cross(F[0], F[1]);
-        P = this->mu * F + this->lambda * (I_3 - alpha) * d_detF;
+        P =  this->lambda * (I_3 - alpha) * d_detF;
     }
 
     virtual scalar getEnergy(const Matrix3x3& F) {

@@ -22,7 +22,7 @@ public:
 		_fixation = new RB_Fixation(ids);
 		_plane = new PlaneConstraint(_plane_pos, -_plane_normal);
 		ps->add_constraint(_fixation);
-		//ps->add_effect(_plane);
+		ps->add_effect(_plane);
 		_timer = _event_rate;
 		_smooth_step = _smooth_iterations;
 	}
@@ -121,8 +121,8 @@ public:
 		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];
 			part->position.y = _plane_pos.y;
-			part->position.x = _plane_pos.x + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
-			part->position.z = _plane_pos.z + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
+			/*part->position.x = _plane_pos.x + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;
+			part->position.z = _plane_pos.z + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;*/
 			part->last_position = part->position;
 			part->velocity = Unit3D::Zero();
 		}

@@ -45,6 +45,7 @@ public:
     static void Line(const Vector3& a, const Vector3& b);
     static void Vector(const Vector3& p, const Vector3& direction, scalar length);
     static void UnitGrid(unsigned int _size);
+    static void Cube(const Vector3& p_min, const Vector3 p_max);
     static void Cube(const Vector3& p, scalar size);
 };
 
@@ -95,11 +96,9 @@ void Debug::Axis(const Vector3& p, scalar length = 1.) {
     Debug::Axis(p, Matrix::Identity4x4(), length);
 }
 
-void Debug::Cube(const Vector3& p = Unit3D::Zero(), scalar size = scalar(1.f))
+void Debug::Cube(const Vector3& p_min, const Vector3 p_max)
 {
-    Vector3 p_min(p - Vector3(size) * scalar(0.5));
-    Vector3 p_max(p + Vector3(size) * scalar(0.5));
-    Debug* debug          = Instance_ptr();
+    Debug* debug = Instance_ptr();
     unsigned int _i_start = debug->_mesh->nb_vertices();
     for (int i = 0; i < 8; ++i)
     {
@@ -109,12 +108,20 @@ void Debug::Cube(const Vector3& p = Unit3D::Zero(), scalar size = scalar(1.f))
         if (i & 4) v.z = p_max.z;
         debug->add_vertice(v);
     }
-    static unsigned int box_topo[24] = {0, 1, 1, 3, 3, 2, 2, 0, 2, 6, 6, 7,
-                                    7, 3, 7, 5, 5, 1, 6, 4, 4, 0, 4, 5};
-    for (unsigned int i = 0; i < 24; i+=2)
+    static unsigned int box_topo[24] = { 0, 1, 1, 3, 3, 2, 2, 0, 2, 6, 6, 7,
+                                    7, 3, 7, 5, 5, 1, 6, 4, 4, 0, 4, 5 };
+    for (unsigned int i = 0; i < 24; i += 2)
     {
         debug->add_line(_i_start + box_topo[i], _i_start + box_topo[i + 1]);
     }
-    
+
+}
+
+
+void Debug::Cube(const Vector3& p = Unit3D::Zero(), scalar size = scalar(1.f))
+{
+    Vector3 p_min(p - Vector3(size) * scalar(0.5));
+    Vector3 p_max(p + Vector3(size) * scalar(0.5));
+    Debug::Cube(p_min, p_max);
 }
 

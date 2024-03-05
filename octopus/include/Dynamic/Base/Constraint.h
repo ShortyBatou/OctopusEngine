@@ -55,6 +55,28 @@ struct RB_Fixation : public Constraint {
         }
     }
 
+};
+
+
+struct ConstantForce : public Constraint {
+    Vector3 f;
+    ConstantForce(std::vector<unsigned int> ids, Vector3 force, bool active = true) : Constraint(ids, 1., active), f(force) {}
+
+    virtual void init(const std::vector<Particle*>& parts) override {  }
+
+    virtual void apply(const std::vector<Particle*>& parts, const scalar) override {
+        for (unsigned int i = 0; i < this->nb(); i++) {
+            Particle* part = parts[this->_ids[i]];
+            part->force += f;
+        }
+    }
+    virtual void draw_debug(const std::vector<Particle*>& parts) {
+        Debug::SetColor(ColorBase::Red());
+        for (unsigned int i = 0; i < this->nb(); i++) {
+            Particle* part = parts[this->_ids[i]];
+            Debug::Line(part->position, part->position + f * scalar(0.1));
+        }
+    }
 
 };
 

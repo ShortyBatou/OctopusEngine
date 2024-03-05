@@ -63,7 +63,9 @@ protected:
         PBD_System* _pbd = static_cast<PBD_System*>(this->_ps);
         for (Particle* p : _pbd->particles()) p->mass = 0;
 
+        scalar t_volume = 0;
         unsigned int nb_element = 0;
+
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;
             unsigned int nb = elem_nb_vertices(type);
@@ -78,15 +80,16 @@ protected:
                 scalar volume = 0;
                 
                 materials = get_pbd_materials(_material, _young, _poisson);
-                for (PBD_ContinuousMaterial* m : materials) {
+                for (PBD_ContinuousMaterial* m : materials) {                    
                     XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
                     fems.push_back(fem);
                     _pbd->add_xpbd_constraint(fem);
                     volume += fem->volume;
+                    
                 }
                 
                 volume /= materials.size();
-
+                t_volume += volume;
                 for (unsigned int j = 0; j < nb; ++j) {
                     Particle* p = _pbd->get(ids[j]);
                     p->mass += _density * volume / nb;
@@ -103,7 +106,7 @@ protected:
             total_mass += p->mass;
         }
 
-        std::cout << "XPBD FEM BUILDED : VERTICES = " << _pbd->particles().size() << "   ELEMENTS = " << nb_element << "   TOTAL MASS = " << total_mass << std::endl;
+        std::cout << "XPBD FEM BUILDED : VERTICES = " << _pbd->particles().size() << "   ELEMENTS = " << nb_element << "   MASS = " << total_mass << "   VOLUME = " << t_volume <<  std::endl;
     }
     
 public:

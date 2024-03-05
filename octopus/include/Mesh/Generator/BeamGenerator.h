@@ -146,12 +146,14 @@ public:
 
     TetraBeamGenerator(const Vector3I& _subdivisions, const Vector3& _sizes)
         : BeamMeshGenerator(_subdivisions, _sizes)
-    { }
+    { } 
 
     virtual void buildTopoAtCell(unsigned int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
+        //static unsigned tetras[24]{ 0,4,6,5, 0,4,7,6, 0,7,3,6, 2,0,3,6, 2,0,6,1, 6,0,5,1 }; int nb = 24;
         static unsigned tetras[24]{ 0,3,1,4, 4,1,5,3, 3,7,5,4, 1,2,5,3, 5,2,7,3, 5,7,2,6 }; int nb = 24;
         //static unsigned tetras[20]{ 1,6,5,4, 1,2,6,3, 0,1,4,3, 7,6,3,4, 1,3,6,4 }; int nb = 20;
+        //static unsigned tetras[20]{ 0,3,2,7, 7,4,5,0, 7,6,2,5, 2,1,0,5, 7,0,5,0}; int nb = 20;
         for (unsigned int i = 0; i < nb; ++i)
             topologies[Tetra].push_back(ids[tetras[i]]);
     }

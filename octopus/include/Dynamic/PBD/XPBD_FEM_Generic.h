@@ -14,6 +14,7 @@ public:
         for (unsigned int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
+
         energy = 0;
         scalar s, t, l;
         std::vector<scalar> coords = _shape->get_quadrature_coordinates();
@@ -21,6 +22,7 @@ public:
         _dN.resize(_weights.size());
         _V.resize(_weights.size());
         _JX_inv.resize(_weights.size());
+        
         Matrix3x3 JX;
         init_volume = 0;
         for (unsigned int i = 0; i < _weights.size(); ++i) {
@@ -48,7 +50,7 @@ public:
                 Jx += glm::outerProduct(x[j]->position, _dN[i][j]);
             }
 
-            volume += std::abs(glm::determinant(Jx)) * _weights[i]; // temp, just for testing
+            //volume += std::abs(glm::determinant(Jx)) * _weights[i]; // temp, just for testing
 
             F = Jx * _JX_inv[i];
             _material->getStressTensorAndEnergy(F, P, energy);
@@ -64,7 +66,7 @@ public:
         this->energy = C;
         if (std::abs(C) <= scalar(1e-24)) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
-        C = sqrt(abs(C));
+        C = sqrt(abs(C)) * s;
         scalar C_inv = scalar(1.) / scalar(2. * C);
         for (unsigned int j = 0; j < this->nb(); ++j) {
             grads[j] *= C_inv;

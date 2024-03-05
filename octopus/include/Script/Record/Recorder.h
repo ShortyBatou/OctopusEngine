@@ -46,7 +46,7 @@ public:
 class MeshRecorder : public Recorder {
 public:
 
-	MeshRecorder() { }
+	MeshRecorder() : _mesh(nullptr) { }
 
 	virtual void init(Entity* entity) override {
 		_mesh = entity->getComponent<Mesh>();
@@ -107,9 +107,7 @@ private:
 
 class XPBD_FEM_VTK_Recorder : public Recorder {
 public:
-	XPBD_FEM_VTK_Recorder(std::string file_name) : _file_name(file_name) {
-
-	}
+	XPBD_FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr){ }
 
 	virtual void init(Entity* entity) override {
 		{
@@ -158,6 +156,40 @@ private:
 	std::string _file_name;
 	ParticleSystem* _ps;
 	Mesh* _mesh;
+};
+
+class Graphic_VTK_Recorder : public Recorder {
+public:
+	Graphic_VTK_Recorder(std::string file_name) : _file_name(file_name), _graphic(nullptr) { }
+
+	virtual void init(Entity* entity) override {
+		_graphic = entity->getComponent<GL_Graphic>();
+	}
+
+	virtual void print() override { }
+
+	virtual std::string get_name() override {
+		return "vtk_graphic";
+	}
+
+	virtual void add_data_json(std::ofstream& json) override {
+		json << "\"" << AppInfo::PathToAssets() + _file_name + "_Graphic" + ".vtk\"";
+	}
+
+	void save() override {
+		
+		std::map<Element, Mesh::Topology> topologies;
+		topologies[Line] = _graphic->get_lines();
+		//topologies[Triangle].insert(topologies[Triangle].end(), _graphic->get_triangles().begin(), _graphic->get_triangles().end());
+		//topologies[Triangle].insert(topologies[Triangle].end(), _graphic->get_quads().begin(), _graphic->get_quads().end());
+		VTK_Formater vtk;
+		vtk.open(_file_name + "_Graphic");
+		vtk.save_mesh(_graphic->get_geometry(), topologies);
+		vtk.close();
+	}
+private:
+	std::string _file_name;
+	GL_Graphic* _graphic;
 };
 
 
@@ -240,9 +272,10 @@ public:
 
 		for (unsigned int i = 0; i < _ps->nb_particles(); ++i) {
 			Particle* p = _ps->get(i);
-			if (p->position.y < 1e-6 && p->position.z < 1e-6) {
-				p_ids.push_back(i);
-			}
+			if (p->position.y < 1e-6 && p->position.z < 1e-6) p_ids.push_back(i);
+			//if (p->position.y < 1e-6 && p->position.z > 0.9999) p_ids.push_back(i);
+			//if (p->position.y > 0.9999 && p->position.z < 1e-6) p_ids.push_back(i);
+			//if (p->position.y > 0.9999f && p->position.z > 0.9999) p_ids.push_back(i);
 		}
 
 		if (p_ids.size() == 0) {
@@ -258,7 +291,7 @@ public:
 	}
 
 	virtual std::string get_name() override {
-		return "flexion_error";
+		return "rotation_error";
 	}
 
 	void compute_errors(
@@ -275,6 +308,28 @@ public:
 			dist.push_back(p->init_position.x / _beam_length);
 			angles.push_back(angle);
 		}
+		for (unsigned int i = 0; i < dist.size()-1; ++i) {
+			for (unsigned int j = 0; j < dist.size()-1; ++j) {
+				if (dist[j] <= dist[j + 1]) continue;
+				std::swap(dist[j], dist[j + 1]);
+				std::swap(angles[j], angles[j + 1]);
+			}
+		}
+		std::vector<scalar> temp_angle;
+		std::vector<scalar> temp_dist;
+		unsigned int i = 0;
+		while (i < dist.size()) {
+			unsigned int j = 1;
+			while (i + j < dist.size() && abs(dist[i] - dist[i + j]) < 1e-4) {
+				angles[i] += angles[i + j];
+				++j;
+			}
+			temp_angle.push_back(angles[i] / j);
+			temp_dist.push_back(dist[i]);
+			i += j;
+		}
+		dist = temp_dist;
+		angles = temp_angle;
 	}
 
 	virtual  void add_data_json(std::ofstream& json) override {

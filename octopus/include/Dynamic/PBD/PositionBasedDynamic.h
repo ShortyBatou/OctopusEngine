@@ -9,7 +9,6 @@ enum PBDSolverType {
     GaussSeidel, Jacobi, GaussSeidel_RNG
 };
 
-
 struct PBD_Thread_Graph {
     void create_graph_color(std::vector<Particle*>& parts, std::vector<std::vector<XPBD_Constraint*>>& g_constraints) {
         unsigned int max_color = 0;
@@ -57,13 +56,12 @@ struct PBD_System : public ParticleSystem {
     }
 
     virtual void step(const scalar dt) override {
-        if (!_init) {
-            PBD_Thread_Graph graph;
-            graph.create_graph_color(this->particles(), this->_groups);
-            _init = true;
-        }
-
-
+        //if (!_init) {
+        //    PBD_Thread_Graph graph;
+        //    graph.create_graph_color(this->particles(), this->_groups);
+        //    _init = true;
+        //}
+        
         scalar h = dt / (scalar)_nb_substep;
         for (unsigned int i = 0; i < _nb_substep; i++)
         {
@@ -78,9 +76,9 @@ struct PBD_System : public ParticleSystem {
                     step_constraint_gauss_seidel(h);
             }
 
-            this->step_constraint(dt);
+            this->step_constraint(dt); // optional 
 
-            this->step_effects(dt);
+            this->step_effects(dt); // optional
 
             this->update_velocity(h);
         }
@@ -125,11 +123,11 @@ public:
         {
             if (!p->active) continue;
             p->velocity = (p->position - p->last_position) / dt;
-
+            
             scalar norm_v = glm::length(p->velocity);
             if (norm_v > 1e-12) {
-                scalar damping = std::min(scalar(1), _global_damping * dt * p->inv_mass);
-                p->velocity -= p->velocity * damping;
+                scalar damping = -norm_v * std::min(scalar(1), _global_damping * dt * p->inv_mass);
+                p->velocity += glm::normalize(p->velocity) * damping ;
             }
         }
     }
@@ -144,7 +142,7 @@ public:
 
             // apply correction dt_p on particles' position
             for (unsigned int id : xpbd->ids()) {
-                this->_particles[id]->position += this->_particles[id]->force; 
+                this->_particles[id]->position += this->_particles[id]->force; // here: force = delta x
                 this->_particles[id]->force *= 0;
             }
         }
