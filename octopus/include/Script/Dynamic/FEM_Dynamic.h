@@ -9,7 +9,7 @@
 #include "Dynamic/FEM/FEM.h"
 #include "Dynamic/Base/Constraint.h"
 #include "Dynamic/FEM/FEM_Shape.h"
-#include "Dynamic/FEM/ContinousMaterial.h"
+#include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 #include "Dynamic/FEM/FEM_Generic.h"
 
 class FEM_Dynamic : public ParticleSystemDynamic {
@@ -36,7 +36,7 @@ public:
         }
     }
 
-    ContinuousMaterial* getMaterial() {
+    FEM_ContinuousMaterial* getMaterial() {
         switch (_material)
         {
         case Hooke: return new M_Hooke(_young, _poisson);
@@ -63,7 +63,7 @@ public:
     }
 
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.9995f), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*1.f, 0.9995f), _sub_iteration);
     }
 
 

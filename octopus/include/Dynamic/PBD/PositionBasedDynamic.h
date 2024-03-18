@@ -85,6 +85,15 @@ struct PBD_System : public ParticleSystem {
         this->reset_external_forces();
     }
 
+    scalar get_residual(const scalar dt) {
+        scalar sub_dt = dt / (scalar)_nb_substep;
+        scalar residual = 0;
+        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
+            residual += xpbd->get_dual_residual(this->_particles, sub_dt);
+        }
+        return residual / _xpbd_constraints.size();
+    }
+
     virtual ~PBD_System() {
         clear_xpbd_constraints();
     }

@@ -8,6 +8,7 @@
 #include "Dynamic/PBD/XPBD_FEM_Generic.h"
 #include "Script/Dynamic/ParticleSystemDynamic.h"
 #include "Dynamic/PBD/XPBD_FEM_Tetra.h"
+#include "Dynamic/PBD/XPBD_FEM_SVD_Generic.h"
 
 class XPBD_FEM_Dynamic : public ParticleSystemDynamic {
 public:
@@ -22,8 +23,7 @@ public:
         _iteration(iteration), _sub_iteration(sub_iteration), 
         _type(type), 
         _density(density), 
-        _global_damping(global_damping), 
-        mean_cost(0), cost(0), nb_step(0)
+        _global_damping(global_damping)
     { }
 
     virtual void late_init() override {
@@ -31,11 +31,20 @@ public:
     }
 
     virtual void update() {
-        nb_step++;
         Time::Tic();
         this->_ps->step(Time::Fixed_DeltaTime());
-        cost += Time::Tac() * 1000;
-        mean_cost = cost / nb_step;
+        //scalar residual = _pbd->get_residual(Time::Fixed_DeltaTime());
+        //if (residual > 10e-5 && _sub_iteration < 50) {
+        //    set_iterations(_iteration, _sub_iteration + 1);
+        //}
+
+        //DebugUI::Begin("[" + std::to_string(this->_entity->id()) + "] XPBD FEM Dual Residual");
+        //{
+        //    DebugUI::Value("Residual", residual);
+        //    DebugUI::Range("Range", residual);
+        //    DebugUI::Plot("Plot", residual, 60);
+        //}
+        //DebugUI::End();
 
         this->_ps->draw_debug_constraints();
         this->update_mesh();
@@ -56,11 +65,11 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 0.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
+        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 1.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
     }
 
     virtual void build_dynamic() {
-        PBD_System* _pbd = static_cast<PBD_System*>(this->_ps);
+        _pbd = static_cast<PBD_System*>(this->_ps);
         for (Particle* p : _pbd->particles()) p->mass = 0;
 
         scalar t_volume = 0;
@@ -76,19 +85,24 @@ protected:
                     ids[j] = topo.second[i + j];
                 }
 
-                std::vector<PBD_ContinuousMaterial*> materials;
                 scalar volume = 0;
+
+                //std::vector<PBD_ContinuousMaterial*> materials;
+                //materials = get_pbd_materials(_material, _young, _poisson);
+                //for (PBD_ContinuousMaterial* m : materials) {                    
+                //    XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
+                //    fems.push_back(fem);
+                //    _pbd->add_xpbd_constraint(fem);
+                //    volume += fem->get_init_volume();
+                //}
+                //
+                //volume /= materials.size();
                 
-                materials = get_pbd_materials(_material, _young, _poisson);
-                for (PBD_ContinuousMaterial* m : materials) {                    
-                    XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
-                    fems.push_back(fem);
-                    _pbd->add_xpbd_constraint(fem);
-                    volume += fem->volume;
-                    
-                }
-                
-                volume /= materials.size();
+                SVD_ContinuousMaterial* m = get_svd_materials(_material, _young, _poisson);
+                XPBD_FEM_SVD_Generic* fem = new XPBD_FEM_SVD_Generic(ids.data(), m, get_fem_shape(type));
+                _pbd->add_xpbd_constraint(fem);
+                volume += fem->init_volume;
+
                 t_volume += volume;
                 for (unsigned int j = 0; j < nb; ++j) {
                     Particle* p = _pbd->get(ids[j]);
@@ -110,10 +124,8 @@ protected:
     }
     
 public:
-    PBD_System* pbd;
+    PBD_System* _pbd;
     std::vector<XPBD_FEM_Generic*> fems;
-    unsigned int nb_step;
-    scalar mean_cost, cost;
 
     scalar _global_damping;
     scalar _density;

@@ -2,12 +2,12 @@
 #include "Core/Base.h"
 #include "Dynamic/Base/Particle.h"
 #include "Dynamic/Base/Constraint.h"
-#include "Dynamic/FEM/ContinousMaterial.h"
+#include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 #include "Dynamic/FEM/FEM_Shape.h"
 #include <vector>
 class FEM_Generic : public Constraint {
 public:
-    FEM_Generic(unsigned int* ids, ContinuousMaterial* material, FEM_Shape* shape) 
+    FEM_Generic(unsigned int* ids, FEM_ContinuousMaterial* material, FEM_Shape* shape)
         : Constraint(std::vector<unsigned int>(ids, ids + shape->nb)), _material(material), _shape(shape)
     {  }
 
@@ -113,6 +113,6 @@ private:
     std::vector<scalar> _V;
     std::vector<scalar> _weights;
 
-    ContinuousMaterial* _material;
+    FEM_ContinuousMaterial* _material;
     FEM_Shape* _shape;
 };

@@ -1,6 +1,6 @@
 #pragma once
 #include "Dynamic/PBD/XPBD_Constraint.h"
-#include "Dynamic/PBD/PBD_ContinousMaterial.h"
+#include "Dynamic/PBD/PBD_ContinuousMaterial.h"
 
 class XPBD_FEM_Tetra : public XPBD_Constraint {
 public:

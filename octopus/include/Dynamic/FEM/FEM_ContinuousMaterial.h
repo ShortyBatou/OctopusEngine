@@ -1,52 +1,18 @@
 #pragma once
-#include "Core/Base.h"
-#include <vector>
-enum Material {
-    Hooke, StVK, Neo_Hooke, Developed_Neohooke
-};
+#include "Dynamic/FEM/ContinuousMaterial.h"
 
-std::string get_material_name(Material material) {
-    switch (material)
-    {
-        case Hooke: return "Hooke";
-        case StVK: return "SaintVenant";
-        case Neo_Hooke: return "Stable Neo-Hooke";
-        case Developed_Neohooke: return "Stable Neo-Hooke";
-        default: return "";
-    }
-}
-
-struct ContinuousMaterial {
-    scalar lambda, mu;
-    scalar young, poisson;
-    
-
-    ContinuousMaterial(const scalar _young, const scalar _poisson) : young(_young), poisson(_poisson) {
-        lambda = computeLambda();
-        mu = computeMu();
-    }
-    scalar computeLambda() { return young * poisson / ((1. + poisson) * (1. - 2. * poisson)); }
-    scalar computeMu() { return young / (2. * (1. + poisson)); }
-
-    static Matrix3x3 getStrainTensorLinear(const Matrix3x3& F)
-    {
-        return scalar(0.5) * (glm::transpose(F) + F) - Matrix::Identity3x3();
-    }
-
-    static Matrix3x3 getStrainTensor(const Matrix3x3& F)
-    {
-        return scalar(0.5) * (glm::transpose(F) * F - Matrix::Identity3x3());
-    }
-
+struct FEM_ContinuousMaterial : public ContinuousMaterial {
+    FEM_ContinuousMaterial(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
     virtual void getSubHessians(const Matrix3x3&, std::vector<Matrix3x3>&) { };
     virtual void getStressTensor(const Matrix3x3& F, Matrix3x3& P) = 0;
     virtual scalar getEnergy(const Matrix3x3& F) = 0;
-    virtual ~ContinuousMaterial() {}
+    virtual ~FEM_ContinuousMaterial() {}
 };
 
 
-struct M_Hooke : public ContinuousMaterial {
-    M_Hooke(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
+
+struct M_Hooke : public FEM_ContinuousMaterial {
+    M_Hooke(const scalar _young, const scalar _poisson) : FEM_ContinuousMaterial(_young, _poisson) { }
 
     virtual void getStressTensor(const Matrix3x3& F, Matrix3x3& P) {
         const auto E = getStrainTensorLinear(F);
@@ -71,13 +37,13 @@ struct M_Hooke : public ContinuousMaterial {
 };
 
 
-struct M_StVK : public ContinuousMaterial {
-    M_StVK(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
+struct M_StVK : public FEM_ContinuousMaterial {
+    M_StVK(const scalar _young, const scalar _poisson) : FEM_ContinuousMaterial(_young, _poisson) { }
 
     virtual void getStressTensor(const Matrix3x3& F, Matrix3x3& P) override {
         const auto E = getStrainTensor(F);
         const auto trace = Matrix::Trace(E);
-        P = this->lambda * trace * F + scalar(2.) * this->mu * F * E ;
+        P = this->lambda * trace * F + scalar(2.) * this->mu * F * E;
     }
 
     virtual scalar getEnergy(const Matrix3x3& F) override {
@@ -89,9 +55,9 @@ struct M_StVK : public ContinuousMaterial {
 };
 
 
-struct M_NeoHooke : public ContinuousMaterial {
+struct M_NeoHooke : public FEM_ContinuousMaterial {
     scalar alpha;
-    M_NeoHooke(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) {
+    M_NeoHooke(const scalar _young, const scalar _poisson) : FEM_ContinuousMaterial(_young, _poisson) {
         alpha = 1 + this->mu / this->lambda;
     }
 
@@ -101,7 +67,7 @@ struct M_NeoHooke : public ContinuousMaterial {
         d_detF[0] = glm::cross(F[1], F[2]);
         d_detF[1] = glm::cross(F[2], F[0]);
         d_detF[2] = glm::cross(F[0], F[1]);
-        P =  this->lambda * (I_3 - alpha) * d_detF;
+        P = this->lambda * (I_3 - alpha) * d_detF;
     }
 
     virtual scalar getEnergy(const Matrix3x3& F) {

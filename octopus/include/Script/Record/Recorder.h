@@ -82,7 +82,6 @@ public:
 	}
 
 	virtual void print() override {
-		std::cout << "[XPBD_COST = " << fem_dynamic->mean_cost << "ms]";
 	}
 
 	virtual std::string get_name() override {
@@ -92,7 +91,6 @@ public:
 	virtual void add_data_json(std::ofstream& json) override {
 		json <<
 			"{"
-			<< "\"mean_cost\" : " << fem_dynamic->mean_cost << ","
 			<< "\"material\" : \"" << get_material_name(fem_dynamic->_material) << "\","
 			<< "\"poisson\" : " << fem_dynamic->_poisson << ","
 			<< "\"young\" : " << fem_dynamic->_young << ","

@@ -21,7 +21,7 @@
 #include "UI/AppInfo.h"
 #include "UI/UI_Editor.h"
 #include "UI/UI_Component.h"
-
+#include "Manager/Debug.h"
 class Application : public Behaviour
 {
 public: 
@@ -139,6 +139,7 @@ public:
         // init hud
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         Engine::Instance().update();
         _editor->draw();
@@ -146,6 +147,8 @@ public:
         Engine::Instance().late_update();
 
         ImGui::ShowDemoWindow();
+
+        DebugUI::Instance().draw();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

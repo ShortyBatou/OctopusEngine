@@ -13,11 +13,9 @@ public:
     virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override {
         if (_stiffness <= 0) return;
 
-        scalar w_sum(0.);
         std::vector<Particle*> x(this->nb());
         for (unsigned int i = 0; i < this->nb(); ++i) {
             x[i] = particles[this->_ids[i]];
-            w_sum += x[i]->inv_mass;
         }
 
         scalar C = 0;
@@ -36,6 +34,19 @@ public:
         for (unsigned int i = 0; i < this->nb(); ++i) {
             x[i]->force += (dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
         }
+    }
+
+    virtual scalar get_dual_residual(const std::vector<Particle*>& particles, const scalar dt) {
+        std::vector<Particle*> x(this->nb());
+        for (unsigned int i = 0; i < this->nb(); ++i) {
+            x[i] = particles[this->_ids[i]];
+        }
+        scalar C = 0;
+        std::vector<Vector3> grads(this->nb(), Unit3D::Zero());
+        if (!project(x, grads, C)) return 0;
+        scalar alpha = scalar(1.0) / (_stiffness * dt * dt);
+        return (C + alpha * _lambda);
+        
     }
 
     virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) { return false; }

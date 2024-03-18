@@ -33,9 +33,8 @@ public:
         unsigned int wx, wy;
         AppInfo::Window_sizes(wx, wy);
 
-        ImGui::NewFrame();
         ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2(500, wy - 20));
+        ImGui::SetNextWindowSize(ImVec2(500, wy - 40));
         ImGui::Begin(name());
         if (ImGui::Button("Pause")) {
             _step = true;

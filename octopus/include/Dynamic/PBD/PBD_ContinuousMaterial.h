@@ -1,8 +1,7 @@
 #pragma once
-#include "Dynamic/FEM/ContinousMaterial.h"
+#include "Dynamic/FEM/ContinuousMaterial.h"
 struct PBD_ContinuousMaterial : public ContinuousMaterial {
     PBD_ContinuousMaterial(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
-    virtual void getStressTensor(const Matrix3x3& F, Matrix3x3& P) {}
     virtual scalar getEnergy(const Matrix3x3& F) { return 0.; }
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) = 0;
     virtual scalar getStiffness() const { return young; }

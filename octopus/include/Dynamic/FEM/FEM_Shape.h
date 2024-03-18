@@ -7,8 +7,25 @@
 
 struct FEM_Shape {
 
-    unsigned int nb;
-    FEM_Shape(unsigned int _nb) : nb(_nb) {}
+    unsigned int nb; // number of vertices
+    std::vector<std::vector<Vector3>> dN;
+    std::vector<scalar> weights;
+
+    FEM_Shape(unsigned int _nb) : nb(_nb) {
+
+    }
+
+    virtual void build() {
+        std::vector<scalar> coords = get_quadrature_coordinates();
+        weights = get_weights();
+        dN.resize(weights.size());
+        scalar s, t, l;
+        for (unsigned int i = 0; i < weights.size(); ++i) {
+            s = coords[i * 3]; t = coords[i * 3 + 1]; l = coords[i * 3 + 2];
+            dN[i] = build_shape_derivatives(s, t, l);
+        }
+    }
+
     virtual std::vector<scalar> get_quadrature_coordinates() const = 0;
     virtual std::vector<scalar> get_weights() const = 0;
     virtual Mesh::Geometry get_vertices() const = 0;
@@ -31,7 +48,9 @@ struct FEM_Shape {
 
 struct Tetra_4 : public FEM_Shape {
 
-    Tetra_4() : FEM_Shape(4) {}
+    Tetra_4() : FEM_Shape(4) {
+        build();
+    }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
         return std::vector<scalar>(3, 0.25); // change nothing because it's a constant strain element
@@ -61,7 +80,7 @@ struct Tetra_4 : public FEM_Shape {
 
 struct Pyramid_5 : public FEM_Shape {
 
-    Pyramid_5() :FEM_Shape(5) { }
+    Pyramid_5() :FEM_Shape(5) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
         scalar h1 = 0.1331754163448146;
@@ -119,7 +138,7 @@ struct Pyramid_5 : public FEM_Shape {
 
 struct Prism_6 : public FEM_Shape {
 
-    Prism_6() : FEM_Shape(6) { }
+    Prism_6() : FEM_Shape(6) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
         scalar a = 1. / std::sqrt(3.);
@@ -161,7 +180,7 @@ struct Prism_6 : public FEM_Shape {
 
 struct Hexa_8 : public FEM_Shape {
 
-    Hexa_8() : FEM_Shape(8) {}
+    Hexa_8() : FEM_Shape(8) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const override {
         scalar c = 1. / std::sqrt(3);
@@ -208,7 +227,7 @@ struct Hexa_8 : public FEM_Shape {
 
 struct Tetra_10 : public FEM_Shape {
 
-    Tetra_10() : FEM_Shape(10) {}
+    Tetra_10() : FEM_Shape(10) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const override {
         return {
@@ -320,7 +339,7 @@ struct Tetra_10 : public FEM_Shape {
 
 struct Tetra_20 : public FEM_Shape {
 
-    Tetra_20() : FEM_Shape(20) {}
+    Tetra_20() : FEM_Shape(20) { build(); }
     virtual std::vector<scalar> get_quadrature_coordinates() const override {
         // polyfem
         std::vector<scalar> coords ={ 
