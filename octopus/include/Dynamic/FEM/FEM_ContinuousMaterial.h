@@ -76,3 +76,16 @@ struct M_NeoHooke : public FEM_ContinuousMaterial {
         return 0.5 * this->mu * (I_2 - 3.) + 0.5 * this->lambda * (I_3 - alpha) * (I_3 - alpha);
     }
 };
+
+FEM_ContinuousMaterial* get_fem_material(Material material, scalar young, scalar poisson) {
+    switch (material)
+    {
+    case Hooke: return new M_Hooke(young, poisson);
+    case StVK: return new M_StVK(young, poisson);
+    case Neo_Hooke: return new M_NeoHooke(young, poisson);
+    case Developed_Neohooke: return new M_NeoHooke(young, poisson);
+    default:
+        std::cout << "Material not found" << std::endl;
+        return nullptr;
+    }
+}

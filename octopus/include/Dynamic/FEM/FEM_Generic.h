@@ -116,3 +116,92 @@ private:
     FEM_ContinuousMaterial* _material;
     FEM_Shape* _shape;
 };
+
+
+class FEM_SVD_Generic : public Constraint {
+public:
+    FEM_SVD_Generic(unsigned int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
+        : Constraint(std::vector<unsigned int>(ids, ids + shape->nb)), _material(material), _shape(shape)
+    {  }
+
+    virtual void init(const std::vector<Particle*>& particles) override {
+        std::vector<Vector3> X(this->nb());
+        for (unsigned int i = 0; i < X.size(); ++i) {
+            X[i] = particles[this->_ids[i]]->position;
+        }
+
+        scalar s, t, l;
+        unsigned int nb_quadrature = _shape->weights.size();
+        _V.resize(nb_quadrature);
+        _JX_inv.resize(nb_quadrature);
+        init_volume = 0;
+        Matrix3x3 JX;
+        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+            JX = Matrix::Zero3x3();
+            for (unsigned int j = 0; j < this->nb(); ++j) {
+                JX += glm::outerProduct(X[j], _shape->dN[i][j]);
+            }
+            _V[i] = std::abs(glm::determinant(JX)) * _shape->weights[i];
+            init_volume += _V[i];
+            _JX_inv[i] = glm::inverse(JX);
+        }
+        volume = init_volume;
+    }
+
+    virtual void apply(const std::vector<Particle*>& particles, const scalar) override
+    {
+        Matrix3x3 Jx, F;
+        Matrix3x3 U, S, V;
+        Matrix3x3 W[3];
+        Vector3 constraint;
+
+        std::vector<Particle*> x(_shape->nb);
+        for (unsigned int i = 0; i < _shape->nb; ++i) {
+            x[i] = particles[this->_ids[i]];
+        }
+
+        unsigned int nb_quadrature = _shape->weights.size();
+        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+            Jx = Matrix::Zero3x3();
+            for (unsigned int j = 0; j < this->nb(); ++j) {
+                Jx += glm::outerProduct(x[j]->position, _shape->dN[i][j]);
+            }
+
+            F = Jx * _JX_inv[i];
+
+            // get SVD of F
+            MatrixAlgo::SVD(F, U, S, V);
+
+            Vector3 s = Vector3(S[0][0], S[1][1], S[2][2]);
+
+            // get constraint
+            _material->getConstraint(s, constraint);
+   
+            for (unsigned int j = 0; j < 3; ++j) {
+                W[j] = glm::outerProduct(U[j], V[j]) * glm::transpose(_JX_inv[i]);
+            }
+
+            // get grads 
+            for (unsigned int j = 0; j < _shape->nb; j++) {
+                Matrix3x3 J = Matrix::Zero3x3();
+                J[0] = W[0] * _shape->dN[i][j];
+                J[1] = W[1] * _shape->dN[i][j];
+                J[2] = W[2] * _shape->dN[i][j];
+                x[j]->force -= J * constraint * V[i];
+            }
+
+        }
+    }
+
+    scalar get_volume() { return volume; }
+
+    scalar init_volume;
+    scalar volume;
+private:
+    std::vector<std::vector<Vector3>> _dN;
+    std::vector<Matrix3x3> _JX_inv;
+    std::vector<scalar> _V;
+
+    SVD_ContinuousMaterial* _material;
+    FEM_Shape* _shape;
+};

@@ -47,8 +47,8 @@ public:
         // triangle subdivision pattern;
         std::vector<unsigned int> subdivision_pattern = { 0,3,5, 3,1,4, 3,4,5, 5,4,2 };
         std::vector<Edge> subdivision_edges = { Edge(0,1), Edge(1,2), Edge(0,2) };
-        // convert tetra10 into quads and triangles
 
+        // convert tetra10 into quads and triangles
         Element elem;
         for (auto& t : _mesh->topologies()) {
             if (t.second.size() > 0) {

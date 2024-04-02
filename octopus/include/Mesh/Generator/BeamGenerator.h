@@ -209,8 +209,8 @@ void subdive_tetra(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& 
 
 void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies)
 {
-    Mesh::Topology tetras = topologies[Tetra];
-    topologies[Tetra].clear();
+    Mesh::Topology& tetras = topologies[Tetra];
+    
     topologies[Tetra10].clear();
 
     using Edge = std::pair<unsigned int, unsigned int>;
@@ -249,14 +249,13 @@ void tetra4_to_tetra10(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
         for (unsigned int k = 0; k < 10; ++k) {
             topologies[Tetra10].push_back(ids[k]);
         }
-
     }
+    topologies[Tetra].clear();
 }
 
 void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies)
 {
-    Mesh::Topology tetras = topologies[Tetra];
-    topologies[Tetra].clear();
+    Mesh::Topology& tetras = topologies[Tetra];
     topologies[Tetra20].clear();
     unsigned int nb = elem_nb_vertices(Tetra20);
 
@@ -336,6 +335,7 @@ void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
             topologies[Tetra20].push_back(ids[k]);
         }
     }
+    topologies[Tetra].clear();
 }
 
 

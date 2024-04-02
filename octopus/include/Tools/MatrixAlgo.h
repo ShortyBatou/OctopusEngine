@@ -42,7 +42,7 @@ namespace MatrixAlgo {
         Matrix3x3 S = glm::transpose(A) * A;
         // jacobi iteration
         Matrix3x3 q = Matrix3x3(1.0f);
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 20; i++) {
             Vector2 ch_sh = approx_givens_quat(S[0].x, S[0].y, S[1].y);
             Vector4 ch_sh_quat = Vector4(ch_sh.x, 0, 0, ch_sh.y);
             Matrix3x3 q_mat; quat_to_mat3(ch_sh_quat, q_mat);

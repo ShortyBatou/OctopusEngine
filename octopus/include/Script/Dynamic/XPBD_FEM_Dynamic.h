@@ -46,7 +46,16 @@ public:
         //}
         //DebugUI::End();
 
-        this->_ps->draw_debug_constraints();
+        DebugUI::Begin("[" + std::to_string(this->_entity->id()) + "] XPBD FEM Time");
+        {
+            float t = Time::Tac() * 1000;
+            DebugUI::Value("Time", t);
+            DebugUI::Range("Range", t);
+            DebugUI::Plot("Plot", t, 60);
+        }
+        DebugUI::End();
+
+        //this->_ps->draw_debug_constraints();
         this->update_mesh();
     }
 
@@ -65,7 +74,7 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 1.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
+        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 0.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
     }
 
     virtual void build_dynamic() {
@@ -86,22 +95,25 @@ protected:
                 }
 
                 scalar volume = 0;
-
-                //std::vector<PBD_ContinuousMaterial*> materials;
-                //materials = get_pbd_materials(_material, _young, _poisson);
-                //for (PBD_ContinuousMaterial* m : materials) {                    
-                //    XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
-                //    fems.push_back(fem);
-                //    _pbd->add_xpbd_constraint(fem);
-                //    volume += fem->get_init_volume();
-                //}
-                //
-                //volume /= materials.size();
+                if (this->_entity->id() != 0) {
+                    std::vector<PBD_ContinuousMaterial*> materials;
+                    materials = get_pbd_materials(_material, _young, _poisson);
+                    for (PBD_ContinuousMaterial* m : materials) {                    
+                        XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
+                        fems.push_back(fem);
+                        _pbd->add_xpbd_constraint(fem);
+                        volume += fem->get_init_volume();
+                    }
+                    volume /= materials.size();
+                }
+                else {
+                    SVD_ContinuousMaterial* m = get_svd_materials(_material, _young, _poisson);
+                    XPBD_FEM_SVD_Generic* fem = new XPBD_FEM_SVD_Generic(ids.data(), m, get_fem_shape(type));
+                    _pbd->add_xpbd_constraint(fem);
+                    volume += fem->init_volume;
+                }
                 
-                SVD_ContinuousMaterial* m = get_svd_materials(_material, _young, _poisson);
-                XPBD_FEM_SVD_Generic* fem = new XPBD_FEM_SVD_Generic(ids.data(), m, get_fem_shape(type));
-                _pbd->add_xpbd_constraint(fem);
-                volume += fem->init_volume;
+                
 
                 t_volume += volume;
                 for (unsigned int j = 0; j < nb; ++j) {

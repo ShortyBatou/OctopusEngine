@@ -46,15 +46,18 @@ public:
 
         Matrix3x3 sum_J = Matrix::Zero3x3();
         for (unsigned int i = 0; i < this->nb(); ++i) {
-            sum_J += glm::transpose(J[i]) * J[i] * x[i]->inv_mass;
+            sum_J += J[i] * glm::transpose(J[i]) * x[i]->inv_mass;
         }
 
-        A *= scalar(1.0) / (dt * dt);
-        dt_lambda = -C * glm::inverse(A + sum_J);
+        
+        A /= dt * dt;
+
+        dt_lambda = - (A * C) * glm::inverse(sum_J + A);
 
         for (unsigned int i = 0; i < this->nb(); ++i) {
             x[i]->force += x[i]->inv_mass * J[i] * dt_lambda;
         }
+        std::cout;
     }
 
 
@@ -94,10 +97,11 @@ public:
                 grads[j][0] += W[0] * _shape->dN[i][j];
                 grads[j][1] += W[1] * _shape->dN[i][j];
                 grads[j][2] += W[2] * _shape->dN[i][j];
-                grads[j] *= _V[i];
+                grads[j] *=  _V[i];
             }
+
         }
-        A = glm::inverse(A);
+        A = glm::inverse(A); // compliance matrix A = N^-1
         return true;
     }
 

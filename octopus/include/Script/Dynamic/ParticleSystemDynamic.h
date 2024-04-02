@@ -17,10 +17,10 @@ public:
     }
 
     virtual void update_mesh() {
-        _ps->step(Time::Fixed_DeltaTime());
         for (unsigned int i = 0; i < this->_mesh->nb_vertices(); ++i) {
             _mesh->geometry()[i] = _ps->get(i)->position;
         }
+        std::cout;
     }
 
     virtual ParticleSystem* getParticleSystem() {

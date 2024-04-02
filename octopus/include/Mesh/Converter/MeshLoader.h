@@ -12,13 +12,14 @@ public:
     Mesh* build() {
         Mesh* mesh = new Mesh();
 
-        std::ifstream inputFile(_file_path.c_str(), std::ios::in);
+        std::ifstream inputFile = get_file();
         if (!inputFile.good()) {
             std::cerr << "Error: could not read " << _file_path << std::endl;
             return nullptr;
         }
         
         load(inputFile, mesh->geometry(), mesh->topologies());
+        inputFile.close();
         std::cout << "MESH : " << _file_path << std::endl;
         std::cout << "NB VERTICES = " << mesh->geometry().size() << std::endl;
         for (auto topo : mesh->topologies()) {
@@ -28,6 +29,10 @@ public:
 
         apply_transform(mesh->geometry());
         return mesh;
+    }
+
+    virtual std::ifstream get_file() {
+        return std::ifstream(_file_path.c_str(), std::ios::in);
     }
 
     virtual void load(std::ifstream& inputFile, Mesh::Geometry& vertices, std::map<Element, Mesh::Topology>& topologies) = 0;
@@ -159,9 +164,9 @@ public:
         skip_lines(inputFile, line);
 
         if (line.compare(0, 6, "POINTS") == 0) {
-            std::istringstream stream(line, std::istringstream::in);
-            stream.seekg(6, std::ios::cur);
-            stream >> nbPositions;
+            std::istringstream stream_point(line, std::istringstream::in);
+            stream_point.seekg(6, std::ios::cur);
+            stream_point >> nbPositions;
 
             vertices.reserve(nbPositions); // pre-allocating
 
@@ -246,13 +251,51 @@ public:
     }
 
     void skip_to(std::ifstream& inputFile, std::string& line, std::string s) {
-        unsigned int size = s.size();
         do { //skip end of last line
             if (!std::getline(inputFile, line)) {
                 std::cout << "VTKLoader : getLine failed \"" << line << "\"" << std::endl;
                 break;
             }
         } while (line.compare(0, s.size(), s) != 0);
+    }
+
+    std::vector<Vector3> get_point_data_v3(std::string att_name) {
+        std::vector<Vector3> v3;
+        std::ifstream file = get_file();
+        if (!file.good()) {
+            std::cerr << "Error: could not read " << _file_path << std::endl;
+            return v3;
+        }
+
+        std::string line;
+        skip_to(file, line, "POINT_DATA "); // skip to data
+        if (line.compare(0, 10, "POINT_DATA") != 0) {
+            std::cerr << "POINT_DATA not found" << std::endl;
+            return v3;
+        }
+
+        std::istringstream stream_nb(line, std::istringstream::in);
+        stream_nb.seekg(11, std::ios::cur);
+        int nb_point_data;
+        stream_nb >> nb_point_data;
+        v3.resize(nb_point_data);
+        
+        // get data length
+
+        skip_to(file, line, "VECTORS " + att_name + " float"); // skip to data
+        if (line.compare(0, 14 + att_name.size(), "VECTORS " + att_name + " float") != 0) {
+            std::cerr << "Attribute " << att_name << " not found" << std::endl;
+            return v3;
+        }
+        skip_lines(file, line); // data are on the next line
+        std::istringstream steam_data(line, std::istringstream::in);
+        scalar x=0, y=0, z=0;
+        for (unsigned int i = 0; i < nb_point_data; ++i) {
+            steam_data >> x >> y >> z;
+            v3[i] = Vector3(x, y, z);
+        }
+        std::cout << "Attribute : " << att_name << "  size = " << nb_point_data << std::endl;
+        return v3;        
     }
 
 };

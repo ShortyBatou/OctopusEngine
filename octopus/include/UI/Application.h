@@ -16,6 +16,7 @@
 #include "Core/Base.h"
 #include "Scene/SceneManager.h"
 #include "Scene/BaseScene.h"
+#include "Scene/MeshScene.h"
 #include "Scene/XPBD_FEM_Torsion_Scene.h"
 
 #include "UI/AppInfo.h"
@@ -34,6 +35,7 @@ public:
         SceneManager::Instance();
         SceneManager::Add(new BaseScene());
         SceneManager::Add(new XPBD_FEM_Torsion_Scene());
+        SceneManager::Add(new MeshScene());
         SceneManager::SetScene(0);
     }
 
