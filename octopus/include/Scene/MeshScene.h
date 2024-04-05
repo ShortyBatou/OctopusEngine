@@ -145,7 +145,7 @@ struct MeshScene : public Scene
         std::vector<int> new_v_tetra;
         Mesh::Topology e_topo(2);
         std::vector<unsigned int> ids(10);
-        for (unsigned int i = 0; i < 8; i += 4) {
+        for (unsigned int i = 4; i < 8; i += 4) {
             t_id = t_ids[i / 4];
             for (unsigned int j = 0; j < 4; ++j) ids[j] = tetra_topology[i + j];
 

@@ -59,12 +59,12 @@ struct BaseScene : public Scene
         Vector3 size(4, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(4, 1, 1);
+        cells = Vector3I(19, 4, 4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
-        //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra20, false, false);
+        //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
+        //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), Hexa, false, false);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
@@ -126,14 +126,14 @@ struct BaseScene : public Scene
 
         // simulation FEM or PBD
         scalar density = 1000;
-        scalar young = 10000000;
-        scalar poisson = 0.35;
+        scalar young = 1000000;
+        scalar poisson = 0.49;
         Material material = Developed_Neohooke;
         unsigned int sub_it = 50;
         scalar global_damping = 0.5;
         Vector3 dir = Unit3D::right();
         unsigned int scenario_1 = 0;
-        unsigned int scenario_2 = 1;
+        unsigned int scenario_2 = 0;
 
         if (fem) {
             e->addComponent(new FEM_Dynamic(density, young, poisson, material, 300));
@@ -148,10 +148,10 @@ struct BaseScene : public Scene
         rd_constraint_1->_rot_speed = 90;
         rd_constraint_1->_move_speed = 1;
 
-        auto rd_constraint_2 = new Constraint_Rigid_Controller(pos - dir * scalar(0.05) + size, dir, scenario_2);
-        rd_constraint_2->_rot_speed = 180;
-        rd_constraint_2->_move_speed = 1;
-        e->addComponent(rd_constraint_2);
+        //auto rd_constraint_2 = new Constraint_Rigid_Controller(pos - dir * scalar(0.05) + size, dir, scenario_2);
+        //rd_constraint_2->_rot_speed = 180;
+        //rd_constraint_2->_move_speed = 1;
+        //e->addComponent(rd_constraint_2);
 
         //auto cf_c = new ConstantForce_Controller(Vector3(0.5, 0.5, 0.0), Vector3(1, 1, 1), Unit3D::right() * 5.f);
         //e->addComponent(cf_c);
