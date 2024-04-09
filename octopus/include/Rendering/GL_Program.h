@@ -38,7 +38,7 @@ public:
     void uniform(const char* name, const std::vector<unsigned int>& v)
     {
         assert(v.size());
-        glUniform1uiv(location(_program, name, v.size()), v.size(), v.data());
+        glUniform1uiv(location(_program, name, int(v.size())), int(v.size()), v.data());
     }
 
     void uniform(const char* name, const int v)
@@ -49,7 +49,7 @@ public:
     void uniform(const char* name, const std::vector<int>& v)
     {
         assert(v.size());
-        glUniform1iv(location(_program, name, v.size()), v.size(), v.data());
+        glUniform1iv(location(_program, name, int(v.size())), int(v.size()), v.data());
     }
 
     void uniform(const char* uniform, const float v)
@@ -60,7 +60,7 @@ public:
     void uniform(const char* name, const std::vector<float>& v)
     {
         assert(v.size());
-        glUniform1fv(location(_program, name, v.size()), v.size(), v.data());
+        glUniform1fv(location(_program, name, int(v.size())), int(v.size()), v.data());
     }
 
     void uniform(const char* name, const Vector2& v)
@@ -71,7 +71,7 @@ public:
     void uniform(const char* name, const std::vector<Vector2>& v)
     {
         assert(v.size());
-        glUniform2fv(location(_program, name, v.size()), v.size(), &v[0].x);
+        glUniform2fv(location(_program, name, int(v.size())), int(v.size()), &v[0].x);
     }
 
     void uniform(const char* name, const Vector3& v)
@@ -82,7 +82,7 @@ public:
     void uniform(const char* name, const std::vector<Vector3>& v)
     {
         assert(v.size());
-        glUniform3fv(location(_program, name, v.size()), v.size(), &v[0].x);
+        glUniform3fv(location(_program, name, int(v.size())), int(v.size()), &v[0].x);
     }
 
     void uniform(const char* name, const Vector4& v)
@@ -93,7 +93,7 @@ public:
     void uniform(const char* name, const std::vector<Vector4>& v)
     {
         assert(v.size());
-        glUniform4fv(location(_program, name, v.size()), v.size(), &v[0].x);
+        glUniform4fv(location(_program, name, int(v.size())), int(v.size()), &v[0].x);
     }
 
     void uniform(const char* name, const Matrix4x4& v)
@@ -103,7 +103,7 @@ public:
 
     void uniform(const char* name, const std::vector<Matrix4x4>& v)
     {
-        glUniformMatrix4fv(location(_program, name, v.size()), v.size(), GL_FALSE, &v[0][0][0]);
+        glUniformMatrix4fv(location(_program, name, int(v.size())), int(v.size()), GL_FALSE, &v[0][0][0]);
     }
 
     void program_use_texture(const char* name,

@@ -72,15 +72,15 @@ struct Sin_ForceField : public Effect {
 	scalar lambda, mu, rho;
 	scalar global_error;
 	scalar scale;
-	Sin_ForceField(scalar _lambda, scalar _mu, scalar _rho, bool active = true) : Effect(1., active), lambda(_lambda), mu(_mu), rho(_rho), scale(0.2  )
+	Sin_ForceField(scalar _lambda, scalar _mu, scalar _rho, bool active = true) : Effect(1.f, active), lambda(_lambda), mu(_mu), rho(_rho), scale(0.2f)
 	{}
 
 	virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override {
-		scalar pi = 3.14159265358979323846;
+		scalar pi = 3.14159265358979323846f;
 		Vector3 f;
 		scalar x, y, z;
 		global_error = 0;
-		unsigned int nb = 0;
+		int nb = 0;
 		scalar t = Time::Fixed_Timer();
 		for (Particle* part : particles) {
 			x = part->init_position.x;

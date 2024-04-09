@@ -38,15 +38,15 @@ public:
         lines.resize(element_quads.size() / 4 * 8);
         quads.resize(element_quads.size() / 4 * 6);
 
-        unsigned int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
-        unsigned int quad_triangle[6] = { 0,1,3, 3,1,2 };
+        int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
+        int quad_triangle[6] = { 0,1,3, 3,1,2 };
 
-        for (unsigned int i = 0; i < element_quads.size()/4; i ++)
+        for (int i = 0; i < element_quads.size()/4; i ++)
         {
-            for (unsigned int j = 0; j < 8; ++j) 
+            for (int j = 0; j < 8; ++j) 
                 lines[i*8+j] = element_quads[i*4 + quad_lines[j]];
 
-            for (unsigned int j = 0; j < 6; ++j)
+            for (int j = 0; j < 6; ++j)
                 quads[i * 6 + j] = element_quads[i * 4 + quad_triangle[j]];
         }
 
@@ -55,14 +55,14 @@ public:
 
 protected:
 
-    template<unsigned int nb>
+    template<int nb>
     void get_surface(Mesh::Topology& topology, bool remove_double = true)
     {
         std::set<Face<nb>> faces;
         Mesh::Topology ids(nb);
-        for (unsigned int i = 0; i < topology.size(); i += nb)
+        for (int i = 0; i < topology.size(); i += nb)
         {
-            for (unsigned int j = 0; j < nb; ++j) ids[j] = topology[i + j];
+            for (int j = 0; j < nb; ++j) ids[j] = topology[i + j];
             Face<nb> face(ids);
             auto it = faces.find(face);
             if (it == faces.end()) 
@@ -75,13 +75,13 @@ protected:
             topology.insert(topology.end(), face.ids.begin(), face.ids.end());
     }
 
-    Face<2> find_edge(Mesh::Topology& topology, unsigned int i_start)
+    Face<2> find_edge(Mesh::Topology& topology, int i_start)
     {
-        std::vector<unsigned int> ids;
-        for (unsigned int j = 0; j < 3; ++j)
+        std::vector<int> ids;
+        for (int j = 0; j < 3; ++j)
         {
-            unsigned int current = topology[i_start + j];
-            for (unsigned int k = 0; k < 3; ++k)
+            int current = topology[i_start + j];
+            for (int k = 0; k < 3; ++k)
             {
                 if (current == topology[i_start + k + 3])
                     ids.push_back(current);

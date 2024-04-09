@@ -26,7 +26,7 @@
 class Application : public Behaviour
 {
 public: 
-    Application(unsigned int width = 1600, unsigned int height = 900) : _editor(nullptr)
+    Application(int width = 1600, int height = 900) : _editor(nullptr)
     {
         auto& info = AppInfo::Instance(); // init app info
         info.set_window_size(width, height);
@@ -61,7 +61,7 @@ public:
 
     /// Create Opengl Context
     void init_glfw() {
-        unsigned int w, h; AppInfo::Window_sizes(w, h);
+        int w, h; AppInfo::Window_sizes(w, h);
 
         // GLFW
         glfwInit();

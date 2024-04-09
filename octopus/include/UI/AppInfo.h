@@ -14,7 +14,7 @@ public:
     {
         return !Instance()._exit || !glfwWindowShouldClose(Instance()._window);
     }
-    static void Window_sizes(unsigned int& w, unsigned int& h)
+    static void Window_sizes(int& w, int& h)
     {
         w = Instance()._width;
         h = Instance()._height;
@@ -22,7 +22,7 @@ public:
     static GLFWwindow* Window() { return Instance()._window; }
     static void Exit() { Instance()._exit = true; }
     static std::string PathToAssets() { return Instance()._path_to_assets; }
-    void set_window_size(unsigned int w, unsigned int h)
+    void set_window_size(int w, int h)
     {
         _width  = w;
         _height = h;
@@ -30,7 +30,7 @@ public:
     void set_window(GLFWwindow* window) { _window = window; }
 
     protected :
-    unsigned int _width, _height;
+    int _width, _height;
     GLFWwindow* _window;
     static const std::string _path_to_assets; 
     bool _exit;

@@ -7,13 +7,13 @@
 #include <vector>
 class FEM_Generic : public Constraint {
 public:
-    FEM_Generic(unsigned int* ids, FEM_ContinuousMaterial* material, FEM_Shape* shape)
-        : Constraint(std::vector<unsigned int>(ids, ids + shape->nb)), _material(material), _shape(shape)
+    FEM_Generic(int* ids, FEM_ContinuousMaterial* material, FEM_Shape* shape)
+        : Constraint(std::vector<int>(ids, ids + shape->nb)), _material(material), _shape(shape)
     {  }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(_shape->nb);
-        for (unsigned int i = 0; i < _shape->nb; ++i) {
+        for (int i = 0; i < _shape->nb; ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
 
@@ -27,11 +27,11 @@ public:
         _JX_inv.resize(_weights.size());
         _JX.resize(_weights.size());
         init_volume = 0;
-        for (unsigned int i = 0; i < _weights.size(); ++i) {
+        for (int i = 0; i < _weights.size(); ++i) {
             s = coords[i * 3]; t = coords[i * 3 + 1]; l = coords[i * 3 + 2];
             _dN[i] = _shape->build_shape_derivatives(s, t, l);
             _JX[i] = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < _shape->nb; ++j) {
+            for (int j = 0; j < _shape->nb; ++j) {
                 _JX[i] += glm::outerProduct(X[j], _dN[i][j]);
             }
             _V[i] = abs(glm::determinant(_JX[i])) * _weights[i];
@@ -40,7 +40,7 @@ public:
             _JX_inv[i] = glm::inverse(_JX[i]);
 
             _dF[i].resize(_dN[i].size());
-            for (unsigned int j = 0; j < _shape->nb; ++j) {
+            for (int j = 0; j < _shape->nb; ++j) {
                 _dF[i][j] = glm::transpose(_JX_inv[i]) * _dN[i][j];
             }
         }
@@ -53,13 +53,13 @@ public:
         Matrix3x3 Jx, F, P;
 
         std::vector<Particle*> p(_shape->nb);
-        for (unsigned int i = 0; i < _shape->nb; ++i) {
+        for (int i = 0; i < _shape->nb; ++i) {
             p[i] = particles[this->_ids[i]];
         }
         volume = 0;
-        for (unsigned int i = 0; i < _weights.size(); ++i) {
+        for (int i = 0; i < _weights.size(); ++i) {
             Jx = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < _shape->nb; ++j) {
+            for (int j = 0; j < _shape->nb; ++j) {
                 Jx += glm::outerProduct(p[j]->position, _dN[i][j]);
             }
 
@@ -67,21 +67,21 @@ public:
 
             F = Jx * _JX_inv[i];
             _material->getStressTensor(F, P);
-            for (unsigned int j = 0; j < _shape->nb; ++j) {
+            for (int j = 0; j < _shape->nb; ++j) {
                 p[j]->force -= P * _dF[i][j] * _V[i];
             }
         }
     }
 
     virtual void compute_df_ij(const Vector3 dFi, const std::vector<Vector3>& Hkl_dFj, Matrix3x3& df_ij) {
-        for (unsigned int j = 0; j < 3; ++j)
-            for (unsigned int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            for (int i = 0; i < 3; ++i)
                 df_ij[i][j] = glm::dot(dFi, Hkl_dFj[i + j * 3]);
     }
 
     virtual void pre_compute_hessian(const Vector3& dF_j, const std::vector<Matrix3x3>& H_kl, std::vector<Vector3>& Hkl_dFj) {
-        for (unsigned int l = 0; l < 3; ++l)
-            for (unsigned int k = 0; k < 3; ++k)
+        for (int l = 0; l < 3; ++l)
+            for (int k = 0; k < 3; ++k)
                 Hkl_dFj[k + l * 3] = H_kl[k + l * 3] * dF_j;
 
     }
@@ -92,9 +92,9 @@ public:
         std::vector<Matrix3x3> H_kl; _material->getSubHessians(F, H_kl);
         std::vector<Vector3> Hkl_dFj(9);
         std::vector<Matrix3x3> df(_shape->nb * _shape->nb);
-        for (unsigned int j = 0; j < _shape->nb; ++j) {
+        for (int j = 0; j < _shape->nb; ++j) {
             pre_compute_hessian(dF_w[j], H_kl, Hkl_dFj);
-            for (unsigned int i = 0; i < _shape->nb; ++i) {
+            for (int i = 0; i < _shape->nb; ++i) {
                 compute_df_ij(dF_w[i], Hkl_dFj, df[i + j * _shape->nb]);
             }
         }
@@ -120,25 +120,24 @@ private:
 
 class FEM_SVD_Generic : public Constraint {
 public:
-    FEM_SVD_Generic(unsigned int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
-        : Constraint(std::vector<unsigned int>(ids, ids + shape->nb)), _material(material), _shape(shape)
+    FEM_SVD_Generic(int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
+        : Constraint(std::vector<int>(ids, ids + shape->nb)), _material(material), _shape(shape)
     {  }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(this->nb());
-        for (unsigned int i = 0; i < X.size(); ++i) {
+        for (int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
 
-        scalar s, t, l;
-        unsigned int nb_quadrature = _shape->weights.size();
+        int nb_quadrature = _shape->weights.size();
         _V.resize(nb_quadrature);
         _JX_inv.resize(nb_quadrature);
         init_volume = 0;
         Matrix3x3 JX;
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        for (int i = 0; i < nb_quadrature; ++i) {
             JX = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 JX += glm::outerProduct(X[j], _shape->dN[i][j]);
             }
             _V[i] = std::abs(glm::determinant(JX)) * _shape->weights[i];
@@ -156,14 +155,14 @@ public:
         Vector3 constraint;
 
         std::vector<Particle*> x(_shape->nb);
-        for (unsigned int i = 0; i < _shape->nb; ++i) {
+        for (int i = 0; i < _shape->nb; ++i) {
             x[i] = particles[this->_ids[i]];
         }
 
-        unsigned int nb_quadrature = _shape->weights.size();
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        int nb_quadrature = _shape->weights.size();
+        for (int i = 0; i < nb_quadrature; ++i) {
             Jx = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 Jx += glm::outerProduct(x[j]->position, _shape->dN[i][j]);
             }
 
@@ -177,12 +176,12 @@ public:
             // get constraint
             _material->getConstraint(s, constraint);
    
-            for (unsigned int j = 0; j < 3; ++j) {
+            for (int j = 0; j < 3; ++j) {
                 W[j] = glm::outerProduct(U[j], V[j]) * glm::transpose(_JX_inv[i]);
             }
 
             // get grads 
-            for (unsigned int j = 0; j < _shape->nb; j++) {
+            for (int j = 0; j < _shape->nb; j++) {
                 Matrix3x3 J = Matrix::Zero3x3();
                 J[0] = W[0] * _shape->dN[i][j];
                 J[1] = W[1] * _shape->dN[i][j];

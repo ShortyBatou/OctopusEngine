@@ -25,8 +25,8 @@ struct ContinuousMaterial {
         lambda = computeLambda();
         mu = computeMu();
     }
-    scalar computeLambda() { return young * poisson / ((1. + poisson) * (1. - 2. * poisson)); }
-    scalar computeMu() { return young / (2. * (1. + poisson)); }
+    scalar computeLambda() { return scalar(young * poisson / ((1. + poisson) * (1. - 2. * poisson))); }
+    scalar computeMu() { return scalar(young / (2. * (1. + poisson))); }
 
     static Matrix3x3 getStrainTensorLinear(const Matrix3x3& F)
     {

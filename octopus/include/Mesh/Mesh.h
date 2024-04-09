@@ -5,21 +5,21 @@
 #include "Core/Base.h"
 #include "Core/Pattern.h"
 #include "Mesh/Elements.h"
-template<unsigned int nb>
+template<int nb>
 struct Face
 {
     using Geometry = std::vector<Vector3>;
-    std::vector<unsigned int> ids;
-    std::vector<unsigned int> ids_sorted;
+    std::vector<int> ids;
+    std::vector<int> ids_sorted;
     Geometry vertices;
 
-    unsigned int element_id;
-    unsigned int face_id;
+    int element_id;
+    int face_id;
 
-    Face(const std::vector<unsigned int>& _ids, 
+    Face(const std::vector<int>& _ids, 
         const Geometry& _vertices = {},
-        unsigned int _element_id = 0, 
-        unsigned int _face_id = 0) : element_id(_element_id), face_id(_face_id), vertices(_vertices)
+        int _element_id = 0, 
+        int _face_id = 0) : element_id(_element_id), face_id(_face_id), vertices(_vertices)
     {
         assert(_ids.size() == nb);
         ids = _ids; 
@@ -36,7 +36,7 @@ struct Face
     /// same order modulo rotation.
     bool operator==(const Face& f) const
     {
-        for (unsigned int i = 0; i < nb; ++i)
+        for (int i = 0; i < nb; ++i)
             if (ids_sorted[i] != f.ids_sorted[i]) return false;
         
         return true;
@@ -52,7 +52,7 @@ struct Face
 class Mesh : public Behaviour
 {
 public:
-    using Topology = std::vector<unsigned int>;
+    using Topology = std::vector<int>;
     using Geometry = std::vector<Vector3>;
 
     Mesh(bool dynamic_geometry = false, bool dynamic_topology = false)
@@ -61,9 +61,9 @@ public:
         , _need_update(true)
 	{ }
    
-    Vector3& vertice(unsigned int i) { return _geometry[i]; }
+    Vector3& vertice(int i) { return _geometry[i]; }
     Geometry& geometry() { return _geometry; }
-    unsigned int nb_vertices() { return _geometry.size(); }
+    int nb_vertices() { return _geometry.size(); }
     Topology& topology(Element elem) {return _topologies[elem]; }
     std::map<Element, Topology>& topologies() { return _topologies; }
 

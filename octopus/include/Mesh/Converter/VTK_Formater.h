@@ -40,7 +40,7 @@ public:
 		file << "\n";
 
 		nb_cells = 0;
-		unsigned int nb_indices = 0;
+		int nb_indices = 0;
 		for (auto& topo : topologies) {
 			nb_cells += topo.second.size() / elem_nb_vertices(topo.first);
 			nb_indices += topo.second.size();
@@ -50,11 +50,11 @@ public:
 		file << "CELLS " << nb_cells + 1 << " " << nb_indices << "\n";
 		file << "OFFSETS vtktypeint64\n";
 
-		unsigned int offset = 0;
+		int offset = 0;
 		for (auto& topo : topologies) {
 			if (topo.second.size() == 0) continue;
-			unsigned int element_size = elem_nb_vertices(topo.first);
-			for (unsigned int i = 0; i <= topo.second.size(); i += element_size) {
+			int element_size = elem_nb_vertices(topo.first);
+			for (int i = 0; i <= topo.second.size(); i += element_size) {
 				file << offset << " ";
 				offset += element_size;
 			}
@@ -65,10 +65,10 @@ public:
 
 		// numPoints0 i0 j0 k0 …
 		for (auto& topo : topologies) {
-			unsigned int element_size = elem_nb_vertices(topo.first);
-			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
-			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
-				for (unsigned int j = 0; j < element_size; ++j)
+			int element_size = elem_nb_vertices(topo.first);
+			int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
+			for (int i = 0; i < topo.second.size(); i += element_size) {
+				for (int j = 0; j < element_size; ++j)
 				{
 					file << topo.second[i + j] << " ";
 				}
@@ -78,10 +78,10 @@ public:
 
 		file << "CELL_TYPES " << nb_cells << "\n";
 		for (auto& topo : topologies) {
-			unsigned int element_size = elem_nb_vertices(topo.first);
-			unsigned int element_vtk_id = get_cell_type(topo.first);
-			unsigned int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
-			for (unsigned int i = 0; i < topo.second.size(); i += element_size) {
+			int element_size = elem_nb_vertices(topo.first);
+			int element_vtk_id = get_cell_type(topo.first);
+			int nb_elements = topo.second.size() / elem_nb_vertices(topo.first);;
+			for (int i = 0; i < topo.second.size(); i += element_size) {
 				file << element_vtk_id << " ";
 			}
 			if (topo.second.size() > 0) file << "\n";
@@ -130,7 +130,7 @@ public:
 		return *this;
 	}
 
-	unsigned int get_cell_type(Element e) {
+	int get_cell_type(Element e) {
 		switch (e)
 		{
 		case Line: return 3;
@@ -150,7 +150,7 @@ public:
 
 protected:
 	VTK::DATA data_mode;
-	unsigned int nb_cells;
-	unsigned int nb_vertices;
+	int nb_cells;
+	int nb_vertices;
 	std::ofstream file;
 };

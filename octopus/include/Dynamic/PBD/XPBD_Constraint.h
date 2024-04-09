@@ -8,13 +8,13 @@
 
 class XPBD_Constraint : public Constraint {
 public:
-    XPBD_Constraint(std::vector<unsigned int> ids, scalar stiffness, bool active = true) : Constraint(ids, stiffness, active), _lambda(0) {}
+    XPBD_Constraint(std::vector<int> ids, scalar stiffness, bool active = true) : Constraint(ids, stiffness, active), _lambda(0) {}
     virtual void init(const std::vector<Particle*>& particles) override {}
     virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override {
         if (_stiffness <= 0) return;
 
         std::vector<Particle*> x(this->nb());
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i] = particles[this->_ids[i]];
         }
 
@@ -23,7 +23,7 @@ public:
         if (!project(x, grads, C)) return;
 
         scalar sum_norm_grad = 0;
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             sum_norm_grad += glm::dot(grads[i], grads[i]) * x[i]->inv_mass;
         }
 
@@ -31,14 +31,14 @@ public:
         scalar dt_lambda = -(C + alpha * _lambda) / (sum_norm_grad + alpha);
         _lambda += dt_lambda;
 
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i]->force += (dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
         }
     }
 
     virtual scalar get_dual_residual(const std::vector<Particle*>& particles, const scalar dt) {
         std::vector<Particle*> x(this->nb());
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i] = particles[this->_ids[i]];
         }
         scalar C = 0;
@@ -60,7 +60,7 @@ protected:
 
 class XPBD_DistanceConstraint : public XPBD_Constraint {
 public:
-    XPBD_DistanceConstraint(unsigned int a, unsigned int b, scalar stiffness, bool active = true) : XPBD_Constraint({a,b}, stiffness, active) {}
+    XPBD_DistanceConstraint(int a, int b, scalar stiffness, bool active = true) : XPBD_Constraint({a,b}, stiffness, active) {}
 
     virtual void init(const std::vector<Particle*>& particles) override {
         Vector3 pa = particles[this->_ids[0]]->position;

@@ -17,7 +17,7 @@ public:
     }
 
     virtual void update_mesh() {
-        for (unsigned int i = 0; i < this->_mesh->nb_vertices(); ++i) {
+        for (int i = 0; i < this->_mesh->nb_vertices(); ++i) {
             _mesh->geometry()[i] = _ps->get(i)->position;
         }
         std::cout;
@@ -33,7 +33,7 @@ public:
     }
 protected:
     virtual void build_particles() {
-        for (unsigned int i = 0; i < _mesh->nb_vertices(); ++i) {
+        for (int i = 0; i < _mesh->nb_vertices(); ++i) {
             Vector3 p = Vector3(_mesh->geometry()[i]);
             _ps->add_particle(p, _particle_mass / _mesh->nb_vertices());
         }

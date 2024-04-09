@@ -14,7 +14,7 @@
 class GL_Graphic : public Component
 {
 public:
-    GL_Graphic(const Color& color = ColorBase::Grey(0.7))
+    GL_Graphic(const Color& color = ColorBase::Grey(scalar(0.7)))
         : _color(color), _multi_color(false), _mesh(nullptr)
     { 
         init_buffers();
@@ -33,9 +33,9 @@ public:
         _b_vertex   = new GL_Buffer<Vector3>(GL_ARRAY_BUFFER);
         _b_color    = new GL_Buffer<Vector4>(GL_ARRAY_BUFFER);
         _b_normal   = new GL_Buffer<Vector3>(GL_ARRAY_BUFFER);
-        _b_line     = new GL_Buffer<unsigned int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
-        _b_triangle = new GL_Buffer<unsigned int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
-        _b_quad     = new GL_Buffer<unsigned int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+        _b_line     = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+        _b_triangle = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+        _b_quad     = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
     }
 
     void init_vao() { 
@@ -89,9 +89,9 @@ public:
     GL_Buffer<Vector3>* b_vertex() { return _b_vertex; }
     GL_Buffer<Vector3>* b_normal() { return _b_normal; }
     GL_Buffer<Vector4>* b_color() { return _b_color; }
-    GL_Buffer<unsigned int>* b_line() { return _b_line; }
-    GL_Buffer<unsigned int>* b_triangle() { return _b_triangle; }
-    GL_Buffer<unsigned int>* b_quad() { return _b_quad; }
+    GL_Buffer<int>* b_line() { return _b_line; }
+    GL_Buffer<int>* b_triangle() { return _b_triangle; }
+    GL_Buffer<int>* b_quad() { return _b_quad; }
 
     Mesh::Topology& get_lines() { return lines; }
     Mesh::Topology& get_triangles() { return triangles; }
@@ -133,29 +133,29 @@ protected:
     {
         v_normals.resize(geometry.size(), Unit3D::Zero());
         
-        for (unsigned int i = 0; i < triangles.size(); i += 3) {
+        for (int i = 0; i < triangles.size(); i += 3) {
             compute_vertex_normals(geometry, triangles, i, v_normals);
         }
 
-        for (unsigned int i = 0; i < quads.size(); i += 3) {
+        for (int i = 0; i < quads.size(); i += 3) {
             compute_vertex_normals(geometry, quads, i, v_normals);
         }
 
-        for (unsigned int i = 0; i < v_normals.size(); ++i) {
+        for (int i = 0; i < v_normals.size(); ++i) {
             v_normals[i] = glm::normalize(v_normals[i]);
         }
 
     }
-    virtual void compute_vertex_normals(const Mesh::Geometry& geometry, const Mesh::Topology& triangles, unsigned int i, std::vector<Vector3>& v_normals) {
+    virtual void compute_vertex_normals(const Mesh::Geometry& geometry, const Mesh::Topology& triangles, int i, std::vector<Vector3>& v_normals) {
         Vector3 v[3];
-        unsigned int vid[3];
-        for (unsigned int j = 0; j < 3; ++j) {
+        int vid[3];
+        for (int j = 0; j < 3; ++j) {
             vid[j] = triangles[i + j];
             v[j] = geometry[vid[j]];
         }
 
         Vector3 t_normal = glm::cross(v[1] - v[0], v[2] - v[0]) * scalar(0.5);
-        for (unsigned int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; ++j) {
             v_normals[vid[j]] += t_normal;
         }
     }
@@ -198,12 +198,12 @@ protected:
     GL_Buffer<Vector3>* _b_normal;
     GL_Buffer<Vector3>* _b_vertex;
     GL_Buffer<Color>* _b_color;
-    GL_Buffer<unsigned int> *_b_line, *_b_triangle, *_b_quad;
+    GL_Buffer<int> *_b_line, *_b_triangle, *_b_quad;
 
 private:
     Mesh::Topology lines, triangles, quads;
     Mesh::Geometry geometry;
 };
 
-scalar GL_Graphic::wireframe_intencity = 0.7;
-Color GL_Graphic::vertice_color = ColorBase::Grey(0.1);
+scalar GL_Graphic::wireframe_intencity = scalar(0.7);
+Color GL_Graphic::vertice_color = ColorBase::Grey(scalar(0.1));

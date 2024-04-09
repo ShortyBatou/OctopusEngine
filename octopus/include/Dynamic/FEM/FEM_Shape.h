@@ -7,11 +7,11 @@
 
 struct FEM_Shape {
 
-    unsigned int nb; // number of vertices
+    int nb; // number of vertices
     std::vector<std::vector<Vector3>> dN;
     std::vector<scalar> weights;
 
-    FEM_Shape(unsigned int _nb) : nb(_nb) {
+    FEM_Shape(int _nb) : nb(_nb) {
 
     }
 
@@ -20,7 +20,7 @@ struct FEM_Shape {
         weights = get_weights();
         dN.resize(weights.size());
         scalar s, t, l;
-        for (unsigned int i = 0; i < weights.size(); ++i) {
+        for (int i = 0; i < weights.size(); ++i) {
             s = coords[i * 3]; t = coords[i * 3 + 1]; l = coords[i * 3 + 2];
             dN[i] = build_shape_derivatives(s, t, l);
         }
@@ -33,7 +33,7 @@ struct FEM_Shape {
     virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) = 0;
     virtual std::vector<Vector3> convert_dN_to_vector3(scalar* dN) const {
         std::vector<Vector3> dN_v3(nb);
-        for (unsigned int i = 0; i < nb; ++i) {
+        for (int i = 0; i < nb; ++i) {
             dN_v3[i].x = dN[i];
             dN_v3[i].y = dN[i + nb];
             dN_v3[i].z = dN[i + nb * 2];
@@ -53,11 +53,11 @@ struct Tetra_4 : public FEM_Shape {
     }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
-        return std::vector<scalar>(3, 0.25); // change nothing because it's a constant strain element
+        return std::vector<scalar>(3, 0.25f); // change nothing because it's a constant strain element
     }
 
     virtual std::vector<scalar> get_weights() const {
-        return std::vector<scalar>(1, 1. / 6.);
+        return std::vector<scalar>(1, 1.f / 6.f);
     }
     virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
         return { 1-s-t-l, s, t, l };
@@ -83,9 +83,9 @@ struct Pyramid_5 : public FEM_Shape {
     Pyramid_5() :FEM_Shape(5) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
-        scalar h1 = 0.1331754163448146;
-        scalar h2 = 0.6372983346207416;
-        scalar a = 0.5;
+        scalar h1 = 0.1331754163448146f;
+        scalar h2 = 0.6372983346207416f;
+        scalar a = 0.5f;
         return { a,0,h1, 0,a,h1, -a,0,h1, 0,-a,h1, 0,0,h2 };
     }
 
@@ -141,13 +141,13 @@ struct Prism_6 : public FEM_Shape {
     Prism_6() : FEM_Shape(6) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const {
-        scalar a = 1. / std::sqrt(3.);
-        scalar b = 0.5;
+        scalar a = 1.f / std::sqrt(3.f);
+        scalar b = 0.5f;
         return { b,0,-a, 0,b,-a, b,b,-a, b,0,a, 0,b,a, b,b,a };
     }
 
     virtual std::vector<scalar> get_weights() const {
-        return std::vector<scalar>(6, 1. / 6.);
+        return std::vector<scalar>(6, 1.f / 6.f);
     }
 
     virtual Mesh::Geometry get_vertices() const override {
@@ -161,18 +161,18 @@ struct Prism_6 : public FEM_Shape {
             s + t - 1, -s, -t, -s - t + 1, s, t
         };
 
-        for (unsigned int i = 0; i < 18; ++i) dN[i] *= 0.5;
+        for (int i = 0; i < 18; ++i) dN[i] *= 0.5;
         return this->convert_dN_to_vector3(dN);
     }
 
     virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) override {
         return {
-            scalar(0.5) * (1 - s - t) * (1 - l),
-            scalar(0.5) * s * (1 - l),
-            scalar(0.5) * t * (1 - l),
-            scalar(0.5) * (1 - s - t)* (1 + l),
-            scalar(0.5) * s * (1 + l),
-            scalar(0.5) * t * (1 + l),
+            0.5f * (1 - s - t) * (1 - l),
+            0.5f * s * (1 - l),
+            0.5f * t * (1 - l),
+            0.5f * (1 - s - t)* (1 + l),
+            0.5f * s * (1 + l),
+            0.5f * t * (1 + l),
         };
     }
 };
@@ -183,13 +183,13 @@ struct Hexa_8 : public FEM_Shape {
     Hexa_8() : FEM_Shape(8) { build(); }
 
     virtual std::vector<scalar> get_quadrature_coordinates() const override {
-        scalar c = 1. / std::sqrt(3);
+        scalar c = 1.f / std::sqrt(3.f);
         std::vector<scalar> coords = { -c,-c,-c, c,-c,-c, c,c,-c, -c,c,-c, -c,-c,c, c,-c,c, c,c,c, -c,c,c };
         return coords;
     }
 
     virtual std::vector<scalar> get_weights() const override {
-        return std::vector<scalar>(8, 1.);
+        return std::vector<scalar>(8, 1.f);
     }
 
     virtual Mesh::Geometry get_vertices() const override {
@@ -205,7 +205,7 @@ struct Hexa_8 : public FEM_Shape {
             -(1 - s) * (1 - t), -(1 - t) * (s + 1), -(s + 1) * (t + 1), -(1 - s) * (t + 1), (1 - s)* (1 - t), (1 - t)* (s + 1), (s + 1)* (t + 1), (1 - s)* (t + 1)
         };
 
-        for (unsigned int i = 0; i < 24; ++i) dN[i] *= scalar(1. / 8.);
+        for (int i = 0; i < 24; ++i) dN[i] *= scalar(1. / 8.);
         return this->convert_dN_to_vector3(dN);
     }
 
@@ -306,19 +306,19 @@ struct Tetra_10 : public FEM_Shape {
 
     void debug_draw(std::vector<Vector3>& pts) override {
         std::vector<Vector3> vertices = { Vector3(0,0,0), Vector3(1,0,0), Vector3(0,0,1), Vector3(0,1,0) };
-        std::vector<unsigned int> edges = { 0,1,0,2,0,3,1,3,2,3,1,2 };
-        unsigned int sub_dibivision = 8;
+        std::vector<int> edges = { 0,1,0,2,0,3,1,3,2,3,1,2 };
+        int sub_dibivision = 8;
         scalar step = scalar(1) / scalar(sub_dibivision);
 
         Debug::SetColor(ColorBase::Black());
         
-        for (unsigned int i = 0; i < edges.size(); i += 2) {
+        for (int i = 0; i < edges.size(); i += 2) {
             scalar x = 0;
-            for (unsigned int j = 0; j < sub_dibivision; ++j) {
+            for (int j = 0; j < sub_dibivision; ++j) {
                 Vector3 a = Unit3D::Zero(), b = Unit3D::Zero();
                 Vector3 p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
                 std::vector<scalar> N = build_shape(p.x, p.y, p.z);
-                for (unsigned int n = 0; n < N.size(); ++n) {
+                for (int n = 0; n < N.size(); ++n) {
                     a += N[n] * pts[n];
                 }
                 // a = N_i(p) * pts[i]
@@ -326,7 +326,7 @@ struct Tetra_10 : public FEM_Shape {
                 x += step;
                 p = vertices[edges[i]] * (1.f - x) + vertices[edges[i+1]] * x;
                 N = build_shape(p.x, p.y, p.z);
-                for (unsigned int n = 0; n < N.size(); ++n) {
+                for (int n = 0; n < N.size(); ++n) {
                     b += N[n] * pts[n];
                 }
                 // b = N_i(p) * pts[i]
@@ -512,7 +512,6 @@ struct Tetra_20 : public FEM_Shape {
 };
 
 FEM_Shape* get_fem_shape(Element type) {
-    FEM_Shape* shape;
     switch (type) {
     case Tetra: return new Tetra_4(); break;
     case Pyramid: return new Pyramid_5(); break;

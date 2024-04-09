@@ -12,8 +12,8 @@ public:
 	virtual void late_init() override {
 		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
-		std::vector<unsigned int> ids;
-		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
+		std::vector<int> ids;
+		for (int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];
 			if (check_in_box(part->position)) {
 				ids.push_back(i);

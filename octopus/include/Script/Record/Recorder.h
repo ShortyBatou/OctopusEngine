@@ -130,12 +130,12 @@ public:
 	}
 
 	void save() override {
-		unsigned int nb = _ps->nb_particles();
+		int nb = _ps->nb_particles();
 		std::vector<scalar> norm_displacements(nb);
 		std::vector<Vector3> displacements(nb);
 		std::vector<Vector3> init_pos(nb);
 		std::vector<scalar> massses(nb);
-		for (unsigned int i = 0; i < nb; ++i) {
+		for (int i = 0; i < nb; ++i) {
 			Particle* p = _ps->get(i);
 			init_pos[i] = p->init_position;
 			displacements[i] = p->position - p->init_position;
@@ -208,7 +208,7 @@ public:
 		}
 		
 		bool found = false;
-		for (unsigned int i = 0; i < _ps->nb_particles(); ++i) {
+		for (int i = 0; i < _ps->nb_particles(); ++i) {
 			Particle* p = _ps->get(i);
 
 			if (glm::length2(p->init_position - _p_follow) >= 1e-6) continue;
@@ -246,7 +246,7 @@ public:
 	}
 
 private:
-	unsigned int p_id;
+	int p_id;
 	Vector3 _p_follow, _p_target;
 	ParticleSystem* _ps;
 };
@@ -268,7 +268,7 @@ public:
 			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
 		}
 
-		for (unsigned int i = 0; i < _ps->nb_particles(); ++i) {
+		for (int i = 0; i < _ps->nb_particles(); ++i) {
 			Particle* p = _ps->get(i);
 			if (p->position.y < 1e-6 && p->position.z < 1e-6) p_ids.push_back(i);
 			//if (p->position.y < 1e-6 && p->position.z > 0.9999) p_ids.push_back(i);
@@ -296,7 +296,7 @@ public:
 		std::vector<scalar>& dist, 
 		std::vector<scalar>& angles)
 	{
-		for (unsigned int i = 0; i < p_ids.size(); ++i) {
+		for (int i = 0; i < p_ids.size(); ++i) {
 			Particle* p = _ps->get(p_ids[i]);
 			Vector2 d_init = glm::normalize(Vector2(p->init_position.y, p->init_position.z) -Vector2(0.5, 0.5));
 			Vector2 d_current = glm::normalize(Vector2(p->position.y, p->position.z) - Vector2(0.5, 0.5));
@@ -306,8 +306,8 @@ public:
 			dist.push_back(p->init_position.x / _beam_length);
 			angles.push_back(angle);
 		}
-		for (unsigned int i = 0; i < dist.size()-1; ++i) {
-			for (unsigned int j = 0; j < dist.size()-1; ++j) {
+		for (int i = 0; i < dist.size()-1; ++i) {
+			for (int j = 0; j < dist.size()-1; ++j) {
 				if (dist[j] <= dist[j + 1]) continue;
 				std::swap(dist[j], dist[j + 1]);
 				std::swap(angles[j], angles[j + 1]);
@@ -315,9 +315,9 @@ public:
 		}
 		std::vector<scalar> temp_angle;
 		std::vector<scalar> temp_dist;
-		unsigned int i = 0;
+		int i = 0;
 		while (i < dist.size()) {
-			unsigned int j = 1;
+			int j = 1;
 			while (i + j < dist.size() && abs(dist[i] - dist[i + j]) < 1e-4) {
 				angles[i] += angles[i + j];
 				++j;
@@ -347,7 +347,7 @@ public:
 	void add_scalar_array(std::ofstream& json, std::vector<scalar>& s_array) 
 	{
 		json << "[";
-		for (unsigned int i = 0; i < s_array.size(); ++i) {
+		for (int i = 0; i < s_array.size(); ++i) {
 			json << s_array[i];
 			if (i < s_array.size() - 1) json << ",";
 		}
@@ -355,7 +355,7 @@ public:
 	}
 
 private:
-	std::vector<unsigned int> p_ids;
+	std::vector<int> p_ids;
 	ParticleSystem* _ps;
 	scalar _max_rotation, _beam_length;
 };

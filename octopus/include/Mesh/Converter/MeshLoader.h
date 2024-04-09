@@ -58,10 +58,8 @@ public:
         elemTypeNumMap[29] = Tetra20;
 
         std::string line;
-        unsigned int nbElements = 0, eltNum, n;
+        int nbElements = 0, eltNum, n;
         int eltTag, eltType;
-        scalar d;
-
         // skip lines untill vertices are found
         while (std::getline(inputFile, line)) {
             if (line.compare(0, 6, "$Nodes") == 0) break;
@@ -69,7 +67,7 @@ public:
 
         // get vertices from file
         std::getline(inputFile, line); // nb vertices
-        unsigned int off = 1;
+        int off = 1;
         while (std::getline(inputFile, line)) {
             if (line.compare(0, 9, "$EndNodes") == 0) break;
 
@@ -102,11 +100,11 @@ public:
             stream >> eltType;
             // element number of tags
             stream >> n;
-            for (unsigned int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; ++i) {
                 stream >> eltTag;
             }
             Element elem = elemTypeNumMap[eltType];
-            unsigned int nb_vertices = elem_nb_vertices(elem);
+            int nb_vertices = elem_nb_vertices(elem);
             for (int j = 0; j < nb_vertices; ++j) {
                 stream >> n;
                 topologies[elem].push_back(n - off);
@@ -127,8 +125,8 @@ public:
         vertices.clear();
         topologies.clear();
         std::string line;
-        unsigned int nbPositions = 0, nbElements = 0, nb_ids;
-        unsigned int off = 0;
+        int nbPositions = 0, nbElements = 0, nb_ids;
+        int off = 0;
 
         // read Title (256 characters maximum, terminated with newline \n character)
         // if 2D, must be specified at beginning of title!
@@ -206,8 +204,8 @@ public:
 
         skip_to(inputFile, line, "CONNECTIVITY vtktypeint64");
 
-        std::vector <unsigned int> ids;
-        unsigned int id;
+        std::vector <int> ids;
+        int id;
         //elements.reserve(nbElements);
         for (int j = 0; j < nb_ids; ++j) {
             inputFile >> id;
@@ -224,8 +222,8 @@ public:
         stream_type.seekg(10, std::ios::cur);
         stream_type >> nbElements;
 
-        unsigned int cellType;
-        unsigned int count = 0;
+        int cellType;
+        int count = 0;
         for (int j = 0; j < nbElements; ++j) {
             inputFile >> cellType;
             Element elem = elemTypeFromVTKMap[cellType];
@@ -290,7 +288,7 @@ public:
         skip_lines(file, line); // data are on the next line
         std::istringstream steam_data(line, std::istringstream::in);
         scalar x=0, y=0, z=0;
-        for (unsigned int i = 0; i < nb_point_data; ++i) {
+        for (int i = 0; i < nb_point_data; ++i) {
             steam_data >> x >> y >> z;
             v3[i] = Vector3(x, y, z);
         }

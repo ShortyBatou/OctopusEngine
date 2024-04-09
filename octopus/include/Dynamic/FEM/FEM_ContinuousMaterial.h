@@ -23,7 +23,7 @@ struct M_Hooke : public FEM_ContinuousMaterial {
         const auto E = getStrainTensorLinear(F);
         const auto trace = Matrix::Trace(E);
         // Psi(F) = lambda / 2 tr(E)² + mu tr(E^2)
-        return scalar(0.5) * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
+        return 0.5f * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
     }
 
     // get all H_kl of dF_i^T H_kl dF_j
@@ -43,14 +43,14 @@ struct M_StVK : public FEM_ContinuousMaterial {
     virtual void getStressTensor(const Matrix3x3& F, Matrix3x3& P) override {
         const auto E = getStrainTensor(F);
         const auto trace = Matrix::Trace(E);
-        P = this->lambda * trace * F + scalar(2.) * this->mu * F * E;
+        P = this->lambda * trace * F + 2.f * this->mu * F * E;
     }
 
     virtual scalar getEnergy(const Matrix3x3& F) override {
         const auto E = getStrainTensor(F);
         const auto trace = Matrix::Trace(E);
         // Psi(F) = (lambda / 2) tr(E)² + mu tr(E^2)
-        return scalar(0.5) * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
+        return 0.5f * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
     }
 };
 
@@ -73,7 +73,7 @@ struct M_NeoHooke : public FEM_ContinuousMaterial {
     virtual scalar getEnergy(const Matrix3x3& F) {
         scalar I_3 = glm::determinant(F);
         scalar I_2 = Matrix::SquaredNorm(F);
-        return 0.5 * this->mu * (I_2 - 3.) + 0.5 * this->lambda * (I_3 - alpha) * (I_3 - alpha);
+        return 0.5f * this->mu * (I_2 - 3.f) + 0.5f * this->lambda * (I_3 - alpha) * (I_3 - alpha);
     }
 };
 

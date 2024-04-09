@@ -5,13 +5,13 @@
 #include "Dynamic/Base/Constraint.h"
 class Constraint_Rigid_Controller : public Component {
 public:
-	Constraint_Rigid_Controller(const Vector3& p, const Vector3& n, unsigned int mode = 0) : _plane_pos(p), _plane_normal(n), _mode(mode), _rot_speed(45), _move_speed(0.5), _event_rate(1), _smooth_iterations(1) { }
+	Constraint_Rigid_Controller(const Vector3& p, const Vector3& n, int mode = 0) : _plane_pos(p), _plane_normal(n), _mode(mode), _rot_speed(45), _move_speed(0.5), _event_rate(1), _smooth_iterations(1) { }
 
 	virtual void late_init() override {
 		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
-		std::vector<unsigned int> ids;
-		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
+		std::vector<int> ids;
+		for (int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];
 			Vector3 dir = part->init_position - _plane_pos + _plane_normal * 0.001f;
 			if (glm::dot(dir, _plane_normal) >= 0) 
@@ -118,7 +118,7 @@ public:
 	void rgn_crush() {
 		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
-		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
+		for (int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];
 			part->position.y = _plane_pos.y;
 			/*part->position.x = _plane_pos.x + (scalar(rand()) / scalar(RAND_MAX)) * 2.f - 1.f;

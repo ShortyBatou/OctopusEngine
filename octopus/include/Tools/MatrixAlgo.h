@@ -1,10 +1,10 @@
 #pragma once
 #include "Core/Base.h"
 
-#define GAMMA 5.8284271247
-#define C_STAR 0.9238795325
-#define S_STAR 0.3826834323
-#define SVD_EPS 0.0000001
+#define GAMMA 5.8284271247f
+#define C_STAR 0.9238795325f
+#define S_STAR 0.3826834323f
+#define SVD_EPS 0.0000001f
 
 //https://gist.github.com/alexsr/5065f0189a7af13b2f3bc43d22aff62f
 namespace MatrixAlgo {

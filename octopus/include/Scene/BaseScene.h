@@ -46,11 +46,11 @@ struct BaseScene : public Scene
 
     virtual void build_root(Entity* root) override
     {
-        root->addBehaviour(new TimeManager(1. / 60.));
+        root->addBehaviour(new TimeManager(1.f / 60.f));
         root->addBehaviour(new InputManager());
         root->addBehaviour(new CameraManager());
         root->addBehaviour(new DebugManager(true));
-        root->addBehaviour(new OpenGLManager(Color(0.9,0.9,0.9,1.)));
+        root->addBehaviour(new OpenGLManager(Color(0.9f,0.9f,0.9f,1.f)));
     }
 
     // build scene's entities
@@ -61,7 +61,7 @@ struct BaseScene : public Scene
 
         cells = Vector3I(12,4,4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -126,13 +126,13 @@ struct BaseScene : public Scene
         // simulation FEM or PBD
         scalar density = 1000;
         scalar young = 100000;
-        scalar poisson = 0.4;
+        scalar poisson = 0.4f;
         Material material = Developed_Neohooke;
-        unsigned int sub_it = 50;
-        scalar global_damping = 2.5;
+        int sub_it = 50;
+        scalar global_damping = 2.5f;
         Vector3 dir = Unit3D::right();
-        unsigned int scenario_1 = 0;
-        unsigned int scenario_2 = 0;
+        int scenario_1 = 0;
+        int scenario_2 = 0;
 
         if (fem) {
             e->addComponent(new FEM_Dynamic(density, young, poisson, material, 300));

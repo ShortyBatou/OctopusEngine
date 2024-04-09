@@ -6,25 +6,24 @@
 
 class XPBD_FEM_SVD_Generic : public XPBD_Constraint {
 public:
-    XPBD_FEM_SVD_Generic(unsigned int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
-        : XPBD_Constraint(std::vector<unsigned int>(ids, ids + shape->nb), 0), _material(material), _shape(shape)
+    XPBD_FEM_SVD_Generic(int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
+        : XPBD_Constraint(std::vector<int>(ids, ids + shape->nb), 0), _material(material), _shape(shape)
     { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(this->nb());
-        for (unsigned int i = 0; i < X.size(); ++i) {
+        for (int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
 
-        scalar s, t, l;
-        unsigned int nb_quadrature = _shape->weights.size();
+        int nb_quadrature = _shape->weights.size();
         _V.resize(nb_quadrature);
         _JX_inv.resize(nb_quadrature);
         init_volume = 0;
         Matrix3x3 JX;
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        for (int i = 0; i < nb_quadrature; ++i) {
             JX = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 JX += glm::outerProduct(X[j], _shape->dN[i][j]);
             }
             _V[i] = std::abs(glm::determinant(JX)) * _shape->weights[i];
@@ -35,7 +34,7 @@ public:
 
     virtual void apply(const std::vector<Particle*>& particles, const scalar dt) override {
         std::vector<Particle*> x(this->nb());
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i] = particles[this->_ids[i]];
         }
 
@@ -45,7 +44,7 @@ public:
         if (!project(x, J, C, A)) return;
 
         Matrix3x3 sum_J = Matrix::Zero3x3();
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             sum_J += J[i] * glm::transpose(J[i]) * x[i]->inv_mass;
         }
 
@@ -54,7 +53,7 @@ public:
 
         dt_lambda = - (A * C) * glm::inverse(sum_J + A);
 
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i]->force += x[i]->inv_mass * J[i] * dt_lambda;
         }
         std::cout;
@@ -66,10 +65,10 @@ public:
         Matrix3x3 U, S, V;
         Matrix3x3 W[3];
         Vector3 constraint;
-        unsigned int nb_quadrature = _shape->weights.size();
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        int nb_quadrature = _shape->weights.size();
+        for (int i = 0; i < nb_quadrature; ++i) {
             Jx = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 Jx += glm::outerProduct(x[j]->position, _shape->dN[i][j]);
             }
 
@@ -88,12 +87,12 @@ public:
             _material->getStiffness(s, stiffness);
             A += stiffness * _V[i];
 
-            for (unsigned int j = 0; j < 3; ++j) {
+            for (int j = 0; j < 3; ++j) {
                 W[j] = glm::outerProduct(U[j], V[j]) * glm::transpose(_JX_inv[i]);
             }
 
             // get grads 
-            for (unsigned int j = 0; j < _shape->nb; j++) {
+            for (int j = 0; j < _shape->nb; j++) {
                 grads[j][0] += W[0] * _shape->dN[i][j];
                 grads[j][1] += W[1] * _shape->dN[i][j];
                 grads[j][2] += W[2] * _shape->dN[i][j];
@@ -107,7 +106,7 @@ public:
 
     virtual scalar get_dual_residual(const std::vector<Particle*>& particles, const scalar dt) {
         std::vector<Particle*> x(this->nb());
-        for (unsigned int i = 0; i < this->nb(); ++i) {
+        for (int i = 0; i < this->nb(); ++i) {
             x[i] = particles[this->_ids[i]];
         }
         

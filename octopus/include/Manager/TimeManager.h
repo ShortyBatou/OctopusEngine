@@ -4,13 +4,13 @@
 #include "Core/Base.h"
 #include "Core/Pattern.h"
 
-class TimeManager;
+struct TimeManager;
 
 struct Time : Singleton<Time> {
 protected:
     using Chrono = typename std::chrono::steady_clock::time_point;
     friend Singleton<Time>;
-    Time() : _dt(0.01), _fixed_dt(_dt), _time(0.), _fixed_time(0.), _frame(0) { }
+    Time() : _dt(0.01f), _fixed_dt(_dt), _time(0.f), _fixed_time(0.f), _frame(0) { }
 
 public:
     static scalar DeltaTime() {return Time::Instance()._dt;}

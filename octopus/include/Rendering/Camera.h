@@ -10,10 +10,10 @@ class Camera : public Singleton<Camera>
 protected:
     friend Singleton<Camera>;
     Camera()
-        : _far(1000.)
-        , _near(0.01)
-        , _fov(60.)
-        , _ratio(0.5)
+        : _far(1000.f)
+        , _near(0.01f)
+        , _fov(60.f)
+        , _ratio(0.5f)
         , _type(Persective)
         , _target(Unit3D::Zero())
         , _up(Unit3D::up())
@@ -22,7 +22,7 @@ protected:
     { }
 
 public:
-    void build(scalar near = 0.01, scalar far = 1000., scalar fov = 60., ProjectionType type = Persective)
+    void build(scalar near = 0.01f, scalar far = 1000.f, scalar fov = 60.f, ProjectionType type = Persective)
     { 
         _near = near;
         _far  = far;
@@ -33,7 +33,7 @@ public:
 
     void update_vp()
     {
-        unsigned int w, h;
+        int w, h;
         AppInfo::Window_sizes(w, h);
         _ratio = float(w) / float(h);
         if (_type == Persective)
@@ -43,8 +43,8 @@ public:
         }
         else
         {
-            float right = float(w) * 0.005;
-            float top   = float(h) * 0.005; 
+            float right = float(w) * 0.005f;
+            float top   = float(h) * 0.005f; 
             _projection = glm::ortho(-right, right, -top, top, _near, _far);
         }
 

@@ -12,7 +12,7 @@ enum Element
     Tetra20
 };
 
-unsigned int elem_nb_vertices(Element elem) {
+int elem_nb_vertices(Element elem) {
     switch (elem)
     {
         case Line:      return 2;

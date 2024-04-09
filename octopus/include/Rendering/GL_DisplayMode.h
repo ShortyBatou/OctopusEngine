@@ -14,7 +14,7 @@ public:
     { 
         _graphic     = this->_entity->getComponent<GL_Graphic>();
         set_shaders_path(_paths);
-        for (unsigned int i = 0; i < _paths.size(); ++i)
+        for (int i = 0; i < _paths.size(); ++i)
         {
             _paths[i] = AppInfo::PathToAssets()+ _paths[i];
             _programs.push_back(new GL_Program(_paths[i].c_str()));
@@ -38,7 +38,7 @@ class GL_DisplayMesh : public GL_DisplayMode
 public:
     GL_DisplayMesh() 
         : _wireframe(true), _surface(true), _point(true), _normal(false), 
-          _normal_color(ColorBase::Blue()), _normal_length(0.05) {
+          _normal_color(ColorBase::Blue()), _normal_length(0.05f) {
     }
 
     virtual void update() override {
@@ -49,9 +49,9 @@ public:
         GL_VAO* vao = this->_graphic->vao();
 
         GL_Buffer<Vector3>* b_vertices      = this->_graphic->b_vertex();
-        GL_Buffer<unsigned int>* b_line     = this->_graphic->b_line();
-        GL_Buffer<unsigned int>* b_triangle = this->_graphic->b_triangle();
-        GL_Buffer<unsigned int>* b_quad     = this->_graphic->b_quad();
+        GL_Buffer<int>* b_line     = this->_graphic->b_line();
+        GL_Buffer<int>* b_triangle = this->_graphic->b_triangle();
+        GL_Buffer<int>* b_quad     = this->_graphic->b_quad();
 
         if (b_vertices->nb_element() <= 0) return;
 
@@ -111,9 +111,9 @@ protected:
         paths.push_back("shaders/mesh_normal.glsl");
     }
 
-    virtual void draw_face_normals(GL_Buffer<unsigned int>* b_triangles) 
+    virtual void draw_face_normals(GL_Buffer<int>* b_triangles) 
     {
-        unsigned int shader_id = 4;
+        int shader_id = 4;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         this->_programs[shader_id]->uniform("color", _normal_color);
         this->_programs[shader_id]->uniform("n_length", _normal_length);
@@ -130,7 +130,7 @@ protected:
 
     virtual void draw_vertices_normals(GL_Buffer<Vector3>* b_vertices)
     {
-        unsigned int shader_id = 7;
+        int shader_id = 7;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
 
         this->_programs[shader_id]->uniform("color", _normal_color);
@@ -145,7 +145,7 @@ protected:
 
     virtual void draw_vertices(GL_Buffer<Vector3>* b_vertices)
     {
-        unsigned int shader_id = this->_graphic->use_multi_color() && !_surface && !_wireframe;
+        int shader_id = this->_graphic->use_multi_color() && !_surface && !_wireframe;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         
         if (shader_id == 0)
@@ -158,9 +158,9 @@ protected:
         this->_programs[shader_id]->unbind();
     }
 
-    virtual void draw_line(GL_Buffer<unsigned int>* b_line)
+    virtual void draw_line(GL_Buffer<int>* b_line)
     { 
-        unsigned int shader_id = this->_graphic->use_multi_color() && !_surface;
+        int shader_id = this->_graphic->use_multi_color() && !_surface;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 0)
             this->_programs[shader_id]->uniform("color", this->_graphic->color() * GL_Graphic::wireframe_intencity);
@@ -176,8 +176,8 @@ protected:
         this->_programs[shader_id]->unbind();
     }
 
-    virtual void draw_triangles(GL_Buffer<unsigned int>* b_triangle) {
-        unsigned int shader_id = this->_graphic->use_multi_color();
+    virtual void draw_triangles(GL_Buffer<int>* b_triangle) {
+        int shader_id = this->_graphic->use_multi_color();
         shader_id += this->_graphic->normals() ? 5 : 2;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 2 || shader_id == 5)
@@ -192,9 +192,9 @@ protected:
         this->_programs[shader_id]->unbind();
     }
 
-    virtual void draw_triangles_wireframe(GL_Buffer<unsigned int>* b_triangle)
+    virtual void draw_triangles_wireframe(GL_Buffer<int>* b_triangle)
     {
-        unsigned int shader_id = this->_graphic->use_multi_color() && !_surface;
+        int shader_id = this->_graphic->use_multi_color() && !_surface;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 0)
             this->_programs[0]->uniform("color", this->_graphic->color() * GL_Graphic::wireframe_intencity);

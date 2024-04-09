@@ -15,7 +15,7 @@ public:
     XPBD_FEM_Dynamic(scalar density, 
         scalar young, scalar poisson, 
         Material material, 
-        unsigned int iteration = 1, unsigned int sub_iteration = 30, 
+        int iteration = 1, int sub_iteration = 30, 
         scalar global_damping = 0,
         PBDSolverType type = GaussSeidel) : 
         ParticleSystemDynamic(density),  _young(young), _poisson(poisson), 
@@ -32,7 +32,7 @@ public:
 
     virtual void update() {
         Time::Tic();
-        //this->_ps->step(Time::Fixed_DeltaTime());
+        this->_ps->step(Time::Fixed_DeltaTime());
         //scalar residual = _pbd->get_residual(Time::Fixed_DeltaTime());
         //if (residual > 10e-5 && _sub_iteration < 50) {
         //    set_iterations(_iteration, _sub_iteration + 1);
@@ -62,9 +62,9 @@ public:
     virtual ~XPBD_FEM_Dynamic() {
     }
 
-    unsigned int get_iteration() { return _iteration; }
-    unsigned int get_sub_iteration() { return _sub_iteration; }
-    void set_iterations(unsigned int it, unsigned int sub_it) {
+    int get_iteration() { return _iteration; }
+    int get_sub_iteration() { return _sub_iteration; }
+    void set_iterations(int it, int sub_it) {
         _iteration = it;
         _sub_iteration = sub_it;
         PBD_System* pbd = static_cast<PBD_System*>(this->_ps);
@@ -82,15 +82,15 @@ protected:
         for (Particle* p : _pbd->particles()) p->mass = 0;
 
         scalar t_volume = 0;
-        unsigned int nb_element = 0;
+        int nb_element = 0;
 
         for (auto& topo : _mesh->topologies()) {
             Element type = topo.first;
-            unsigned int nb = elem_nb_vertices(type);
-            std::vector<unsigned int> ids(nb);
+            int nb = elem_nb_vertices(type);
+            std::vector<int> ids(nb);
             nb_element += topo.second.size() / nb;
-            for (unsigned int i = 0; i < topo.second.size(); i += nb) {
-                for (unsigned int j = 0; j < nb; ++j) {
+            for (int i = 0; i < topo.second.size(); i += nb) {
+                for (int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
 
@@ -116,7 +116,7 @@ protected:
                 
 
                 t_volume += volume;
-                for (unsigned int j = 0; j < nb; ++j) {
+                for (int j = 0; j < nb; ++j) {
                     Particle* p = _pbd->get(ids[j]);
                     p->mass += _density * volume / nb;
                 }
@@ -142,7 +142,7 @@ public:
     scalar _global_damping;
     scalar _density;
     scalar _young, _poisson;
-    unsigned int _iteration, _sub_iteration;
+    int _iteration, _sub_iteration;
     Material _material;
     PBDSolverType _type;
 };

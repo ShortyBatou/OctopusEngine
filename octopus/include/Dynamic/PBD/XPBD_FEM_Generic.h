@@ -5,26 +5,24 @@
 
 class XPBD_FEM_Generic : public XPBD_Constraint {
 public:
-    XPBD_FEM_Generic(unsigned int* ids, PBD_ContinuousMaterial* material, FEM_Shape* shape)
-        : XPBD_Constraint(std::vector<unsigned int>(ids, ids + shape->nb) , material->getStiffness()), _material(material), _shape(shape)
+    XPBD_FEM_Generic(int* ids, PBD_ContinuousMaterial* material, FEM_Shape* shape)
+        : XPBD_Constraint(std::vector<int>(ids, ids + shape->nb) , material->getStiffness()), _material(material), _shape(shape)
     { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(this->nb());
-        for (unsigned int i = 0; i < X.size(); ++i) {
+        for (int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
-
-        scalar s, t, l;
-        unsigned int nb_quadrature = _shape->weights.size();
+        int nb_quadrature = _shape->weights.size();
         _V.resize(nb_quadrature);
         _JX_inv.resize(nb_quadrature);
         
         Matrix3x3 JX;
         init_volume = 0;
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        for (int i = 0; i < nb_quadrature; ++i) {
             JX = Matrix::Zero3x3();
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 JX += glm::outerProduct(X[j], _shape->dN[i][j]);
             }
             _V[i] = std::abs(glm::determinant(JX)) * _shape->weights[i];
@@ -37,12 +35,12 @@ public:
     virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) override {
         Matrix3x3 Jx, F, P;
         scalar energy;
-        unsigned int nb_quadrature = _shape->weights.size();
-        for (unsigned int i = 0; i < nb_quadrature; ++i) {
+        int nb_quadrature = _shape->weights.size();
+        for (int i = 0; i < nb_quadrature; ++i) {
             Jx = Matrix::Zero3x3();
 
             // Compute transform (reference => scene)
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 Jx += glm::outerProduct(x[j]->position, _shape->dN[i][j]);
             }
 
@@ -54,7 +52,7 @@ public:
 
             // add forces
             P = P * glm::transpose(_JX_inv[i]) * _V[i];
-            for (unsigned int j = 0; j < this->nb(); ++j) {
+            for (int j = 0; j < this->nb(); ++j) {
                 grads[j] += P * _shape->dN[i][j];
             }
 
@@ -69,7 +67,7 @@ public:
 
         // convert force to constraint gradient
         scalar C_inv = scalar(1.) / scalar(2. * C);
-        for (unsigned int j = 0; j < this->nb(); ++j) {
+        for (int j = 0; j < this->nb(); ++j) {
             grads[j] *= C_inv;
         }
         return true;

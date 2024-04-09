@@ -46,11 +46,11 @@ struct MeshScene : public Scene
 
     virtual void build_root(Entity* root) override
     {
-        root->addBehaviour(new TimeManager(1. / 60.));
+        root->addBehaviour(new TimeManager(1.f / 60.f));
         root->addBehaviour(new InputManager());
         root->addBehaviour(new CameraManager());
         root->addBehaviour(new DebugManager(true));
-        root->addBehaviour(new OpenGLManager(Color(0.9, 0.9, 0.9, 1.)));
+        root->addBehaviour(new OpenGLManager(Color(0.9f, 0.9f, 0.9f, 1.f)));
     }
 
     // build scene's entities
@@ -60,7 +60,7 @@ struct MeshScene : public Scene
         Vector3I cells;
 
         cells = Vector3I(1, 1, 1);
-        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10);
+        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra10);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -104,25 +104,25 @@ struct MeshScene : public Scene
         Mesh::Topology ref_tetra_edges = tetra_converter->get_elem_topo_edges();
         Mesh::Geometry ref_tetra_geom = tetra_converter->geo_ref();
 
-        unsigned int nb_tetra = tetras.size() / 10 * 4;
+        int nb_tetra = tetras.size() / 10 * 4;
 
         // rebuild the mesh as linear tetrahedron mesh but with only position in reference element
-        std::vector<unsigned int> v_ids(geometry.size(), -1); // permit to check if vertices allready defined or not
-        std::vector<unsigned int> t_ids(nb_tetra); // in which tetrahedron is defined each tetrahedron t_id = [0,nb_tetra-1]
+        std::vector<int> v_ids(geometry.size(), -1); // permit to check if vertices allready defined or not
+        std::vector<int> t_ids(nb_tetra); // in which tetrahedron is defined each tetrahedron t_id = [0,nb_tetra-1]
         std::vector<int> v_tetra; // in which element the vertices is valid
         Mesh::Geometry ref_geometry; // vertices position in reference element
         Mesh::Geometry ref_tetra_geometry(nb_tetra); // vertices position of all linear tetra (in ref element)
         Mesh::Topology tetra_topology(nb_tetra); // topology of linear tetra
-        unsigned int v_id = 0;
-        unsigned int t_id = 0;
-        for (unsigned int i = 0; i < tetras.size(); i += 10) {
+        int v_id = 0;
+        int t_id = 0;
+        for (int i = 0; i < tetras.size(); i += 10) {
             t_id = i / 10;
             t_ids[t_id] = t_id;
-            for (unsigned int j = 0; j < 4; ++j) // we only needs the first 4 vertices
+            for (int j = 0; j < 4; ++j) // we only needs the first 4 vertices
             {
-                unsigned int k = t_id * 4 + j;
+                int k = t_id * 4 + j;
                 ref_tetra_geometry[k] = ref_tetra_geom[j];
-                unsigned int id = tetras[i + j];
+                int id = tetras[i + j];
                 if (v_ids[id] == -1) {
                     v_tetra.push_back(t_id);
                     ref_geometry.push_back(ref_tetra_geom[j]);
@@ -139,21 +139,21 @@ struct MeshScene : public Scene
         
         
 
-        unsigned int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };
-        std::map<Face<2>, unsigned int> edges;
+        int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };
+        std::map<Face<2>, int> edges;
         Mesh::Topology new_tetra_topology;
         std::vector<int> new_v_tetra;
         Mesh::Topology e_topo(2);
-        std::vector<unsigned int> ids(10);
-        for (unsigned int i = 4; i < 8; i += 4) {
+        std::vector<int> ids(10);
+        for (int i = 4; i < 8; i += 4) {
             t_id = t_ids[i / 4];
-            for (unsigned int j = 0; j < 4; ++j) ids[j] = tetra_topology[i + j];
+            for (int j = 0; j < 4; ++j) ids[j] = tetra_topology[i + j];
 
-            for (unsigned int j = 0; j < ref_tetra_edges.size(); j+=2) {
+            for (int j = 0; j < ref_tetra_edges.size(); j+=2) {
                 e_topo[0] = tetra_topology[i + ref_tetra_edges[j]]; 
                 e_topo[1] = tetra_topology[i + ref_tetra_edges[j+1]];
                 Face<2> e(e_topo);
-                unsigned int id;
+                int id;
                 // edge found in map
                 if (edges.find(e) != edges.end()) {
                     id = edges[e];
@@ -172,11 +172,11 @@ struct MeshScene : public Scene
                 ids[4+j/2] = id;
             }
 
-            for (unsigned int k = 0; k < 32; ++k) {
+            for (int k = 0; k < 32; ++k) {
                 new_tetra_topology.push_back(ids[tetra_10_topo[k]]);
             }
 
-            for (unsigned int k = 0; k < 8; ++k) {
+            for (int k = 0; k < 8; ++k) {
                 new_v_tetra.push_back(t_id);
             }
 
@@ -186,12 +186,12 @@ struct MeshScene : public Scene
         Tetra_10* shape = new Tetra_10();
         topologies[Tetra] = new_tetra_topology;
         Mesh::Geometry new_geometry(ref_geometry.size());
-        for (unsigned int i = 0; i < ref_geometry.size(); ++i) {
+        for (int i = 0; i < ref_geometry.size(); ++i) {
             t_id = v_tetra[i];
             new_geometry[i] = Vector3(0., 0., 0.);
             Vector3 p = ref_geometry[i];
             std::vector<scalar> weights = shape->build_shape(p.x, p.y, p.z);
-            for (unsigned int j = 0; j < weights.size(); ++j) {
+            for (int j = 0; j < weights.size(); ++j) {
                 new_geometry[i] += geometry[tetras[t_id * 10 + j]] * weights[j];
             }
         }
@@ -234,7 +234,7 @@ struct MeshScene : public Scene
         //graphic = new GL_GraphicElement(0.7);
         switch (type) {
             case 0 : graphic = new GL_GraphicSurface(color);
-            case 1 : graphic = new GL_GraphicElement(0.7);
+            case 1 : graphic = new GL_GraphicElement(0.7f);
             case 2 : graphic = new GL_GraphicHighOrder(3, color);
             default: graphic = new GL_GraphicSurface(color);
         }

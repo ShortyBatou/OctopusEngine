@@ -47,18 +47,18 @@ public:
         }
     }
 
-    unsigned int add_particle(const Vector3& _position, scalar _mass) {
+    int add_particle(const Vector3& _position, scalar _mass) {
         _particles.push_back(new Particle(_position, _mass));
         return _particles.size() - 1;
     }
 
-    unsigned int add_constraint(Constraint* constraint) {
+    int add_constraint(Constraint* constraint) {
         _constraints.push_back(constraint);
         _constraints.back()->init(this->_particles);
         return _constraints.size() - 1;
     }
 
-    unsigned int add_effect(Effect* effect) {
+    int add_effect(Effect* effect) {
         _effects.push_back(effect);
         _effects.back()->init(this->_particles);
         return _constraints.size() - 1;
@@ -87,7 +87,7 @@ public:
             p->reset();
     };
 
-    virtual Particle* get(unsigned int i) {
+    virtual Particle* get(int i) {
         return _particles[i];
     }
 
@@ -105,12 +105,12 @@ public:
         Debug::SetColor(c);
         for (Particle* p : _particles)
         {
-            Debug::Cube(p->position, 0.01);
+            Debug::Cube(p->position, 0.01f);
         }
     }
 
     std::vector<Particle*>& particles() { return _particles; }
-    unsigned int nb_particles() { return _particles.size(); }
+    int nb_particles() { return _particles.size(); }
     Solver* solver() { return _solver; }
     virtual ~ParticleSystem() {
         clear_particles();

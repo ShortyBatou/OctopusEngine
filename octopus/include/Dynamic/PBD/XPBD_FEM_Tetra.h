@@ -4,13 +4,13 @@
 
 class XPBD_FEM_Tetra : public XPBD_Constraint {
 public:
-    XPBD_FEM_Tetra(unsigned int* ids, PBD_ContinuousMaterial* material)
-        : XPBD_Constraint(std::vector<unsigned int>(ids, ids + 4), material->getStiffness()), _material(material)
+    XPBD_FEM_Tetra(int* ids, PBD_ContinuousMaterial* material)
+        : XPBD_Constraint(std::vector<int>(ids, ids + 4), material->getStiffness()), _material(material)
     { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
         std::vector<Vector3> X(this->nb());
-        for (unsigned int i = 0; i < X.size(); ++i) {
+        for (int i = 0; i < X.size(); ++i) {
             X[i] = particles[this->_ids[i]]->position;
         }
 

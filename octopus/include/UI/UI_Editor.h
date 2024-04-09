@@ -30,11 +30,11 @@ public:
             }
         }
         
-        unsigned int wx, wy;
+        int wx, wy;
         AppInfo::Window_sizes(wx, wy);
 
-        ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2(500, wy - 40));
+        ImGui::SetNextWindowPos(ImVec2(10.f, 10.f));
+        ImGui::SetNextWindowSize(ImVec2(500.f, scalar(wy) - 40.f));
         ImGui::Begin(name());
         if (ImGui::Button("Pause")) {
             _step = true;

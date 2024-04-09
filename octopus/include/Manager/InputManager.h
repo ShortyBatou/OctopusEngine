@@ -16,18 +16,18 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(xpos, ypos);
+    io.AddMousePosEvent(scalar(xpos), scalar(ypos));
 
     if (ImGui::GetIO().WantCaptureMouse) return;
-    Input::Instance().set_mouse_position(Vector2(xpos, ypos));
+    Input::Instance().set_mouse_position(Vector2(scalar(xpos), scalar(ypos)));
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) { 
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMouseWheelEvent(xoffset, yoffset);
+    io.AddMouseWheelEvent(scalar(xoffset), scalar(yoffset));
 
     if (ImGui::GetIO().WantCaptureMouse) return;
-    Input::Instance().set_scroll(Vector2(xoffset, yoffset));
+    Input::Instance().set_scroll(Vector2(scalar(xoffset), scalar(yoffset)));
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)

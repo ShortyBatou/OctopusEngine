@@ -16,7 +16,7 @@ struct Hooke_First : public PBD_ContinuousMaterial {
         // P(F) = 2E
         // C(F) = tr(E)²
         energy = trace * trace;
-        P = scalar(2.) * trace * Matrix::Identity3x3();
+        P = 2.f * trace * Matrix::Identity3x3();
     }
 
     virtual scalar getStiffness() const override { return this->lambda; }
@@ -30,11 +30,11 @@ struct Hooke_Second : public PBD_ContinuousMaterial {
         const auto E = getStrainTensorLinear(F);
         // P(F) = 2E
         // C(F) = tr(E²)
-        P = scalar(2.) * E;
+        P = 2.f * E;
         energy = Matrix::SquaredTrace(E);
     }
 
-    virtual scalar getStiffness() const override { return this->mu * 2.; }
+    virtual scalar getStiffness() const override { return this->mu * 2.f; }
 };
 
 struct StVK_First : public PBD_ContinuousMaterial {
@@ -43,7 +43,7 @@ struct StVK_First : public PBD_ContinuousMaterial {
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override {
         const auto trace = Matrix::Trace(getStrainTensor(F));
         // P(F) = 2 tr(E) F 
-        P = scalar(2) * trace * F;
+        P = 2.f * trace * F;
 
         // C(F) = tr(E)^2
         energy = trace * trace;
@@ -58,9 +58,9 @@ struct StVK_Second : public PBD_ContinuousMaterial {
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override {
         const auto E = getStrainTensor(F);
         // P(F) = 2 F E
-        P =  scalar(4) * F * E;
+        P =  4.f * F * E;
         // C(F) = tr(E^2)
-        energy = scalar(2) * Matrix::SquaredTrace(E);
+        energy = 2.f * Matrix::SquaredTrace(E);
     }
     virtual scalar getStiffness() const override { return this->mu; }
 };
@@ -83,7 +83,7 @@ struct VolumePreservation : public PBD_ContinuousMaterial {
         d_detF[0] = glm::cross(F[1], F[2]);
         d_detF[1] = glm::cross(F[2], F[0]);
         d_detF[2] = glm::cross(F[0], F[1]);
-        P = scalar(2) * detF * d_detF;
+        P = 2.f * detF * d_detF;
     }
 
     virtual scalar getStiffness() const override { return this->lambda; }
@@ -100,9 +100,9 @@ struct Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
 
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override
     {
-        energy = Matrix::SquaredNorm(F) - scalar(3);
+        energy = Matrix::SquaredNorm(F) - 3.f;
 
-        P = scalar(2) * F;
+        P = 2.f * F;
     }
 
     virtual scalar getStiffness() const override { return this->mu; }
@@ -126,7 +126,7 @@ struct Developed_Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
         d_detF[0] = glm::cross(F[1], F[2]);
         d_detF[1] = glm::cross(F[2], F[0]);
         d_detF[2] = glm::cross(F[0], F[1]);
-        P = scalar(2) * F - scalar(2) * d_detF;
+        P = 2.f * F - 2.f * d_detF;
     }
 
     virtual scalar getStiffness() const override { return this->mu; }
@@ -144,7 +144,7 @@ struct Anysotropic : public PBD_ContinuousMaterial {
 
         energy = (IVc_1) * (IVc_1);
 
-        P = scalar(4) * IVc_1 * glm::outerProduct(Fa, a);
+        P = 4.f * IVc_1 * glm::outerProduct(Fa, a);
     }
 
     virtual scalar getStiffness() const override { return this->mu; }
@@ -160,9 +160,9 @@ struct Sqrt_Anysotropic : public PBD_ContinuousMaterial {
         Vector3 Fa = F * a;
         scalar dFa = glm::length(Fa);
 
-        energy = (dFa - scalar(1)) * (dFa - scalar(1));
+        energy = (dFa - 1.f) * (dFa - 1.f);
 
-        P = scalar(2) * (scalar(1) - scalar(1) / dFa) * glm::outerProduct(Fa, a);
+        P = 2.f * (1.f - 1.f / dFa) * glm::outerProduct(Fa, a);
     }
 
     virtual scalar getStiffness() const override { return this->mu; }
@@ -239,7 +239,7 @@ struct C_Developed_Stable_NeoHooke_First : public PBD_ContinuousMaterial {
     {
         // C(F) = (det(F) - 1)
         // P(F) = det(F)/dx
-        energy = glm::determinant(F) - 1;
+        energy = glm::determinant(F) - 1.f;
         P[0] = glm::cross(F[1], F[2]);
         P[1] = glm::cross(F[2], F[0]);
         P[2] = glm::cross(F[0], F[1]);
@@ -254,14 +254,14 @@ struct C_Developed_Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
 
     virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override
     {
-        energy = Matrix::SquaredNorm(F) - 3 - scalar(2) * (glm::determinant(F) - 1);
+        energy = Matrix::SquaredNorm(F) - 3.f - 2.f * (glm::determinant(F) - 1.f);
         energy = sqrt(abs(energy));
 
         Matrix3x3 d_det;
         d_det[0] = glm::cross(F[1], F[2]);
         d_det[1] = glm::cross(F[2], F[0]);
         d_det[2] = glm::cross(F[0], F[1]);
-        P = (scalar(2) * F - scalar(2) * d_det) * (scalar(1) / (scalar(2)*energy));
+        P = (2.f * F - 2.f * d_det) * (1.f / (2.f*energy));
     }
 
     virtual scalar getStiffness() const override { return this->mu; }
