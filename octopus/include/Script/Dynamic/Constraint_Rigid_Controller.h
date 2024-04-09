@@ -13,7 +13,7 @@ public:
 		std::vector<unsigned int> ids;
 		for (unsigned int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];
-			Vector3 dir = part->init_position - _plane_pos;
+			Vector3 dir = part->init_position - _plane_pos + _plane_normal * 0.001f;
 			if (glm::dot(dir, _plane_normal) >= 0) 
 			{
 				ids.push_back(i);

@@ -56,12 +56,12 @@ struct BaseScene : public Scene
     // build scene's entities
     virtual void build_entities() override 
     {  
-        Vector3 size(4, 1, 1);
+        Vector3 size(3, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(19, 4, 4);
+        cells = Vector3I(12,4,4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra20, false, false);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -93,8 +93,10 @@ struct BaseScene : public Scene
 
         // Mesh generation or loading
         Mesh* mesh;
-        //Msh_Loader loader(AppInfo::PathToAssets() + "mesh/bunny_P2.msh");
-        
+
+        //Msh_Loader loader(AppInfo::PathToAssets() + "mesh/msh/beam_tetra_8x2x2.msh");
+        //mesh = loader.build();
+
         //if (element == Tetra || element == Tetra10 || element == Tetra20) {
         //    std::string path = "";
         //    if (cells.x == 18) {
@@ -113,11 +115,8 @@ struct BaseScene : public Scene
         //else {
         //    mesh = get_beam_mesh(pos, cells, size, element);
         //}
-        mesh = get_beam_mesh(pos, cells, size, element);
-        //VTK_Loader loader(AppInfo::PathToAssets() + "mesh/vtk/spot_P3.vtk");
-        //loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos + Vector3(0., 0., 0.)));
-        //mesh = loader.build();
 
+        mesh = get_beam_mesh(pos, cells, size, element);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
   
@@ -126,11 +125,11 @@ struct BaseScene : public Scene
 
         // simulation FEM or PBD
         scalar density = 1000;
-        scalar young = 1000000;
-        scalar poisson = 0.49;
+        scalar young = 8e5;
+        scalar poisson = 0.4;
         Material material = Developed_Neohooke;
         unsigned int sub_it = 50;
-        scalar global_damping = 0.5;
+        scalar global_damping = 2.5;
         Vector3 dir = Unit3D::right();
         unsigned int scenario_1 = 0;
         unsigned int scenario_2 = 0;
@@ -143,7 +142,7 @@ struct BaseScene : public Scene
         }
 
         // constraint for Particle system
-        auto rd_constraint_1 = new Constraint_Rigid_Controller(dir * scalar(0.02), -dir, scenario_1);
+        auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero(), -dir, scenario_1);
         e->addComponent(rd_constraint_1);
         rd_constraint_1->_rot_speed = 90;
         rd_constraint_1->_move_speed = 1;
