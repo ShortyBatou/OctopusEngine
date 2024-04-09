@@ -61,7 +61,7 @@ struct BaseScene : public Scene
 
         cells = Vector3I(12,4,4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -122,10 +122,10 @@ struct BaseScene : public Scene
   
         mesh->set_dynamic_geometry(true);
         e->addBehaviour(mesh);
-
+        
         // simulation FEM or PBD
         scalar density = 1000;
-        scalar young = 8e5;
+        scalar young = 100000;
         scalar poisson = 0.4;
         Material material = Developed_Neohooke;
         unsigned int sub_it = 50;
@@ -168,7 +168,6 @@ struct BaseScene : public Scene
         if (element == Tetra10 || element == Tetra20)
             //graphic = new GL_GraphicElement(0.7);
             graphic = new GL_GraphicHighOrder(3, color);
-            
         else
             graphic = new GL_GraphicSurface(color);
 

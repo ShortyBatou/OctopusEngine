@@ -32,7 +32,7 @@ public:
 
     virtual void update() {
         Time::Tic();
-        this->_ps->step(Time::Fixed_DeltaTime());
+        //this->_ps->step(Time::Fixed_DeltaTime());
         //scalar residual = _pbd->get_residual(Time::Fixed_DeltaTime());
         //if (residual > 10e-5 && _sub_iteration < 50) {
         //    set_iterations(_iteration, _sub_iteration + 1);

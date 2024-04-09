@@ -73,7 +73,7 @@ struct Entity : public Behaviour {
     T* getComponentById(unsigned int i) {
         if(i >= _components.size()) return nullptr;
         
-        return return std::static_cast<T>(_components[i]);
+        return static_cast<T>(_components[i]);
     }
 
     void addBehaviour(Behaviour* behaviour) {

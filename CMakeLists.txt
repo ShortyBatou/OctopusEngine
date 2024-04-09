@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.8)
 project (octopus-engine LANGUAGES CXX)
 
+add_compile_options(-Wno-narrowing)
+
 # Options
 option(TOBANTEGAMING_TEMPLATE_OPENGL_EXAMPLES  "Build examples" ON)
 option(TOBANTEGAMING_TEMPLATE_OPENGL_TESTS     "Build unit tests" ON)

@@ -262,8 +262,8 @@ void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
     std::vector<unsigned int> ids(20);
 
     TetraConverter tetra_converter;
-    Mesh::Topology& tetra_edges = tetra_converter.get_elem_topo_edges();
-    Mesh::Topology& tetra_faces = tetra_converter.get_elem_topo_triangle();
+    const Mesh::Topology& tetra_edges = tetra_converter.get_elem_topo_edges();
+    const Mesh::Topology& tetra_faces = tetra_converter.get_elem_topo_triangle();
 
     std::map<Face<2>, std::vector<unsigned int>> existing_edges;
     std::map<Face<3>, std::vector<unsigned int>> existing_faces;

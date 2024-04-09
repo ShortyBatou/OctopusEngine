@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
 #include <vector>
-
+#include <algorithm>
 #include "Core/Base.h"
 #include "Core/Pattern.h"
 #include "Mesh/Elements.h"

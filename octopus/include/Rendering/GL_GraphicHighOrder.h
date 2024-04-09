@@ -207,8 +207,8 @@ public:
         for (const Edge& edge : wireframe) {
             unsigned int a = map_id[edge.first];
             unsigned int b = map_id[edge.second];
-            Edge edge = (a < b) ? Edge(a, b) : Edge(b, a);
-            remaped_wireframe.insert(edge);
+            Edge edge2 = (a < b) ? Edge(a, b) : Edge(b, a);
+            remaped_wireframe.insert(edge2);
         }
         wireframe = remaped_wireframe;
     }
