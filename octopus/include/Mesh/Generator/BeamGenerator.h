@@ -337,5 +337,170 @@ void tetra4_to_tetra20(Mesh::Geometry& geometry, std::map<Element, Mesh::Topolog
     topologies[Tetra].clear();
 }
 
+// convert data in an intial mesh to a target mesh
+struct MeshMap {
+    Element s_elem; // what is the initial element type
+    Element t_elem; // what is the target element type
+    Mesh::Geometry ref_geometry; // vertices position in reference element
+    Mesh::Topology elem_topo; // topology of linear elem
+    std::vector<int> v_elem; // in which element the vertices is valid
+
+
+    MeshMap(Element _s_elem, Element _t_elem, 
+            const Mesh::Geometry& _ref_geometry, 
+            const Mesh::Topology& _elem_topo,
+            const std::vector<int>& _v_elem) 
+        : s_elem(_s_elem), t_elem(_t_elem), ref_geometry(_ref_geometry), elem_topo(_elem_topo), v_elem(_v_elem)
+    { }
+
+    template<typename T>
+    std::vector<T> convert(Mesh* mesh, const std::vector<T>& vals) {
+        int nb_vert = elem_nb_vertices(s_elem);
+        FEM_Shape* shape = get_fem_shape(s_elem);
+        int t_id = 0;
+        std::vector<T> new_vals(ref_geometry.size());
+        for (int i = 0; i < ref_geometry.size(); ++i) {
+            t_id = v_elem[i];
+            new_vals[i] = T();
+            Vector3 p = ref_geometry[i];
+            std::vector<scalar> weights = shape->build_shape(p.x, p.y, p.z);
+            for (int j = 0; j < weights.size(); ++j) {
+                new_vals[i] += vals[mesh->topologies()[s_elem][t_id * nb_vert + j]] * weights[j];
+            }
+        }
+        delete shape;
+        return new_vals;
+    }
+
+    void apply_to_mesh(Mesh* mesh) {
+        mesh->geometry() = convert<Vector3>(mesh, mesh->geometry());
+        mesh->topologies()[t_elem] = elem_topo;
+        mesh->topologies()[s_elem].clear();
+    }
+};
+
+
+
+void tetra_refine(
+    MeshMap* map,
+    Mesh::Geometry& ref_tetra_geometry,
+    Mesh::Topology& ref_tetra_edges,
+    std::vector<int>& t_ids) {
+
+    int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };
+    std::map<Face<2>, int> edges;
+    Mesh::Topology new_tetra_topology;
+    std::vector<Vector3> new_ref_tetra_geometry;
+
+    Mesh::Topology e_topo(2);
+    std::vector<int> ids(10);
+    std::vector<Vector3> ids_geometry(10);
+    std::vector<int> new_tid;
+
+    int t_id = 0;
+    for (int i = 0; i < map->elem_topo.size(); i += 4) {
+        t_id = t_ids[i / 4];
+        for (int j = 0; j < 4; ++j) {
+            ids[j] = map->elem_topo[i + j];
+            ids_geometry[j] = ref_tetra_geometry[i + j];
+        }
+
+        for (int j = 0; j < ref_tetra_edges.size(); j += 2) {
+            e_topo[0] = map->elem_topo[i + ref_tetra_edges[j]];
+            e_topo[1] = map->elem_topo[i + ref_tetra_edges[j + 1]];
+
+            Vector3 pa = ref_tetra_geometry[i + ref_tetra_edges[j]];
+            Vector3 pb = ref_tetra_geometry[i + ref_tetra_edges[j + 1]];
+            Vector3 p = scalar(0.5) * (pa + pb);
+
+
+            Face<2> e(e_topo);
+            int id;
+            // edge found in map
+            if (edges.find(e) != edges.end()) {
+                id = edges[e];
+            }
+            else {
+                id = map->ref_geometry.size();
+                map->ref_geometry.push_back(p);
+                map->v_elem.push_back(t_id);
+                edges[e] = id;
+            }
+            ids_geometry[4 + j / 2] = p;
+            ids[4 + j / 2] = id;
+        }
+
+        for (int k = 0; k < 32; ++k) {
+            new_tetra_topology.push_back(ids[tetra_10_topo[k]]);
+            new_ref_tetra_geometry.push_back(ids_geometry[tetra_10_topo[k]]);
+        }
+
+        for (int k = 0; k < 8; ++k) {
+            new_tid.push_back(t_id);
+        }
+    }
+
+    map->elem_topo = new_tetra_topology;
+    ref_tetra_geometry = new_ref_tetra_geometry;
+    t_ids = new_tid;
+}
+
+
+/// Create a mapping of a Tetra mesh into linear Tetra (that can be refined)
+MeshMap* tetra_to_linear(Mesh* mesh, Element elem, int subdivision) {
+    if (elem != Tetra && elem != Tetra10 && elem != Tetra20) return nullptr;
+
+    Mesh::Topology tetras = mesh->topologies()[elem];
+    int nb_vert = elem_nb_vertices(elem);
+
+    TetraConverter* tetra_converter = new TetraConverter();
+    tetra_converter->init();
+    Mesh::Topology ref_tetra_edges = tetra_converter->get_elem_topo_edges();
+    Mesh::Geometry ref_tetra_geom = tetra_converter->geo_ref();
+
+    int nb_tetra = tetras.size() / nb_vert;
+
+    // rebuild the mesh as linear tetrahedron mesh but with only position in reference element
+    std::vector<int> v_ids(mesh->geometry().size(), -1); // permit to check if vertices allready defined or not
+    std::vector<int> t_ids(nb_tetra); // in which tetrahedron is defined each tetrahedron t_id = [0,nb_tetra-1]
+
+    std::vector<int> v_tetra; // in which element the vertices is valid
+    Mesh::Geometry ref_geometry; // vertices position in reference element
+
+    Mesh::Geometry ref_tetra_geometry(nb_tetra * 4); // vertices position of all linear tetra (in ref element)
+    Mesh::Topology tetra_topology(nb_tetra * 4); // topology of linear tetra
+    int v_id = 0;
+    int t_id = 0;
+    for (int i = 0; i < tetras.size(); i += nb_vert) {
+        t_id = i / nb_vert;
+        t_ids[t_id] = t_id;
+        for (int j = 0; j < 4; ++j) // we only needs the first 4 vertices
+        {
+            int k = t_id * 4 + j;
+            ref_tetra_geometry[k] = ref_tetra_geom[j];
+            int id = tetras[i + j];
+            if (v_ids[id] == -1) {
+                v_tetra.push_back(t_id);
+                ref_geometry.push_back(ref_tetra_geom[j]);
+                tetra_topology[k] = v_id;
+
+                v_ids[id] = v_id;
+                v_id++;
+            }
+            else {
+                tetra_topology[i / nb_vert * 4 + j] = v_ids[id];
+            }
+        }
+    }
+
+    MeshMap* map = new MeshMap(elem, Tetra, ref_geometry, tetra_topology, v_tetra);
+
+    //Subdivide
+    for (int i = 0; i < subdivision; ++i) {
+        tetra_refine(map, ref_tetra_geometry, ref_tetra_edges, t_ids);
+    }
+
+    return map;
+}
 
 

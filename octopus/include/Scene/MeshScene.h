@@ -60,11 +60,12 @@ struct MeshScene : public Scene
         Vector3I cells;
 
         cells = Vector3I(1, 1, 1);
-        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra10);
+        //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra10);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
-        //build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "result/vtk/Torsion/Torsion_Bad_MeshTetra10_8_2_2.vtk");
+        build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk");
+        convert_vtk_mesh("result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk", "Torsion_Mesh", Tetra20, 4);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
@@ -96,112 +97,20 @@ struct MeshScene : public Scene
         build_entity(mesh, color);
     }
 
-    void tetra10_refinement(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies) {
-        Mesh::Topology tetras = topologies[Tetra10];
+    void convert_vtk_mesh(std::string file, std::string name, Element s_elem, int sub) {
+        VTK_Loader loader(AppInfo::PathToAssets() + file);
+        Mesh* mesh = loader.build();
+        std::vector<Vector3> u_v3 = loader.get_point_data_v3("u");
+        MeshMap* map = tetra_to_linear(mesh, s_elem, sub);
+        std::vector<Vector3> u_v3_refined = map->convert<Vector3>(mesh, u_v3);
+        map->apply_to_mesh(mesh);
 
-        TetraConverter* tetra_converter = new TetraConverter();
-        tetra_converter->init();
-        Mesh::Topology ref_tetra_edges = tetra_converter->get_elem_topo_edges();
-        Mesh::Geometry ref_tetra_geom = tetra_converter->geo_ref();
-
-        int nb_tetra = tetras.size() / 10 * 4;
-
-        // rebuild the mesh as linear tetrahedron mesh but with only position in reference element
-        std::vector<int> v_ids(geometry.size(), -1); // permit to check if vertices allready defined or not
-        std::vector<int> t_ids(nb_tetra); // in which tetrahedron is defined each tetrahedron t_id = [0,nb_tetra-1]
-        std::vector<int> v_tetra; // in which element the vertices is valid
-        Mesh::Geometry ref_geometry; // vertices position in reference element
-        Mesh::Geometry ref_tetra_geometry(nb_tetra); // vertices position of all linear tetra (in ref element)
-        Mesh::Topology tetra_topology(nb_tetra); // topology of linear tetra
-        int v_id = 0;
-        int t_id = 0;
-        for (int i = 0; i < tetras.size(); i += 10) {
-            t_id = i / 10;
-            t_ids[t_id] = t_id;
-            for (int j = 0; j < 4; ++j) // we only needs the first 4 vertices
-            {
-                int k = t_id * 4 + j;
-                ref_tetra_geometry[k] = ref_tetra_geom[j];
-                int id = tetras[i + j];
-                if (v_ids[id] == -1) {
-                    v_tetra.push_back(t_id);
-                    ref_geometry.push_back(ref_tetra_geom[j]);
-                    tetra_topology[k] = v_id;
-
-                    v_ids[id] = v_id;
-                    v_id++;
-                }
-                else {
-                    tetra_topology[i / 10 * 4 + j] = v_ids[id];
-                }
-            }
-        }
-        
-        
-
-        int tetra_10_topo[32] = { 0,4,6,7, 1,5,4,8, 7,8,9,3, 2,6,5,9, 6,4,5,7, 7,4,5,8, 6,5,9,7, 7,8,5,9 };
-        std::map<Face<2>, int> edges;
-        Mesh::Topology new_tetra_topology;
-        std::vector<int> new_v_tetra;
-        Mesh::Topology e_topo(2);
-        std::vector<int> ids(10);
-        for (int i = 4; i < 8; i += 4) {
-            t_id = t_ids[i / 4];
-            for (int j = 0; j < 4; ++j) ids[j] = tetra_topology[i + j];
-
-            for (int j = 0; j < ref_tetra_edges.size(); j+=2) {
-                e_topo[0] = tetra_topology[i + ref_tetra_edges[j]]; 
-                e_topo[1] = tetra_topology[i + ref_tetra_edges[j+1]];
-                Face<2> e(e_topo);
-                int id;
-                // edge found in map
-                if (edges.find(e) != edges.end()) {
-                    id = edges[e];
-                }
-                else {
-                    id = ref_geometry.size();
-                    Vector3 pa = ref_tetra_geometry[e_topo[0]];
-                    Vector3 pb = ref_tetra_geometry[e_topo[1]];
-
-                    Vector3 p = scalar(0.5) * (pa + pb);
-                    ref_geometry.push_back(p);
-                    v_tetra.push_back(t_id);
-
-                    edges[e] = id;
-                }
-                ids[4+j/2] = id;
-            }
-
-            for (int k = 0; k < 32; ++k) {
-                new_tetra_topology.push_back(ids[tetra_10_topo[k]]);
-            }
-
-            for (int k = 0; k < 8; ++k) {
-                new_v_tetra.push_back(t_id);
-            }
-
-        }
-
-
-        Tetra_10* shape = new Tetra_10();
-        topologies[Tetra] = new_tetra_topology;
-        Mesh::Geometry new_geometry(ref_geometry.size());
-        for (int i = 0; i < ref_geometry.size(); ++i) {
-            t_id = v_tetra[i];
-            new_geometry[i] = Vector3(0., 0., 0.);
-            Vector3 p = ref_geometry[i];
-            std::vector<scalar> weights = shape->build_shape(p.x, p.y, p.z);
-            for (int j = 0; j < weights.size(); ++j) {
-                new_geometry[i] += geometry[tetras[t_id * 10 + j]] * weights[j];
-            }
-        }
-        geometry = new_geometry;
-        topologies[Tetra10].clear();
-        delete shape;
-
-
-        std::cout << "DAM" << std::endl;
-
+        VTK_Formater vtk;
+        vtk.open(name + std::string(element_name(s_elem)) + "_to_T4_R" + std::to_string(sub));
+        vtk.save_mesh(mesh->geometry(), mesh->topologies());
+        vtk.start_point_data();
+        vtk.add_vector_data(u_v3_refined, "u");
+        vtk.close();
     }
 
     void build_vtk_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, std::string file) {
@@ -209,8 +118,9 @@ struct MeshScene : public Scene
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
         std::vector<Vector3> u_v3 = loader.get_point_data_v3("u");
-        tetra10_refinement(mesh->geometry(), mesh->topologies());
-
+        for (int i = 0; i < mesh->geometry().size(); ++i) {
+            mesh->geometry()[i] += u_v3[i];
+        }
         build_entity(mesh, color);
     }
 
@@ -220,7 +130,6 @@ struct MeshScene : public Scene
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
-        tetra10_refinement(mesh->geometry(), mesh->topologies());
         build_entity(mesh, color);
     }
 
@@ -254,6 +163,7 @@ struct MeshScene : public Scene
         std::string file_name = "Mesh";
         DataRecorder* data_recorder = new DataRecorder(file_name);
         data_recorder->add(new MeshRecorder());
+        data_recorder->add(new Mesh_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
         e->addComponent(data_recorder);
     }

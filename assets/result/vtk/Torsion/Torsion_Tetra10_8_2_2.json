@@ -1,1 +1,65 @@
-{"Time" : {"frame" : 240,"time" : 13.853,"dt" : 0.0423508,"fixed_Time" : 4,"fixed_dt" : 0.0166667},"mesh" : {"Tetra10" : 160,"vertices" : 393},"XPBD_FEM_Dynamic" : {"mean_cost" : 27.7192,"material" : "Stable Neo-Hooke","poisson" : 0.35,"young" : 1e+06,"iteration" : 1,"sub_itetrations" : 50,"density" : 1000},"vtk_file" : "assets/Torsion_Tetra10_8_2_2.vtk","rotation_error" : {"rot_max" : 180,"beam_lenght" : 4,"distance" : [0,0.0625,0.125,0.1875,0.25,0.3125,0.375,0.4375,0.5,0.5625,0.625,0.6875,0.75,0.8125,0.875,0.9375,1],"angles" : [0,10.5291,21.6254,33.0963,44.5276,55.8972,67.2744,78.6445,90.0017,101.365,112.746,124.12,135.481,146.89,158.342,169.456,180]}}
+{
+    "Time": {
+        "frame": 240,
+        "time": 13.853,
+        "dt": 0.0423508,
+        "fixed_Time": 4,
+        "fixed_dt": 0.0166667
+    },
+    "mesh": {
+        "Tetra10": 160,
+        "vertices": 393
+    },
+    "XPBD_FEM_Dynamic": {
+        "mean_cost": 27.7192,
+        "material": "Stable Neo-Hooke",
+        "poisson": 0.35,
+        "young": 1e+06,
+        "iteration": 1,
+        "sub_itetrations": 50,
+        "density": 1000
+    },
+    "vtk_file": "assets/Torsion_Tetra10_8_2_2.vtk",
+    "rotation_error": {
+        "rot_max": 180,
+        "beam_lenght": 4,
+        "distance": [
+            0,
+            0.0625,
+            0.125,
+            0.1875,
+            0.25,
+            0.3125,
+            0.375,
+            0.4375,
+            0.5,
+            0.5625,
+            0.625,
+            0.6875,
+            0.75,
+            0.8125,
+            0.875,
+            0.9375,
+            1
+        ],
+        "angles": [
+            0,
+            10.5291,
+            21.6254,
+            33.0963,
+            44.5276,
+            55.8972,
+            67.2744,
+            78.6445,
+            90.0017,
+            101.365,
+            112.746,
+            124.12,
+            135.481,
+            146.89,
+            158.342,
+            169.456,
+            180
+        ]
+    }
+}

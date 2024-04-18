@@ -103,6 +103,35 @@ private:
 	XPBD_FEM_Dynamic* fem_dynamic;
 };
 
+class Mesh_VTK_Recorder : public Recorder {
+public:
+	Mesh_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr) { }
+
+	virtual void init(Entity* entity) override {
+		_mesh = entity->getComponent<Mesh>();
+	}
+
+	virtual void print() override { }
+
+	virtual std::string get_name() override {
+		return "vtk_file";
+	}
+
+	virtual void add_data_json(std::ofstream& json) override {
+		json << "\"" << AppInfo::PathToAssets() + _file_name + ".vtk\"";
+	}
+
+	void save() override {
+		VTK_Formater vtk;
+		vtk.open(_file_name);
+		vtk.save_mesh(_mesh->geometry(), _mesh->topologies());
+		vtk.close();
+	}
+private:
+	std::string _file_name;
+	Mesh* _mesh;
+};
+
 class XPBD_FEM_VTK_Recorder : public Recorder {
 public:
 	XPBD_FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr){ }
@@ -178,8 +207,6 @@ public:
 		
 		std::map<Element, Mesh::Topology> topologies;
 		topologies[Line] = _graphic->get_lines();
-		//topologies[Triangle].insert(topologies[Triangle].end(), _graphic->get_triangles().begin(), _graphic->get_triangles().end());
-		//topologies[Triangle].insert(topologies[Triangle].end(), _graphic->get_quads().begin(), _graphic->get_quads().end());
 		VTK_Formater vtk;
 		vtk.open(_file_name + "_Graphic");
 		vtk.save_mesh(_graphic->get_geometry(), topologies);
