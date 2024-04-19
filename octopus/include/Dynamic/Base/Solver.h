@@ -16,7 +16,7 @@ class EulerExplicit : public Solver {
 public:
 	EulerExplicit(const Vector3& gravity = Vector3(0., -9.81, 0.), scalar damping = 1.) : Solver(gravity, damping) { }
 	void integrate(Particle* p, const scalar dt) override {
-		if (p->mass <= 0.0) return;
+		if (p->mass <= eps) return;
 		p->position += p->velocity * dt;
 		p->velocity += ((p->force + p->external_forces) * p->inv_mass + this->_gravity) * dt;
 		p->velocity *= _damping;
@@ -30,7 +30,7 @@ class EulerSemiExplicit : public Solver {
 public:
 	EulerSemiExplicit(const Vector3& gravity = Vector3(0., -9.81, 0.), scalar damping = 1.) : Solver(gravity, damping) { }
 	void integrate(Particle* p, const scalar dt) override {
-		if (p->mass <= 1e-12) return;
+		if (p->mass <= eps) return;
 		p->velocity += ((p->force + p->external_forces) * p->inv_mass + this->_gravity) * dt;
 		p->velocity *= _damping;
 		p->position += p->velocity * dt;

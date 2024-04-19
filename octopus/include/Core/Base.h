@@ -4,8 +4,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 using scalar = float;
+const scalar min_limit = std::numeric_limits<scalar>::min();
+const scalar max_limit = std::numeric_limits<scalar>::max();
+const scalar eps = min_limit * scalar(1e5);
 const glm::precision precision = glm::precision::defaultp;
- 
+
 
 typedef glm::vec<1, scalar, precision> Vector1;
 typedef glm::vec<2, scalar, precision> Vector2;

@@ -61,7 +61,7 @@ public:
         }
 
         // convert energy to constraint
-        if (std::abs(C) <= scalar(1e-24)) return false;
+        if (std::abs(C) <= eps) return false;
         scalar s = (C > 0) ? 1 : -1; // don't know if it's useful
         C = sqrt(abs(C)) * s;
 

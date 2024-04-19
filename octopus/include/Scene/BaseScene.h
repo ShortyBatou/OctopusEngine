@@ -59,9 +59,9 @@ struct BaseScene : public Scene
         Vector3 size(4, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(8,4,4);
+        cells = Vector3I(16,4,4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra20, false, false);
+        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Hexa, false, false);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -126,10 +126,10 @@ struct BaseScene : public Scene
         // simulation FEM or PBD
         scalar density = 1000;
         scalar young = 1e6;
-        scalar poisson = 0.4f;
+        scalar poisson = 0.35f;
         Material material = Developed_Neohooke;
-        int sub_it = 40;
-        scalar global_damping = 10.;
+        int sub_it = 50;
+        scalar global_damping = 3.;
         Vector3 dir = Unit3D::right();
         int scenario_1 = 0;
         int scenario_2 = 0;
@@ -147,7 +147,7 @@ struct BaseScene : public Scene
         rd_constraint_1->_rot_speed = 90;
         rd_constraint_1->_move_speed = 1;
 
-        //auto rd_constraint_2 = new Constraint_Rigid_Controller(pos - dir * scalar(0.05) + size, dir, scenario_2);
+        //auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, dir, scenario_2);
         //rd_constraint_2->_rot_speed = 180;
         //rd_constraint_2->_move_speed = 1;
         //e->addComponent(rd_constraint_2);
@@ -181,9 +181,10 @@ struct BaseScene : public Scene
         display->normal() = false;
         e->addComponent(display);
 
-        // save mesh in VTK format (Paraview)
+        // save mesh in VTK format (Paraview)size
 
-        std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z);
+        std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z) 
+            + "_" + std::to_string(int(size.x)) + "x" + std::to_string(int(size.y)) + "x" + std::to_string(int(size.z));
         DataRecorder* data_recorder = new DataRecorder(file_name);
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
