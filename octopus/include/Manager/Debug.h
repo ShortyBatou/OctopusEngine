@@ -137,7 +137,7 @@ struct DebugUI_Component {
     std::string name;
 
     /// MUST BE ELSEWHERE !
-    std::string convert_scientific(double value, int precision = 1)
+    std::string convert_scientific(double value, int precision = 3)
     {
         std::ostringstream str;
         str << std::scientific << std::setprecision(precision) << value;
@@ -221,7 +221,7 @@ struct DebugUI_Range: public DebugUI_Component {
         std::string s_min = convert_scientific(_vmin);
         std::string s_max = convert_scientific(_vmax);
         std::string s_mean = convert_scientific(_vmean);
-        ImGui::Text("Min = %s \t Max = %s \t Mean = %s", s_min.c_str(), s_max.c_str(), s_mean.c_str());
+        ImGui::Text("Min = %s   Max = %s   Mean = %s", s_min.c_str(), s_max.c_str(), s_mean.c_str());
     }
 
     void add_value(float value) {

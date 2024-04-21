@@ -46,9 +46,9 @@ public:
         //}
         //DebugUI::End();
 
+        float t = Time::Tac() * 1000;
         DebugUI::Begin("[" + std::to_string(this->_entity->id()) + "] XPBD FEM Time");
         {
-            float t = Time::Tac() * 1000;
             DebugUI::Value("Time", t);
             DebugUI::Range("Range", t);
             DebugUI::Plot("Plot", t, 60);
@@ -74,7 +74,7 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 1.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
+        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 0.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
     }
 
     virtual void build_dynamic() {

@@ -56,16 +56,16 @@ struct MeshScene : public Scene
     // build scene's entities
     virtual void build_entities() override
     {
-        Vector3 size(1, 1, 1);
+        Vector3 size(4, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(1, 1, 1);
+        cells = Vector3I(32, 32, 32);
         //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra10);
-        //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra, false, false);
+        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Hexa);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
-        build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk");
-        convert_vtk_mesh("result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk", "Torsion_Mesh", Tetra20, 4);
+        //build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk");
+        //convert_vtk_mesh("result/vtk/Torsion/Torsion_Tetra20_4_2_2.vtk", "Torsion_Mesh", Tetra20, 4);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
