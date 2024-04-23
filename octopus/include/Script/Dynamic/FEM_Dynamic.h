@@ -38,7 +38,7 @@ public:
 
 
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*1.f, 0.9995f), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.995f), _sub_iteration);
     }
 
 
@@ -54,10 +54,10 @@ public:
                 for (int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
-                //FEM_Generic* fem = new FEM_Generic(ids.data(), get_fem_material(_material, _young, _poisson), get_fem_shape(type));
-                FEM_SVD_Generic* fem = new FEM_SVD_Generic(ids.data(), get_svd_materials(_material, _young, _poisson), get_fem_shape(type));
+                FEM_Generic* fem = new FEM_Generic(ids.data(), get_fem_material(_material, _young, _poisson), get_fem_shape(type));
+                //FEM_SVD_Generic* fem = new FEM_SVD_Generic(ids.data(), get_svd_materials(_material, _young, _poisson), get_fem_shape(type));
                 s_fem->add_fem(fem);
-                //fems.push_back(fem);
+                fems.push_back(fem);
                 scalar volume = fem->get_volume();
                 for (int j = 0; j < nb; ++j) {
                     Particle* p = s_fem->get(ids[j]);
@@ -73,9 +73,8 @@ public:
         std::cout << "FEM TOTAL MASS = " << total_mass << std::endl;
     }
 
-
+public:
     std::vector<FEM_Generic*> fems;
-protected:
     scalar _density;
     int nb_step;
     scalar _young, _poisson;

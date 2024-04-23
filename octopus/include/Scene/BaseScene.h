@@ -25,6 +25,18 @@
 #include "Script/Record/DataRecorder.h"
 #include "UI/UI_Component.h"
 
+struct SimulationArgs {
+    scalar density;
+    scalar young;
+    scalar poisson;
+    Material material;
+    int iteration;
+    int sub_iteration;
+    int scenario_1;
+    int scenario_2;
+    Vector3 dir;
+};
+
 struct BaseScene : public Scene
 {
     virtual char* name() override { return "Basic Scene"; }
@@ -56,12 +68,21 @@ struct BaseScene : public Scene
     // build scene's entities
     virtual void build_entities() override 
     {  
-        Vector3 size(4, 1, 1);
-        Vector3I cells;
-            
-        cells = Vector3I(16, 16, 16);
+        SimulationArgs args;
+        args.density = 1000;
+        args.material = Developed_Neohooke;
+        args.poisson = 0.35;
+        args.young = 1e6;
+        args.iteration = 1;
+        args.sub_iteration = 50;
+        args.scenario_1 = 0;
+        args.scenario_2 = -1;
+        args.dir = Unit3D::right();
+
+        Vector3 size(2, 1, 1);
+        Vector3I cells = Vector3I(4,2,2);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Hexa, false, false);
+        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra20, args);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -71,7 +92,7 @@ struct BaseScene : public Scene
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
-        BeamMeshGenerator* generator;
+        BeamMeshGenerator* generator = nullptr;
         switch (element)
         {
             case Tetra: generator = new TetraBeamGenerator(cells, size); break;
@@ -83,85 +104,22 @@ struct BaseScene : public Scene
         default: break; }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = generator->build();
-       
         delete generator;
         return mesh;
     }
 
-    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, bool pbd_v1 = false, bool fem = false) {
-        Entity* e = Engine::CreateEnity();
-
-        // Mesh generation or loading
+    Mesh* build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
         Mesh* mesh;
-
-        //Msh_Loader loader(AppInfo::PathToAssets() + "mesh/msh/beam_tetra_8x2x2.msh");
-        //mesh = loader.build();
-
-        //if (element == Tetra || element == Tetra10 || element == Tetra20) {
-        //    std::string path = "";
-        //    if (cells.x == 18) {
-        //        path = "mesh/vtk/beam-s-3-1-1-n-18-6-6-tetra.vtk";
-        //    }
-        //    else if (cells.x == 9) {
-        //        path = "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk";
-        //    }
-        //    else if (cells.x == 6) {
-        //        path = "mesh/vtk/beam-s-3-1-1-n-6-2-2-tetra.vtk";
-        //    }
-        //    VTK_Loader loader(AppInfo::PathToAssets() + path);
-        //    loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos + Vector3(0., 0., 0.)));
-        //    mesh = loader.build();
-        //}
-        //else {
-        //    mesh = get_beam_mesh(pos, cells, size, element);
-        //}
 
         mesh = get_beam_mesh(pos, cells, size, element);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
-  
+
         mesh->set_dynamic_geometry(true);
-        e->addBehaviour(mesh);
-        
-        // simulation FEM or PBD
-        scalar density = 1000;
-        scalar young = 1e5;
-        scalar poisson = 0.499f;
-        Material material = Developed_Neohooke;
-        int sub_it = 50;
-        scalar global_damping = 50.;
-        Vector3 dir = Unit3D::right();
-        int scenario_1 = 3;
-        int scenario_2 = 3;
+        return mesh;
+    }
 
-        if (fem) {
-            e->addComponent(new FEM_Dynamic(density, young, poisson, material, 300));
-        }
-        else {
-            e->addComponent(new XPBD_FEM_Dynamic(density, young, poisson, material, 1, sub_it, global_damping, GaussSeidel));
-        }
-
-        // constraint for Particle system
-        auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero(), -dir, scenario_1);
-        e->addComponent(rd_constraint_1);
-        rd_constraint_1->_rot_speed = 90;
-        rd_constraint_1->_move_speed = 1;
-
-        auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, dir, scenario_2);
-        rd_constraint_2->_rot_speed = 180;
-        rd_constraint_2->_move_speed = 1;
-        e->addComponent(rd_constraint_2);
-
-        //auto cf_c = new ConstantForce_Controller(Vector3(0.5, 0.5, 0.0), Vector3(1, 1, 1), Unit3D::right() * 5.f);
-        //e->addComponent(cf_c);
-
-        //e->addComponent(new Constraint_Rigid_Controller(dir * scalar(0.01), -Unit3D::right(), scenario_1));
-        //e->addComponent(new Constraint_Rigid_Controller(pos - dir * scalar(0.01) + size, Unit3D::right(), scenario_2));
-
-        //e->addComponent(new Constraint_Rigid_Controller(dir * scalar(0.01), -Unit3D::forward(), scenario_1));
-        //e->addComponent(new Constraint_Rigid_Controller(pos - dir * scalar(0.01) + size, Unit3D::forward(), scenario_2));
-
-        
+    GL_Graphic* build_graphic(const Color& color, Element element) {
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
 
@@ -173,27 +131,86 @@ struct BaseScene : public Scene
             graphic = new GL_GraphicSurface(color);
 
         graphic->normals() = false;
-        e->addComponent(graphic);
+        return graphic;
+    }
 
-        // Opengl Rendering
+    GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->wireframe() = true;
         display->point() = false;
         display->normal() = false;
-        e->addComponent(display);
+        return display;
+    }
+
+    void add_constraint(Entity* e, const Vector3& pos, const Vector3& size, SimulationArgs& args) {
+        // constraint for Particle system
+        if (args.scenario_1 != -1) {
+            auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero(), -args.dir, args.scenario_1);
+            e->addComponent(rd_constraint_1);
+            rd_constraint_1->_rot_speed = 180;
+            rd_constraint_1->_move_speed = 1.;
+        }
+
+        if (args.scenario_2 != -1) {
+            auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, args.dir, args.scenario_2);
+            rd_constraint_2->_rot_speed = 180;
+            rd_constraint_2->_move_speed = 1.;
+            e->addComponent(rd_constraint_2);
+        }
+    }
+
+    Mesh* build_vtk_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, std::string file) {
+        VTK_Loader loader(AppInfo::PathToAssets() + file);
+        loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
+        Mesh* mesh = loader.build();
+        mesh->set_dynamic_geometry(true);
+        return mesh;
+    }
+
+    void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, SimulationArgs& args) {
+        Entity* e = Engine::CreateEnity();
+        e->addBehaviour(build_beam_mesh(pos, cells, size, element));
+        e->addComponent(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration));
+        add_constraint(e, pos, size, args);
+        e->addComponent(build_graphic(color, element));
+        e->addComponent(build_display());
 
         // save mesh in VTK format (Paraview)size
+        std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z)
+            + "_" + std::to_string(int(size.x)) + "x" + std::to_string(int(size.y)) + "x" + std::to_string(int(size.z));
+        DataRecorder* data_recorder = new DataRecorder(file_name);
+        data_recorder->add(new TimeRecorder());
+        data_recorder->add(new MeshRecorder());
+        data_recorder->add(new FEM_Dynamic_Recorder());
+        data_recorder->add(new FEM_VTK_Recorder(file_name));
+        data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        e->addComponent(data_recorder);
+    }
 
-        std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z) 
+
+    void build_xpbd_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, SimulationArgs& args) {
+        Entity* e = Engine::CreateEnity();
+        //e->addBehaviour(build_beam_mesh(pos, cells, size, element));
+        Mesh* mesh = build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk");
+        //subdive_tetra(mesh->geometry(), mesh->topologies());
+        //subdive_tetra(mesh->geometry(), mesh->topologies());
+        e->addBehaviour(mesh);
+
+        e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 1));
+        add_constraint(e, pos, size, args);
+        e->addComponent(build_graphic(color, element));
+        e->addComponent(build_display());
+
+        // save mesh in VTK format (Paraview)size
+        std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z)
             + "_" + std::to_string(int(size.x)) + "x" + std::to_string(int(size.y)) + "x" + std::to_string(int(size.z));
         DataRecorder* data_recorder = new DataRecorder(file_name);
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new XPBD_FEM_Dynamic_Recorder());
-        data_recorder->add(new XPBD_FEM_VTK_Recorder(file_name));
+        data_recorder->add(new FEM_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
-        //data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4,0.5,0.5), Vector3(2.82376, -2.29429, 0.500275)));
-        //data_recorder->add(new FEM_Torsion_error_recorder(180, size.x));
+        data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4,0.5,0.5), Vector3(2.82376, -2.29429, 0.500275)));
         e->addComponent(data_recorder);
     }
 };

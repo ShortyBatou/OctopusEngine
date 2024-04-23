@@ -109,6 +109,32 @@ struct Stable_NeoHooke_Second : public PBD_ContinuousMaterial {
 };
 
 
+struct NeoHooke_ln_First : public VolumePreservation {
+    NeoHooke_ln_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) {
+        this->alpha = scalar(1) + this->mu / this->lambda;
+    }
+    virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override
+    {
+        Matrix3x3 F_t_inv = glm::transpose(glm::inverse(F));
+        scalar J = glm::determinant(F);
+        P = (2.f*J) * (F - F_t_inv) * F_t_inv;
+    }
+};
+
+struct NeoHooke_ln_Second : public PBD_ContinuousMaterial {
+    NeoHooke_ln_Second(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson) { }
+
+    virtual void getStressTensorAndEnergy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override
+    {
+        energy = Matrix::SquaredNorm(F) - 3.f;
+
+        P = 2.f * F;
+    }
+
+    virtual scalar getStiffness() const override { return this->mu; }
+};
+
+
 struct Developed_Stable_NeoHooke_First : public VolumePreservation {
     Developed_Stable_NeoHooke_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) { }
 };

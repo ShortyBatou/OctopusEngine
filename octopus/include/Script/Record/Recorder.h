@@ -75,10 +75,40 @@ private:
 	Mesh* _mesh;
 };
 
+class FEM_Dynamic_Recorder : public Recorder {
+public:
+	virtual void init(Entity* entity) override {
+		fem_dynamic = entity->getComponent<FEM_Dynamic>();
+
+	}
+
+	virtual void print() override {
+	}
+
+	virtual std::string get_name() override {
+		return "XPBD_FEM_Dynamic";
+	}
+
+	virtual void add_data_json(std::ofstream& json) override {
+		json <<
+			"{"
+			<< "\"material\" : \"" << get_material_name(fem_dynamic->_material) << "\","
+			<< "\"poisson\" : " << fem_dynamic->_poisson << ","
+			<< "\"young\" : " << fem_dynamic->_young << ","
+			<< "\"sub_step\" : " << fem_dynamic->_sub_iteration << ","
+			<< "\"density\" : " << fem_dynamic->_density <<
+			"}";
+	}
+private:
+	FEM_Dynamic* fem_dynamic;
+};
+
+
 class XPBD_FEM_Dynamic_Recorder : public Recorder {
 public:
 	virtual void init(Entity* entity) override {
 		fem_dynamic = entity->getComponent<XPBD_FEM_Dynamic>();
+
 	}
 
 	virtual void print() override {
@@ -132,9 +162,9 @@ private:
 	Mesh* _mesh;
 };
 
-class XPBD_FEM_VTK_Recorder : public Recorder {
+class FEM_VTK_Recorder : public Recorder {
 public:
-	XPBD_FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr){ }
+	FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr){ }
 
 	virtual void init(Entity* entity) override {
 		{
