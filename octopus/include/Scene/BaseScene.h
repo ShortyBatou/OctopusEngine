@@ -77,7 +77,7 @@ struct BaseScene : public Scene
         args.sub_iteration = 50;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
-        args.dir = Unit3D::right();
+        args.dir = Unit3D::up();
 
         Vector3 size(2, 1, 1);
         Vector3I cells = Vector3I(4,2,2);
@@ -190,13 +190,13 @@ struct BaseScene : public Scene
 
     void build_xpbd_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
-        //e->addBehaviour(build_beam_mesh(pos, cells, size, element));
-        Mesh* mesh = build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk");
+        e->addBehaviour(build_beam_mesh(pos, cells, size, element));
+        //Mesh* mesh = build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk");
         //subdive_tetra(mesh->geometry(), mesh->topologies());
         //subdive_tetra(mesh->geometry(), mesh->topologies());
-        e->addBehaviour(mesh);
+        //e->addBehaviour(mesh);
 
-        e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 1));
+        e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 1.));
         add_constraint(e, pos, size, args);
         e->addComponent(build_graphic(color, element));
         e->addComponent(build_display());
@@ -210,7 +210,7 @@ struct BaseScene : public Scene
         data_recorder->add(new XPBD_FEM_Dynamic_Recorder());
         data_recorder->add(new FEM_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
-        data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4,0.5,0.5), Vector3(2.82376, -2.29429, 0.500275)));
+        //data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4,0.5,0.5), Vector3(2.82376, -2.29429, 0.500275)));
         e->addComponent(data_recorder);
     }
 };
