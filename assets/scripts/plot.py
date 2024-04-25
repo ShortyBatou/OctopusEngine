@@ -21,7 +21,7 @@ p3_nbe = [0,6,48,162,384,750,1296,2058]
 plt.grid()
 plt.xlabel('vertices')
 plt.ylabel('time (ms)')
-plt.title("Elements cost (50 sub-step)")
+plt.title("a")
 ax = plt.gca()
 ax.set_xlim([0, 10000])
 
@@ -35,7 +35,7 @@ plt.savefig("elem_performance.png", dpi=300)
 plt.grid()
 plt.xlabel('vertices')
 plt.ylabel('memory (mo)')
-plt.title("Elements cost (50 sub-step)")
+plt.title("z")
 ax = plt.gca()
 ax.set_xlim([0, 10000])
 

@@ -71,18 +71,18 @@ struct BaseScene : public Scene
         SimulationArgs args;
         args.density = 1000;
         args.material = StVK;
-        args.poisson = 0.35;
-        args.young = 3e6;
+        args.poisson = 0.49;
+        args.young = 1e6;
         args.iteration = 1;
-        args.sub_iteration = 50;
+        args.sub_iteration = 20;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
 
         Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(64,16,16);
+        Vector3I cells = Vector3I(16,4,4);
         //build_xpbd_entity(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, false, false);
-        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra, args);
+        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.3f, 1.f), Tetra10, args);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.8, 0.3, 1.), Tetra20, false, false);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra20, false, false);
         //cells = Vector3I(8, 3, 3);
@@ -109,9 +109,7 @@ struct BaseScene : public Scene
     }
 
     Mesh* build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
-        Mesh* mesh;
-
-        mesh = get_beam_mesh(pos, cells, size, element);
+        Mesh* mesh = get_beam_mesh(pos, cells, size, element);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
 
@@ -193,13 +191,13 @@ struct BaseScene : public Scene
         //e->addBehaviour(build_beam_mesh(pos, cells, size, element));
 
         Mesh* mesh = build_vtk_mesh(pos, cells, size, color, "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk");
-        subdive_tetra(mesh->geometry(), mesh->topologies());
-        subdive_tetra(mesh->geometry(), mesh->topologies());
+        //subdive_tetra(mesh->geometry(), mesh->topologies());
+        //subdive_tetra(mesh->geometry(), mesh->topologies());
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         e->addBehaviour(mesh);
 
-        e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 1.));
+        e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 5.));
         add_constraint(e, pos, size, args);
         e->addComponent(build_graphic(color, element));
         e->addComponent(build_display());
