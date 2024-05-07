@@ -15,7 +15,7 @@ struct BeamMeshGenerator : public MeshGenerator
     virtual Mesh* build() override
     {
         Mesh* mesh = new Mesh();
-        buildGeometryGrid(mesh->geometry());
+        build_geometry_grid(mesh->geometry());
         apply_transform(mesh->geometry());
         int ids[8];
         for (int z = 0; z < _subdivisions.z - 1; ++z)
@@ -23,13 +23,13 @@ struct BeamMeshGenerator : public MeshGenerator
         for (int x = 0; x < _subdivisions.x - 1; ++x)
         {
             this->get_cell_vertices_ids(x, y, z, ids);
-            addGeometryAtCell(x, y, z, mesh->geometry());
-            buildTopoAtCell(ids, mesh->topologies());
+            add_geometry_at_cell(x, y, z, mesh->geometry());
+            build_topo_at_cell(ids, mesh->topologies());
         }
         return mesh;
     }
 
-    void buildGeometryGrid(Mesh::Geometry& geometry)
+    void build_geometry_grid(Mesh::Geometry& geometry) const
     {
         for (int z = 0; z < _subdivisions.z; ++z)
         for (int y = 0; y < _subdivisions.y; ++y)
@@ -37,7 +37,7 @@ struct BeamMeshGenerator : public MeshGenerator
             geometry.push_back(Vector3(x * _x_step, y * _y_step, z * _z_step));
     }
 
-    void get_cell_vertices_ids(int x, int y, int z, int* ids)
+    void get_cell_vertices_ids(int x, int y, int z, int* ids) const
     {
         ids[0] = icoord_to_id(x, y, z);
         ids[1] = icoord_to_id(x + 1, y, z);
@@ -50,13 +50,13 @@ struct BeamMeshGenerator : public MeshGenerator
         ids[7] = icoord_to_id(x, y + 1, z + 1);
     }
 
-    int icoord_to_id(int x, int y, int z)
+    int icoord_to_id(int x, int y, int z) const
     {
         return x + y * _subdivisions.x + z * _subdivisions.y * _subdivisions.x;
     }
 
-    virtual void addGeometryAtCell(int x, int y, int z, Mesh::Geometry& geometry) { }
-    virtual void buildTopoAtCell(int ids[8], std::map<Element, Mesh::Topology>& topologies) = 0;
+    virtual void add_geometry_at_cell(int x, int y, int z, Mesh::Geometry& geometry) { }
+    virtual void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology>& topologies) = 0;
 
 protected:
     Vector3I _subdivisions;
@@ -72,7 +72,7 @@ public:
         : BeamMeshGenerator(_subdivisions, _sizes)
     { }
 
-    virtual void buildTopoAtCell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
+    virtual void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
         for (int i = 0; i < 8; ++i) 
             topologies[Hexa].push_back(ids[i]);
@@ -89,7 +89,7 @@ public:
         : BeamMeshGenerator(_subdivisions, _sizes)
     { }
 
-    virtual void buildTopoAtCell(int ids[8], std::map<Element, Mesh::Topology>& topologies)
+    virtual void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology>& topologies)
     {
         static int prysms[12] {0, 1, 3, 4, 5, 7, 
                                     1, 2, 3, 5, 6, 7 
@@ -110,7 +110,7 @@ public:
         : BeamMeshGenerator(_subdivisions, _sizes), _mid_id(0)
     { }
 
-    void addGeometryAtCell(int x, int y, int z, Mesh::Geometry& geometry) override
+    void add_geometry_at_cell(int x, int y, int z, Mesh::Geometry& geometry) override
     {
         _mid_id = geometry.size();
         Vector3 v(scalar(x * this->_x_step + this->_x_step * 0.5),
@@ -119,7 +119,7 @@ public:
         geometry.push_back(v);
     }
 
-    virtual void buildTopoAtCell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
+    virtual void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
         static int pyramids[30] {3, 2, 1, 0, 8,
                                       0, 1, 5, 4, 8, 
@@ -147,7 +147,7 @@ public:
         : BeamMeshGenerator(_subdivisions, _sizes)
     { } 
 
-    virtual void buildTopoAtCell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
+    virtual void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology>& topologies) override
     {
         //static unsigned tetras[24]{ 0,4,6,5, 0,4,7,6, 0,7,3,6, 2,0,3,6, 2,0,6,1, 6,0,5,1 }; int nb = 24;
         static int tetras[24]{ 0,4,6,5, 3,6,2,0, 0,4,7,6, 3,6,0,7, 2,0,6,1, 6,0,5,1 }; int nb = 24;

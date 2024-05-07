@@ -10,7 +10,7 @@ public:
 	ConstantForce_Controller(const Vector3& pmin, const Vector3& pmax, const Vector3& force) : _force(force), _pmin(pmin), _pmax(pmax) { }
 
 	virtual void late_init() override {
-		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
+		ParticleSystemDynamic* ps_dynamic = this->_entity->get_component<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
 		std::vector<int> ids;
 		for (int i = 0; i < ps->particles().size(); ++i) {

@@ -12,8 +12,8 @@ struct TriangleMesh : public MeshGenerator {
         Mesh::Geometry geometry = {_a,_b,_c};
         Mesh::Topology topology = {0,1,2};
         apply_transform(geometry);
-        mesh->setGeometry(geometry);
-        mesh->setTopology(Triangle, topology);
+        mesh->set_geometry(geometry);
+        mesh->set_topology(Triangle, topology);
         return mesh;
     }
 
@@ -39,8 +39,8 @@ struct BoxMesh : public MeshGenerator
         buildGeometry(geometry);
         buildTopology(topology);
         apply_transform(geometry);
-        mesh->setGeometry(geometry);
-        mesh->setTopology(Triangle, topology);
+        mesh->set_geometry(geometry);
+        mesh->set_topology(Triangle, topology);
         return mesh;
     }
 
@@ -111,8 +111,8 @@ struct TetraSphere : public MeshGenerator {
         }
 
         apply_transform(geometry);
-        mesh->setGeometry(geometry);
-        mesh->setTopology(_order, topologies[_order]);
+        mesh->set_geometry(geometry);
+        mesh->set_topology(_order, topologies[_order]);
         return mesh;
     }
 

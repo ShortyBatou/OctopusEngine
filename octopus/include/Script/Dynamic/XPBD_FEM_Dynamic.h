@@ -100,7 +100,7 @@ protected:
                     materials = get_pbd_materials(_material, _young, _poisson);
                     for (PBD_ContinuousMaterial* m : materials) {                    
                         XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
-                        fems.push_back(fem);
+                        fem_constraints.push_back(fem);
                         _pbd->add_xpbd_constraint(fem);
                         volume += fem->get_init_volume();
                     }
@@ -113,7 +113,6 @@ protected:
                     volume += fem->init_volume;
                 }
                 
-                
 
                 t_volume += volume;
                 for (int j = 0; j < nb; ++j) {
@@ -122,7 +121,7 @@ protected:
                 }
 
                 // create a constriant group (order garanty) 
-                if (i + nb < topo.second.size()) _pbd->new_group();
+                if ( (i + nb) < topo.second.size()) _pbd->new_group();
             }
         }
 
@@ -137,7 +136,7 @@ protected:
     
 public:
     PBD_System* _pbd;
-    std::vector<XPBD_FEM_Generic*> fems;
+    std::vector<XPBD_FEM_Generic*> fem_constraints;
 
     scalar _global_damping;
     scalar _density;

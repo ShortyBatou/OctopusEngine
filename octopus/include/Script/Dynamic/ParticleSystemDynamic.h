@@ -10,7 +10,7 @@ public:
     ParticleSystemDynamic(scalar particle_mass) : _particle_mass(particle_mass) { }
 
     virtual void init() override {
-        _mesh = this->entity()->getComponent<Mesh>();
+        _mesh = this->entity()->get_component<Mesh>();
         _ps = build_particle_system();
         build_particles();
         build_dynamic();

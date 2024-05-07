@@ -61,13 +61,13 @@ public:
 	}
 
 	bool can_draw(Entity* entity) override {
-		OpenGLManager* opengl_manager = entity->getComponent<OpenGLManager>();
+		OpenGLManager* opengl_manager = entity->get_component<OpenGLManager>();
 		if (!opengl_manager) return false;
 		return true;
 	}
 
 	virtual void draw(Entity* entity) override {
-		OpenGLManager* opengl_manager = entity->getComponent<OpenGLManager>();;
+		OpenGLManager* opengl_manager = entity->get_component<OpenGLManager>();;
 
 		ImGui::ColorEdit3("Background Color", &opengl_manager->background().x);
 		ImGui::SliderFloat("Wireframe Intencity", &GL_Graphic::wireframe_intencity, 0.0f, 1.0f, "ratio = %.3f");
@@ -84,7 +84,7 @@ public:
 		change = change + ImGui::ColorEdit3("Tetra10", &GL_GraphicElement::element_colors[Tetra10].x);
 		if (change) {
 			for (Entity* e : Engine::GetEntities()) {
-				GL_GraphicElement* gl_elements = e->getComponent<GL_GraphicElement>();
+				GL_GraphicElement* gl_elements = e->get_component<GL_GraphicElement>();
 				if (gl_elements) {
 					gl_elements->update_buffer_colors();
 				}
@@ -134,11 +134,11 @@ public:
 	}
 
 	bool can_draw(Entity* entity) override {
-		return entity->getComponent<CameraManager>() != nullptr;
+		return entity->get_component<CameraManager>() != nullptr;
 	}
 
 	virtual void draw(Entity* entity) override {
-		CameraManager* camera_manager = entity->getComponent<CameraManager>();
+		CameraManager* camera_manager = entity->get_component<CameraManager>();
 		ImGui::SliderFloat("Speed", &camera_manager->speed(), 0.0f, 1.0f, "ratio = %.3f");
 		ImGui::SliderFloat("Zoom", &camera_manager->zoom(), camera_manager->zoom_range().x, camera_manager->zoom_range().y, "ratio = %.3f");
 	}
@@ -155,19 +155,19 @@ public:
 
 
 	bool can_draw(Entity* entity) override {
-		GL_GraphicSurface* gl_surface = entity->getComponent<GL_GraphicSurface>();
-		GL_DisplayMesh* gl_display = entity->getComponent<GL_DisplayMesh>();
+		GL_GraphicSurface* gl_surface = entity->get_component<GL_GraphicSurface>();
+		GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
 		if (gl_surface || gl_display) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		GL_GraphicSurface* gl_surface = entity->getComponent< GL_GraphicSurface>();
+		GL_GraphicSurface* gl_surface = entity->get_component< GL_GraphicSurface>();
 		if (gl_surface) {
 			ImGui::ColorEdit3("Color", &gl_surface->color().r);
 		}
 
-		GL_DisplayMesh* gl_display = entity->getComponent<GL_DisplayMesh>();
+		GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
 		if (gl_display) {
 			ImGui::Checkbox("Wireframe", &gl_display->wireframe());
 			ImGui::SameLine();
@@ -195,13 +195,13 @@ public:
 
 
 	bool can_draw(Entity* entity) override {
-		DataRecorder* data_recorder = entity->getComponent<DataRecorder>();
+		DataRecorder* data_recorder = entity->get_component<DataRecorder>();
 		if (data_recorder) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		DataRecorder* data_recorder = entity->getComponent<DataRecorder>();
+		DataRecorder* data_recorder = entity->get_component<DataRecorder>();
 		ImGui::Text(("File : " + data_recorder->json_path()).c_str());
 		if (ImGui::Button("Save")) {
 			data_recorder->save();
@@ -230,13 +230,13 @@ public:
 
 
 	bool can_draw(Entity* entity) override {
-		VTK_Graphic* vtk_fem = entity->getComponent<VTK_Graphic>();
+		VTK_Graphic* vtk_fem = entity->get_component<VTK_Graphic>();
 		if (vtk_fem) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		VTK_Graphic* vtk_fem = entity->getComponent<VTK_Graphic>();
+		VTK_Graphic* vtk_fem = entity->get_component<VTK_Graphic>();
 		ImGui::Text(("File : " + vtk_fem->file_name()).c_str());
 		if (ImGui::Button("Save")) {
 			vtk_fem->save();
@@ -265,13 +265,13 @@ public:
 
 
 	bool can_draw(Entity* entity) override {
-		XPBD_FEM_Dynamic* pbd = entity->getComponent<XPBD_FEM_Dynamic>();
+		XPBD_FEM_Dynamic* pbd = entity->get_component<XPBD_FEM_Dynamic>();
 		if (pbd) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		XPBD_FEM_Dynamic* pbd = entity->getComponent<XPBD_FEM_Dynamic>();
+		XPBD_FEM_Dynamic* pbd = entity->get_component<XPBD_FEM_Dynamic>();
 		it = pbd->get_iteration();
 		sub_it = pbd->get_sub_iteration();
 		if (ImGui::InputInt("steps", &it) || ImGui::InputInt("sub steps", &sub_it)) {
@@ -295,7 +295,7 @@ public:
 
 
 	bool can_draw(Entity* entity) override {
-		Constraint_Rigid_Controller* rc = entity->getComponent<Constraint_Rigid_Controller>();
+		Constraint_Rigid_Controller* rc = entity->get_component<Constraint_Rigid_Controller>();
 		if (rc) return true;
 		return false;
 	}

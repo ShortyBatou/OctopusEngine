@@ -284,10 +284,10 @@ protected:
     void stop() {
         for (Entity* entity : Engine::GetEntities()) {
             if (entity->id() == 0) {
-                TimeManager* time_manager = entity->getComponent<TimeManager>();
+                TimeManager* time_manager = entity->get_component<TimeManager>();
                 if (time_manager) time_manager->disable();
 
-                DebugManager* debug_manager = entity->getComponent<DebugManager>();
+                DebugManager* debug_manager = entity->get_component<DebugManager>();
                 if (debug_manager) debug_manager->pause();
             }
             entity->disable();
@@ -298,10 +298,10 @@ protected:
 
         for (Entity* entity : Engine::GetEntities()) {
             if (entity->id() == 0) {
-                TimeManager* time_manager = entity->getComponent<TimeManager>();
+                TimeManager* time_manager = entity->get_component<TimeManager>();
                 if (time_manager) time_manager->enable();
 
-                DebugManager* debug_manager = entity->getComponent<DebugManager>();
+                DebugManager* debug_manager = entity->get_component<DebugManager>();
                 if (debug_manager) debug_manager->play();
             }
             entity->enable();

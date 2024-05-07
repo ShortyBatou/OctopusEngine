@@ -6,7 +6,7 @@
 class XPBD_FEM_Generic : public XPBD_Constraint {
 public:
     XPBD_FEM_Generic(int* ids, PBD_ContinuousMaterial* material, FEM_Shape* shape)
-        : XPBD_Constraint(std::vector<int>(ids, ids + shape->nb) , material->getStiffness()), _material(material), _shape(shape)
+        : XPBD_Constraint(std::vector<int>(ids, ids + shape->nb) , material->get_stiffness()), _material(material), _shape(shape)
     { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
@@ -48,7 +48,7 @@ public:
             F = Jx * _JX_inv[i];
 
             // Get piola kirchoff stress tensor + energy
-            _material->getStressTensorAndEnergy(F, P, energy);
+            _material->get_PK1_and_energy(F, P, energy);
 
             // add forces
             P = P * glm::transpose(_JX_inv[i]) * _V[i];
@@ -72,6 +72,33 @@ public:
         }
         return true;
     } 
+
+    scalar get_von_mises_stress(const std::vector<Particle*>& particles) {
+        std::vector<Particle*> x(this->nb());
+        for (int i = 0; i < this->nb(); ++i) {
+            x[i] = particles[this->_ids[i]];
+        }
+        Matrix3x3 Jx, F, P;
+        scalar stress = 0, _;
+        for (int i = 0; i < _shape->weights.size(); ++i) {
+            Jx = Matrix::Zero3x3();
+
+            // Compute transform (reference => scene)
+            for (int j = 0; j < this->nb(); ++j) {
+                Jx += glm::outerProduct(x[j]->position, _shape->dN[i][j]);
+            }
+
+            // Deformation gradient (material => scene   =   material => reference => scene)
+            F = Jx * _JX_inv[i];
+
+            // Get piola kirchoff stress tensor + energy
+            _material->get_PK1_and_energy(F, P, _);
+
+            // convert pk1 to chauchy stress and compute von_mises stress
+            stress += _material->von_mises_stress(_material->pk1_to_chauchy_stress(F, P) * _V[i]);
+        }
+        return stress;
+    }
 
     scalar get_init_volume() { return init_volume; }
 

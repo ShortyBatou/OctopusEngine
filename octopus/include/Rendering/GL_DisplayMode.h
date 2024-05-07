@@ -12,7 +12,7 @@ public:
     GL_DisplayMode() : _graphic(nullptr) { }
     virtual void init() override
     { 
-        _graphic     = this->_entity->getComponent<GL_Graphic>();
+        _graphic     = this->_entity->get_component<GL_Graphic>();
         set_shaders_path(_paths);
         for (int i = 0; i < _paths.size(); ++i)
         {

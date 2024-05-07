@@ -60,15 +60,15 @@ public:
         , _dynamic_topology(dynamic_topology)
         , _need_update(true)
 	{ }
-   
+    
     Vector3& vertice(int i) { return _geometry[i]; }
     Geometry& geometry() { return _geometry; }
     int nb_vertices() { return _geometry.size(); }
     Topology& topology(Element elem) {return _topologies[elem]; }
     std::map<Element, Topology>& topologies() { return _topologies; }
 
-    void setGeometry(const Geometry& geometry) {_geometry = geometry;}
-    void setTopology(Element elem, const Topology& topology) { _topologies[elem] = topology;}
+    void set_geometry(const Geometry& geometry) {_geometry = geometry;}
+    void set_topology(Element elem, const Topology& topology) { _topologies[elem] = topology;}
     void clear() { 
         _topologies.clear();
         _geometry.clear();

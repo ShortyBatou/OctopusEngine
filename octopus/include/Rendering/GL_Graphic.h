@@ -24,7 +24,7 @@ public:
     virtual void init() override
     {
         Entity* e = this->entity();
-        _mesh     = e->getComponent<Mesh>();
+        _mesh     = e->get_component<Mesh>();
         
     }
 

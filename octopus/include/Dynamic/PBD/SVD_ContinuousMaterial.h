@@ -3,16 +3,16 @@
 
 struct SVD_ContinuousMaterial : public ContinuousMaterial {
     SVD_ContinuousMaterial(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
-    virtual scalar getEnergy(const Vector3& s) = 0;
+    virtual scalar get_energy(const Vector3& s) = 0;
     virtual void getConstraint(const Vector3& s, Vector3& C) = 0;
-    virtual void getStiffness(const Vector3& s, Matrix3x3& A) = 0;
+    virtual void get_stiffness(const Vector3& s, Matrix3x3& A) = 0;
     virtual void getConstraintAndStiffness(const Vector3& s, Vector3& J, scalar& energy) {};
     virtual ~SVD_ContinuousMaterial() {}
 };
 
 struct SVD_StVK : public SVD_ContinuousMaterial {
     SVD_StVK(const scalar _young, const scalar _poisson) : SVD_ContinuousMaterial(_young, _poisson) { }
-    virtual scalar getEnergy(const Vector3& s) {
+    virtual scalar get_energy(const Vector3& s) {
         scalar s0 = s.x * s.x;
         scalar s1 = s.y * s.y;
         scalar s2 = s.z * s.z;
@@ -28,7 +28,7 @@ struct SVD_StVK : public SVD_ContinuousMaterial {
         C.z = s.z * (lambda / 2 * I_c + mu * (s.z * s.z - 1));
     }
 
-    virtual void getStiffness(const Vector3& s, Matrix3x3& K) {
+    virtual void get_stiffness(const Vector3& s, Matrix3x3& K) {
         scalar s0 = s.x * s.x;
         scalar s1 = s.y * s.y;
         scalar s2 = s.z * s.z;
@@ -55,7 +55,7 @@ struct SVD_Stable_Neohooke : public SVD_ContinuousMaterial {
     SVD_Stable_Neohooke(const scalar _young, const scalar _poisson) : SVD_ContinuousMaterial(_young, _poisson) { 
         alpha = scalar(1) - mu / lambda;
     }
-    virtual scalar getEnergy(const Vector3& s) {
+    virtual scalar get_energy(const Vector3& s) {
         scalar D = s.x * s.y * s.z - alpha;
         return this->mu / scalar(2) * (s.x * s.x + s.y * s.y + s.z * s.z) + this->lambda / 2 * (D * D);
     }
@@ -67,7 +67,7 @@ struct SVD_Stable_Neohooke : public SVD_ContinuousMaterial {
         C.z = this->mu * (s.z - s.x * s.y) + this->lambda * D * s.x * s.y;
     }
 
-    virtual void getStiffness(const Vector3& s, Matrix3x3& K) {
+    virtual void get_stiffness(const Vector3& s, Matrix3x3& K) {
         scalar k0 = 2 * (s.x * s.y * s.z - this->alpha);
 
         K[0][0] = lambda * (s.y * s.z) * (s.y * s.z) + mu;

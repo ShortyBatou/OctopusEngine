@@ -49,7 +49,7 @@ public:
 	MeshRecorder() : _mesh(nullptr) { }
 
 	virtual void init(Entity* entity) override {
-		_mesh = entity->getComponent<Mesh>();
+		_mesh = entity->get_component<Mesh>();
 	}
 
 	virtual void print() override { }
@@ -78,7 +78,7 @@ private:
 class FEM_Dynamic_Recorder : public Recorder {
 public:
 	virtual void init(Entity* entity) override {
-		fem_dynamic = entity->getComponent<FEM_Dynamic>();
+		fem_dynamic = entity->get_component<FEM_Dynamic>();
 
 	}
 
@@ -107,7 +107,7 @@ private:
 class XPBD_FEM_Dynamic_Recorder : public Recorder {
 public:
 	virtual void init(Entity* entity) override {
-		fem_dynamic = entity->getComponent<XPBD_FEM_Dynamic>();
+		fem_dynamic = entity->get_component<XPBD_FEM_Dynamic>();
 
 	}
 
@@ -138,7 +138,7 @@ public:
 	Mesh_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr) { }
 
 	virtual void init(Entity* entity) override {
-		_mesh = entity->getComponent<Mesh>();
+		_mesh = entity->get_component<Mesh>();
 	}
 
 	virtual void print() override { }
@@ -162,20 +162,17 @@ private:
 	Mesh* _mesh;
 };
 
+
+
 class FEM_VTK_Recorder : public Recorder {
 public:
-	FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr){ }
+	FEM_VTK_Recorder(std::string file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr) { }
 
 	virtual void init(Entity* entity) override {
-		{
-			auto fem_dynamic = entity->getComponent<XPBD_FEM_Dynamic>();
-			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
-		}
-		{
-			auto fem_dynamic = entity->getComponent<FEM_Dynamic>();
-			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
-		}
-		_mesh = entity->getComponent<Mesh>();
+		auto fem_dynamic = entity->get_component<FEM_Dynamic>();
+		_mesh = entity->get_component<Mesh>();
+		assert(fem_dynamic && _mesh);
+		_ps = fem_dynamic->getParticleSystem();
 	}
 
 	virtual void print() override { }
@@ -209,10 +206,71 @@ public:
 		vtk.add_vector_data(displacements, "u");
 		vtk.close();
 	}
-private:
+protected:
 	std::string _file_name;
 	ParticleSystem* _ps;
 	Mesh* _mesh;
+};
+
+class XPBD_FEM_VTK_Recorder : public FEM_VTK_Recorder {
+public:
+	XPBD_FEM_VTK_Recorder(std::string file_name) : FEM_VTK_Recorder(file_name) { }
+
+	virtual void init(Entity* entity) override {
+		_xpbd = entity->get_component<XPBD_FEM_Dynamic>();
+		this->_mesh = entity->get_component<Mesh>();
+		assert(_xpbd && _mesh);
+		this->_ps = _xpbd->getParticleSystem();
+	}
+
+	void save() override {
+		int nb = _ps->nb_particles();
+		int nb_element = 0;
+		int elem_nb_vert;
+		Element elem;
+		for (auto& topo : this->_mesh->topologies()) {
+			if (topo.second.size() == 0) continue;
+			elem = topo.first;
+			elem_nb_vert = elem_nb_vertices(elem);
+			nb_element = topo.second.size() / elem_nb_vert;
+			break;
+		}
+
+		std::vector<scalar> norm_displacements(nb);
+		std::vector<Vector3> displacements(nb);
+		std::vector<Vector3> init_pos(nb);
+		std::vector<scalar> massses(nb);
+		std::vector<scalar> element_stress(nb_element);
+		std::vector<scalar> vertex_stress(nb);
+		for (int i = 0; i < nb; ++i) {
+			Particle* p = _ps->get(i);
+			init_pos[i] = p->init_position;
+			displacements[i] = p->position - p->init_position;
+			massses[i] = p->mass;
+		}
+
+		int step = _xpbd->fem_constraints.size() / nb_element;
+		for (int i = 0; i < nb_element; ++i) {
+			element_stress[i] = _xpbd->fem_constraints[i * step]->get_von_mises_stress(this->_ps->particles());
+			for (int j = 0; j < elem_nb_vert; ++j) {
+				int id = _mesh->topologies()[elem][i * elem_nb_vert + j];
+				vertex_stress[id] += element_stress[i] / scalar(elem_nb_vert);
+			}
+		}
+
+		VTK_Formater vtk;
+		vtk.open(_file_name);
+		vtk.save_mesh(init_pos, _mesh->topologies());
+		vtk.start_point_data();
+		vtk.add_scalar_data(massses, "weights");
+		vtk.add_vector_data(displacements, "solution");
+		vtk.add_scalar_data(vertex_stress, "smooth_vm_stress");
+		vtk.start_cell_data();
+		vtk.add_scalar_data(element_stress, "vm_stress");
+		vtk.close();
+	}
+protected:
+	XPBD_FEM_Dynamic* _xpbd;
 };
 
 class Graphic_VTK_Recorder : public Recorder {
@@ -220,7 +278,7 @@ public:
 	Graphic_VTK_Recorder(std::string file_name) : _file_name(file_name), _graphic(nullptr) { }
 
 	virtual void init(Entity* entity) override {
-		_graphic = entity->getComponent<GL_Graphic>();
+		_graphic = entity->get_component<GL_Graphic>();
 	}
 
 	virtual void print() override { }
@@ -256,11 +314,11 @@ public:
 
 	virtual void init(Entity* entity) override {
 		{ 
-			auto fem_dynamic = entity->getComponent<XPBD_FEM_Dynamic>();
+			auto fem_dynamic = entity->get_component<XPBD_FEM_Dynamic>();
 			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
 		}
 		{
-			auto fem_dynamic = entity->getComponent<FEM_Dynamic>();
+			auto fem_dynamic = entity->get_component<FEM_Dynamic>();
 			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
 		}
 		
@@ -317,11 +375,11 @@ public:
 
 	virtual void init(Entity* entity) override {
 		{
-			auto fem_dynamic = entity->getComponent<XPBD_FEM_Dynamic>();
+			auto fem_dynamic = entity->get_component<XPBD_FEM_Dynamic>();
 			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
 		}
 		{
-			auto fem_dynamic = entity->getComponent<FEM_Dynamic>();
+			auto fem_dynamic = entity->get_component<FEM_Dynamic>();
 			if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
 		}
 

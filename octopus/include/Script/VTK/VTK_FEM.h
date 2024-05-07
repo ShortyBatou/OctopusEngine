@@ -18,7 +18,7 @@ public:
     }
 
     void save() {
-        GL_Graphic* graphic = this->_entity->getComponent<GL_Graphic>();
+        GL_Graphic* graphic = this->_entity->get_component<GL_Graphic>();
         VTK_Formater vtk;
 
         std::map<Element, Mesh::Topology> lines;
@@ -27,7 +27,7 @@ public:
         vtk.save_mesh(graphic->get_geometry(), lines);
         vtk.close();
 
-        if (this->_entity->getComponent<GL_GraphicHighOrder>()) {
+        if (this->_entity->get_component<GL_GraphicHighOrder>()) {
             std::map<Element, Mesh::Topology> mesh;
             mesh[Triangle] = graphic->get_quads();
             vtk.open(_name);

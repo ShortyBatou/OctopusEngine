@@ -35,7 +35,7 @@ struct Entity : public Behaviour {
     }
 
     template<class T>
-    T* getComponent() {
+    T* get_component() {
         for (int i = 0; i < _components.size(); ++i)
         {
             if (typeid(*_components[i]) == typeid(T))

@@ -8,7 +8,7 @@ public:
 	Constraint_Rigid_Controller(const Vector3& p, const Vector3& n, int mode = 0) : _plane_pos(p), _plane_normal(n), _mode(mode), _rot_speed(45), _move_speed(0.5), _event_rate(1), _smooth_iterations(1) { }
 
 	virtual void late_init() override {
-		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
+		ParticleSystemDynamic* ps_dynamic = this->_entity->get_component<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
 		std::vector<int> ids;
 		for (int i = 0; i < ps->particles().size(); ++i) {
@@ -116,7 +116,7 @@ public:
 	}
 
 	void rgn_crush() {
-		ParticleSystemDynamic* ps_dynamic = this->_entity->getComponent<ParticleSystemDynamic>();
+		ParticleSystemDynamic* ps_dynamic = this->_entity->get_component<ParticleSystemDynamic>();
 		ParticleSystem* ps = ps_dynamic->getParticleSystem();
 		for (int i = 0; i < ps->particles().size(); ++i) {
 			Particle* part = ps->particles()[i];

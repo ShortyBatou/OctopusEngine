@@ -84,7 +84,7 @@ public:
             C += constraint * _V[i];
 
             // get compliance
-            _material->getStiffness(s, stiffness);
+            _material->get_stiffness(s, stiffness);
             A += stiffness * _V[i];
 
             for (int j = 0; j < 3; ++j) {

@@ -5,7 +5,7 @@
 class XPBD_FEM_Tetra : public XPBD_Constraint {
 public:
     XPBD_FEM_Tetra(int* ids, PBD_ContinuousMaterial* material)
-        : XPBD_Constraint(std::vector<int>(ids, ids + 4), material->getStiffness()), _material(material)
+        : XPBD_Constraint(std::vector<int>(ids, ids + 4), material->get_stiffness()), _material(material)
     { }
 
     virtual void init(const std::vector<Particle*>& particles) override {
@@ -21,7 +21,7 @@ public:
 
         _V_init = std::abs(glm::determinant(JX)) / scalar(6);
         _JX_inv = glm::inverse(JX);
-        this->_stiffness = _material->getStiffness() * _V_init;
+        this->_stiffness = _material->get_stiffness() * _V_init;
         _V = _V_init;
     }
 
@@ -33,7 +33,7 @@ public:
         Jx[2] = x[2]->position - x[3]->position;
 
         F = Jx * _JX_inv;
-        _material->getStressTensorAndEnergy(F, P, C);
+        _material->get_PK1_and_energy(F, P, C);
         _V = std::abs(glm::determinant(Jx)) / scalar(6);
 
         P = P * glm::transpose(_JX_inv);

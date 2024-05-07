@@ -49,26 +49,34 @@ struct MeshScene : public Scene
         root->addBehaviour(new TimeManager(1.f / 60.f));
         root->addBehaviour(new InputManager());
         root->addBehaviour(new CameraManager());
-        root->addBehaviour(new DebugManager(true));
+        root->addBehaviour(new DebugManager(false));
         root->addBehaviour(new OpenGLManager(Color(0.9f, 0.9f, 0.9f, 1.f)));
     }
 
     // build scene's entities
     virtual void build_entities() override
     {
-        Vector3 size(4, 1, 1);
+        Vector3 size(1, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(32, 32, 32);
-        //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.8f, 1.f), Tetra10);
+        cells = Vector3I(1, 1, 1);
+        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.4f, 0.4f, 0.8f, 1.f), Tetra20);
         //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Hexa);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
         //build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "mesh/vtk/hexa.vtk");
-        convert_vtk_mesh("Tetra10_8_2_2_4x1x1.vtk", "Torsion_", Tetra10, 4);
+        //convert_vtk_mesh("Tetra10_8_2_2_4x1x1.vtk", "Torsion_", Tetra10, 4);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
+    }
+
+    Mesh* get_sphere_mesh(const Vector3& pos, Element& element) {
+        MeshGenerator* generator = new TetraSphere(element);
+        generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
+        Mesh* mesh = generator->build();
+        delete generator;
+        return mesh;
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
@@ -126,9 +134,10 @@ struct MeshScene : public Scene
 
     void build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element) {
         Mesh* mesh;
-        mesh = get_beam_mesh(pos, cells, size, element);
-        if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
-        if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+        //mesh = get_beam_mesh(pos, cells, size, element);
+        mesh = get_sphere_mesh(pos, element);
+        //if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+        //if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
         build_entity(mesh, color);
     }
@@ -139,13 +148,13 @@ struct MeshScene : public Scene
 
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
-        int type = (mesh->topologies()[Tetra10].size() != 0 || mesh->topologies()[Tetra20].size() != 0) ? 3 : 1;
+        int type = (mesh->topologies()[Tetra10].size() != 0 || mesh->topologies()[Tetra20].size() != 0) ? 2 : 0;
         //graphic = new GL_GraphicElement(0.7);
         switch (type) {
-            case 0 : graphic = new GL_GraphicSurface(color);
-            case 1 : graphic = new GL_GraphicElement(0.7f);
-            case 2 : graphic = new GL_GraphicHighOrder(3, color);
-            default: graphic = new GL_GraphicSurface(color);
+            case 0: graphic = new GL_GraphicSurface(color); break;
+            case 1 : graphic = new GL_GraphicElement(0.7f); break;
+            case 2 : graphic = new GL_GraphicHighOrder(5, color); break;
+            default: graphic = new GL_GraphicSurface(color); break;
         }
 
         graphic->normals() = false;
