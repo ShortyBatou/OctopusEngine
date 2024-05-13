@@ -80,7 +80,7 @@ public:
             Vector3 s = Vector3(S[0][0], S[1][1], S[2][2]);
 
             // get constraint
-            _material->getConstraint(s, constraint);
+            _material->get_constraint(s, constraint);
             C += constraint * _V[i];
 
             // get compliance

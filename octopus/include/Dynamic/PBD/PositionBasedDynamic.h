@@ -16,7 +16,7 @@ struct PBD_Thread_Graph {
         std::vector<std::set<int>> parts_colors(parts.size());
         for (int i = 0; i < g_constraints.size(); ++i) {
             if (g_constraints[i].size() == 0) continue;
-            Mesh::Topology c_topo = g_constraints[i][0]->ids();
+            Mesh::Topology c_topo = g_constraints[i][0]->ids;
             int current_color = 0;
             
             /// get neighbors' color
@@ -150,7 +150,7 @@ public:
             xpbd->apply(this->_particles, dt);
 
             // apply correction dt_p on particles' position
-            for (int id : xpbd->ids()) {
+            for (int id : xpbd->ids) {
                 this->_particles[id]->position += this->_particles[id]->force; // here: force = delta x
                 this->_particles[id]->force *= 0;
             }
@@ -171,7 +171,7 @@ public:
                 xpbd->apply(this->_particles, dt);
 
                 // apply correction dt_p on particles' position
-                for (int id : xpbd->ids()) {
+                for (int id : xpbd->ids) {
                     this->_particles[id]->position += this->_particles[id]->force;
                     this->_particles[id]->force *= 0;
                 }
@@ -186,7 +186,7 @@ public:
             if (!xpbd->active()) continue;
             xpbd->apply(this->_particles, dt); // if xpbd
 
-            for (int id : xpbd->ids()) {
+            for (int id : xpbd->ids) {
                 counts[id]++;
             }
         }

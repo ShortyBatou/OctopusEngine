@@ -17,9 +17,12 @@ public:
         for (auto& elem : _converters) elem.second->init();
     }
 
+    virtual void update_buffer_colors() override
+    {
+        assert(_colors.size() == _mesh->nb_vertices());
+        if (_mesh->nb_vertices() == 0) return;
 
-    virtual void get_geometry(Mesh::Geometry& geometry) override {
-
+        // mono element ...
         Element elem;
         for (auto& t : _mesh->topologies()) {
             if (t.second.size() > 0) {
@@ -31,19 +34,50 @@ public:
 
         auto& tetras = _mesh->topology(elem);
         FEM_Shape* shape = _converters[elem]->shape();
+        std::vector<Color> refined_colors(refined_geometry.size());
+        for (size_t i = 0; i < refined_geometry.size(); ++i) {
+            std::vector<scalar> N_v = shape->build_shape(refined_geometry[i].x, refined_geometry[i].y, refined_geometry[i].z);
+            for (size_t j = 0; j < N_v.size(); ++j) {
+                refined_colors[i] += N_v[j] * _colors[tetras[v_tetra_id[i] * elem_size + j]];
+            }
+        }
+
+        _b_color->load_data(refined_colors);
+    }
+
+    virtual void get_geometry(Mesh::Geometry& geometry) override {
+
+        Element elem;
+        // mono element ...
+        for (auto& t : _mesh->topologies()) {
+            if (t.second.size() > 0) {
+                elem = t.first;
+                break;
+            }
+        }
+        int elem_size = elem_nb_vertices(elem);
+
+        auto& tetras = _mesh->topology(elem);
+        FEM_Shape* shape = _converters[elem]->shape();
         geometry.resize(refined_geometry.size());
+        
         for (int i = 0; i < refined_geometry.size(); ++i) {
             std::vector<scalar> N_v = shape->build_shape(refined_geometry[i].x, refined_geometry[i].y, refined_geometry[i].z);
             geometry[i] = Unit3D::Zero();
             for (int j = 0; j < N_v.size(); ++j) {
                 geometry[i] += N_v[j] * _mesh->geometry()[tetras[v_tetra_id[i] * elem_size + j]];
-            }
+            }  
         }
     }
 
-    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) override
+    virtual void get_topology(
+        Mesh::Topology& lines, 
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads, 
+        Mesh::Topology& tri_to_elem, 
+        Mesh::Topology& quad_to_elem) override
     {
-
+        
         // triangle subdivision pattern;
         std::vector<int> subdivision_pattern = { 0,3,5, 3,1,4, 3,4,5, 5,4,2 };
         std::vector<Edge> subdivision_edges = { Edge(0,1), Edge(1,2), Edge(0,2) };
@@ -58,7 +92,7 @@ public:
         }
         int elem_size = elem_nb_vertices(elem);
         Mesh::Topology elem_triangles, elem_quads;
-        _converters[elem]->convert_element(_mesh->topologies(), elem_triangles, elem_quads);
+        _converters[elem]->convert_element(_mesh->topologies(), elem_triangles, elem_quads, tri_to_elem, quad_to_elem);
 
         // get surface triangles associated with their tetra and face num and their coordinate in referential element
         std::vector<Face<3>> surface_triangles = get_surface<3>(
@@ -87,13 +121,18 @@ public:
             subdivise<3>(subdivision_pattern, subdivision_edges, surface_triangles, edges, wireframe, v_tetra_id, refined_geometry);
             // TODO quad
         }
+        tri_to_elem.clear();
+
+       
 
         // we use quads list to store triangle because we don't want wireframe ! (automatic for triangles)
         quads.resize(surface_triangles.size()*3);
+        quad_to_elem.resize(surface_triangles.size() * 3);
         for (int i = 0; i < surface_triangles.size(); ++i) {
-            quads[i * 3] = surface_triangles[i].ids[0];
-            quads[i * 3+1] = surface_triangles[i].ids[1];
-            quads[i * 3+2] = surface_triangles[i].ids[2];
+            for (int j = 0; j < 3; ++j) {
+                quads[i*3+j] = surface_triangles[i].ids[j];
+                quad_to_elem[i*3+j] = surface_triangles[i].element_id;
+            }
         } 
 
         lines.resize(wireframe.size() * 2);

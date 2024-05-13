@@ -6,11 +6,9 @@
 #include "Core/Entity.h"
 #include "Dynamic/PBD/PositionBasedDynamic.h"
 #include "Dynamic/PBD/XPBD_FEM_Generic.h"
-#include "Script/Dynamic/ParticleSystemDynamic.h"
-#include "Dynamic/PBD/XPBD_FEM_Tetra.h"
-#include "Dynamic/PBD/XPBD_FEM_SVD_Generic.h"
+#include "Script/Dynamic/FEM_Dynamic.h"
 
-class XPBD_FEM_Dynamic : public ParticleSystemDynamic {
+class XPBD_FEM_Dynamic : public FEM_Dynamic {
 public:
     XPBD_FEM_Dynamic(scalar density, 
         scalar young, scalar poisson, 
@@ -18,49 +16,13 @@ public:
         int iteration = 1, int sub_iteration = 30, 
         scalar global_damping = 0,
         PBDSolverType type = GaussSeidel) : 
-        ParticleSystemDynamic(density),  _young(young), _poisson(poisson), 
-        _material(material), 
-        _iteration(iteration), _sub_iteration(sub_iteration), 
-        _type(type), 
-        _density(density), 
+        FEM_Dynamic(density, young, poisson, material, sub_iteration), 
+        _iteration(iteration),
+        _type(type),
         _global_damping(global_damping)
     { }
 
-    virtual void late_init() override {
-        this->update_mesh();
-    }
-
-    virtual void update() {
-        Time::Tic();
-        this->_ps->step(Time::Fixed_DeltaTime());
-        //scalar residual = _pbd->get_residual(Time::Fixed_DeltaTime());
-        //if (residual > 10e-5 && _sub_iteration < 50) {
-        //    set_iterations(_iteration, _sub_iteration + 1);
-        //}
-
-        //DebugUI::Begin("[" + std::to_string(this->_entity->id()) + "] XPBD FEM Dual Residual");
-        //{
-        //    DebugUI::Value("Residual", residual);
-        //    DebugUI::Range("Range", residual);
-        //    DebugUI::Plot("Plot", residual, 60);
-        //}
-        //DebugUI::End();
-
-        float t = Time::Tac() * 1000;
-        DebugUI::Begin("[" + std::to_string(this->_entity->id()) + "] XPBD FEM Time");
-        {
-            DebugUI::Value("Time", t);
-            DebugUI::Range("Range", t);
-            DebugUI::Plot("Plot", t, 60);
-        }
-        DebugUI::End();
-
-        //this->_ps->draw_debug_constraints();
-        this->update_mesh();
-    }
-
-    virtual ~XPBD_FEM_Dynamic() {
-    }
+    virtual ~XPBD_FEM_Dynamic() { }
 
     int get_iteration() { return _iteration; }
     int get_sub_iteration() { return _sub_iteration; }
@@ -74,74 +36,25 @@ public:
 
 protected:
     virtual ParticleSystem* build_particle_system() override {
-        return new PBD_System(new EulerSemiExplicit(Vector3(0.,-9.81,0.) * 1.f, 1.f), _iteration, _sub_iteration, _type, _global_damping);
+        return new PBD_System(new EulerSemiExplicit(1.f), _iteration, _sub_iteration, _type, _global_damping);
     }
 
-    virtual void build_dynamic() {
-        _pbd = static_cast<PBD_System*>(this->_ps);
-        for (Particle* p : _pbd->particles()) p->mass = 0;
-
-        scalar t_volume = 0;
-        int nb_element = 0;
-
-        for (auto& topo : _mesh->topologies()) {
-            Element type = topo.first;
-            int nb = elem_nb_vertices(type);
-            std::vector<int> ids(nb);
-            nb_element += topo.second.size() / nb;
-            for (int i = 0; i < topo.second.size(); i += nb) {
-                for (int j = 0; j < nb; ++j) {
-                    ids[j] = topo.second[i + j];
-                }
-
-                scalar volume = 0;
-                if (this->_entity->id() != 0) {
-                    std::vector<PBD_ContinuousMaterial*> materials;
-                    materials = get_pbd_materials(_material, _young, _poisson);
-                    for (PBD_ContinuousMaterial* m : materials) {                    
-                        XPBD_FEM_Generic* fem = new XPBD_FEM_Generic(ids.data(), m, get_fem_shape(type));
-                        fem_constraints.push_back(fem);
-                        _pbd->add_xpbd_constraint(fem);
-                        volume += fem->get_init_volume();
-                    }
-                    volume /= materials.size();
-                }
-                else {
-                    SVD_ContinuousMaterial* m = get_svd_materials(_material, _young, _poisson);
-                    XPBD_FEM_SVD_Generic* fem = new XPBD_FEM_SVD_Generic(ids.data(), m, get_fem_shape(type));
-                    _pbd->add_xpbd_constraint(fem);
-                    volume += fem->init_volume;
-                }
-                
-
-                t_volume += volume;
-                for (int j = 0; j < nb; ++j) {
-                    Particle* p = _pbd->get(ids[j]);
-                    p->mass += _density * volume / nb;
-                }
-
-                // create a constriant group (order garanty) 
-                if ( (i + nb) < topo.second.size()) _pbd->new_group();
-            }
+    virtual std::vector<FEM_Generic*> build_element(const std::vector<int>& ids, Element type, scalar& volume) override {
+        std::vector<PBD_ContinuousMaterial*> materials = get_pbd_materials(_material, _young, _poisson);
+        auto pbd = static_cast<PBD_System*>(_ps);
+        XPBD_FEM_Generic* fem;
+        std::vector<FEM_Generic*> fems;
+        for (PBD_ContinuousMaterial* m : materials) {
+            fem = new XPBD_FEM_Generic(ids, m, get_fem_shape(type));
+            fems.push_back(fem);
+            pbd->add_xpbd_constraint(fem);
         }
-
-        scalar total_mass = 0;
-        for (Particle* p : _pbd->particles()) {
-            p->inv_mass = scalar(1) / p->mass;
-            total_mass += p->mass;
-        }
-
-        std::cout << "XPBD FEM BUILDED : VERTICES = " << _pbd->particles().size() << "   ELEMENTS = " << nb_element << "   MASS = " << total_mass << "   VOLUME = " << t_volume <<  std::endl;
+        volume = fem->compute_volume(fem->get_particles(_ps->particles()));
+        return fems;
     }
     
 public:
-    PBD_System* _pbd;
-    std::vector<XPBD_FEM_Generic*> fem_constraints;
-
     scalar _global_damping;
-    scalar _density;
-    scalar _young, _poisson;
-    int _iteration, _sub_iteration;
-    Material _material;
+    int _iteration;
     PBDSolverType _type;
 };

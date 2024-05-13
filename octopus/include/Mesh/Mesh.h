@@ -74,6 +74,24 @@ public:
         _geometry.clear();
     }
 
+    Geometry get_elem_vertices(Element elem, int eid) {
+        int nb = elem_nb_vertices(elem);
+        Geometry geom(nb);
+        for (int i = 0; i < nb; ++i) {
+            geom[i] = _geometry[_topologies[elem][eid * nb + i]];
+        }
+        return geom;
+    }
+
+    Topology get_elem_indices(Element elem, int eid) {
+        int nb = elem_nb_vertices(elem);
+        Topology topo(nb);
+        for (int i = 0; i < nb; ++i) {
+            topo[i] = _topologies[elem][eid * nb + i];
+        }
+        return topo;
+    }
+
     void update_mesh() { _need_update = true; }
     void set_dynamic_geometry(bool state) { _dynamic_geometry = state; }
     void set_dynamic_topology(bool state) { _dynamic_topology = state; }

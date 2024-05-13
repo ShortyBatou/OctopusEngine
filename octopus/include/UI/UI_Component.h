@@ -73,6 +73,7 @@ public:
 		ImGui::SliderFloat("Wireframe Intencity", &GL_Graphic::wireframe_intencity, 0.0f, 1.0f, "ratio = %.3f");
 		ImGui::ColorEdit3("Vertices Color", &GL_Graphic::vertice_color.x);
 		ImGui::SeparatorText("Element's Color");
+
 		bool change = false;
 		change = change + ImGui::ColorEdit3("Line", &GL_GraphicElement::element_colors[Line].x);
 		change = change + ImGui::ColorEdit3("Triangle", &GL_GraphicElement::element_colors[Triangle].x);
@@ -121,6 +122,29 @@ public:
 	}
 protected:
 	scalar _fixed_delta_t;
+};
+
+class UI_Dynamic : public UI_Component {
+public:
+	virtual char* name() override {
+		return "Dynamic";
+	}
+	virtual void init() {
+		_gravity = Dynamic::gravity();
+	}
+
+	bool can_draw(Entity* entity) override {
+		return true;
+	}
+
+	virtual void draw(Entity* entity) override {
+		if (ImGui::InputFloat3("gravity ", &_gravity.x)) {
+			Dynamic::Instance().set_gravity(_gravity);
+		}
+		
+	}
+protected:
+	Vector3 _gravity;
 };
 
 

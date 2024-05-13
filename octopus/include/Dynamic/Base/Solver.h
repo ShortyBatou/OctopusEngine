@@ -1,37 +1,36 @@
 #pragma once
 #include "Core/Base.h"
 #include "Dynamic/Base/Particle.h"
+#include "Manager/Dynamic.h"
+
 class Solver {
 public:
-	Solver(const Vector3& gravity = Vector3(0.,-9.81,0.), scalar damping = 1.) : _gravity(gravity), _damping(damping) { }
+	Solver(scalar damping = 1.) : _damping(damping) { }
 	virtual void integrate(Particle* p, const scalar dt) = 0;
-	Vector3& gravity() { return _gravity; }
 	scalar& damping() { return _damping; }
 protected:
-	Vector3 _gravity;
 	scalar _damping;
 };
 
 class EulerExplicit : public Solver {
 public:
-	EulerExplicit(const Vector3& gravity = Vector3(0., -9.81, 0.), scalar damping = 1.) : Solver(gravity, damping) { }
+	EulerExplicit(scalar damping = 1.) : Solver(damping) { }
 	void integrate(Particle* p, const scalar dt) override {
 		if (p->mass <= eps) return;
 		p->position += p->velocity * dt;
-		p->velocity += ((p->force + p->external_forces) * p->inv_mass + this->_gravity) * dt;
+		p->velocity += ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt;
 		p->velocity *= _damping;
 		p->force *= 0.;
 
 	}
 };
 
-
 class EulerSemiExplicit : public Solver {
 public:
-	EulerSemiExplicit(const Vector3& gravity = Vector3(0., -9.81, 0.), scalar damping = 1.) : Solver(gravity, damping) { }
+	EulerSemiExplicit(scalar damping = 1.) : Solver(damping) { }
 	void integrate(Particle* p, const scalar dt) override {
 		if (p->mass <= eps) return;
-		p->velocity += ((p->force + p->external_forces) * p->inv_mass + this->_gravity) * dt;
+		p->velocity += ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt;
 		p->velocity *= _damping;
 		p->position += p->velocity * dt;
 		p->force *= 0.;

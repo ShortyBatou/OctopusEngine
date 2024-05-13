@@ -7,7 +7,7 @@ class CameraManager : public Behaviour
 {
 public:
     CameraManager(const Vector3& init_pos = -Unit3D::forward() * scalar(8.), const Vector3& target = Unit3D::Zero(), scalar distance = 0.0)
-        : _speed(0.5), _zoom(45.), _init_camera_pos(init_pos)
+        : _speed(0.5), _zoom(45.), _init_camera_pos(init_pos), _zoom_range(Vector2(1., 90.))
     {
         Camera* camera = Camera::Instance_ptr();
         camera->position() = _init_camera_pos;

@@ -10,43 +10,115 @@
 #include "Dynamic/Base/Constraint.h"
 #include "Dynamic/FEM/FEM_Shape.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
-#include "Dynamic/FEM/FEM_Generic.h"
+#include "Dynamic/FEM/FEM_Generic_Force.h"
+#include "Script/Dynamic/ParticleSystemDynamic.h"
 
-class FEM_Dynamic : public ParticleSystemDynamic {
-public:
+struct FEM_Dynamic : public ParticleSystemDynamic {
     FEM_Dynamic(scalar density, scalar young, scalar poisson, Material material, int sub_iteration = 30)
         : ParticleSystemDynamic(density), _young(young), _poisson(poisson), _material(material), _sub_iteration(sub_iteration), _density(density) {
     }
 
     virtual void update() override {
-        Time::Tic();
         this->_ps->step(Time::Fixed_DeltaTime());
-        scalar tac = Time::Tac() * 1000.f;
-
-        scalar init_total_volume = 0;
-        scalar total_volume = 0;
-        for (FEM_Generic* fem : fems) {
-            init_total_volume += fem->init_volume;
-            total_volume += fem->volume;
-        }
-        std::cout << "FEM : " << tac << " ms" << "  " << init_total_volume << " :: " << total_volume <<  std::endl;
-        
         for (int i = 0; i < _mesh->nb_vertices(); ++i) {
             _mesh->geometry()[i] = this->_ps->get(i)->position;
         }
     }
 
-
     virtual ParticleSystem* build_particle_system() override {
-        return new FEM_System(new EulerSemiExplicit(Vector3(0., -9.81, 0.)*0.f, 0.995f), _sub_iteration);
+        return new FEM_System(new EulerSemiExplicit(0.995f), _sub_iteration);
+    }
+
+    virtual std::vector<FEM_Generic*> build_element(const std::vector<int>& ids, Element type, scalar& volume) {
+        FEM_Generic_Force* fem = new FEM_Generic_Force(ids, get_fem_material(_material, _young, _poisson), get_fem_shape(type));
+        static_cast<FEM_System*>(_ps)->add_fem(fem);
+        volume = fem->compute_volume(fem->get_particles(_ps->particles()));
+        return std::vector<FEM_Generic*>(1, fem);
+    }
+
+    virtual void get_fem_info(int& nb_elem, int& elem_vert, Element& elem) {
+        for (auto& topo : _mesh->topologies()) {
+            if (topo.second.size() == 0) continue;
+            elem = topo.first;
+            elem_vert = elem_nb_vertices(elem);
+            nb_elem = topo.second.size() / elem_vert;
+        }
+    }
+
+    virtual std::vector<scalar> get_stress()
+    {
+        int nb_elem, elem_vert; Element elem;
+        get_fem_info(nb_elem, elem_vert, elem);
+        std::vector<scalar> stress(nb_elem);
+        for (size_t i = 0; i < fems.size(); ++i) {
+            std::vector<Vector3> p = _mesh->get_elem_vertices(elem, id_fems[i]);
+            stress[id_fems[i]] = fems[i]->compute_stress(p);
+        }
+        return stress;
+    }
+
+    virtual std::vector<scalar> get_volume()
+    {
+        int nb_elem, elem_vert; Element elem;
+        get_fem_info(nb_elem, elem_vert, elem);
+        std::vector<scalar> volume(nb_elem);
+        for (size_t i = 0; i < fems.size(); ++i) {
+            std::vector<Vector3> p = _mesh->get_elem_vertices(elem, id_fems[i]);
+            volume[id_fems[i]] = fems[i]->compute_volume(p);
+        }
+        return volume;
+    }
+
+    virtual std::vector<scalar> get_volume_diff()
+    {
+        int nb_elem, elem_vert; Element elem;
+        get_fem_info(nb_elem, elem_vert, elem);
+        std::vector<scalar> volume_diff(nb_elem);
+        for (size_t i = 0; i < fems.size(); ++i) {
+            std::vector<Vector3> p = _mesh->get_elem_vertices(elem, id_fems[i]);
+            volume_diff[id_fems[i]] = abs(fems[i]->compute_volume(p) - fems[i]->get_init_volume());
+        }
+        return volume_diff;
+    }
+
+    virtual std::vector<scalar> get_stress_vertices()
+    {
+        int nb_elem, elem_vert; Element elem;
+        get_fem_info(nb_elem, elem_vert, elem);
+        //Mesh::Topology& topo = _mesh->topology(elem);
+        //std::vector<int> v_count(_mesh->geometry().size(), 0);
+        //for (size_t i = 0; i < topo.size(); ++i) {
+        //    v_count[topo[i]]++;
+        //}
+
+        std::vector<scalar> smooth_stress(_ps->nb_particles(),0.);
+        for (size_t i = 0; i < fems.size(); ++i) {
+            Mesh::Geometry p = _mesh->get_elem_vertices(elem, id_fems[i]);
+            std::vector<int> t = _mesh->get_elem_indices(elem, id_fems[i]);
+            scalar stress = fems[i]->compute_stress(p);
+            std::vector<float> weights(elem_vert);
+
+            //scalar sum = 0;
+            //for (int j = 0; j < elem_vert; ++j) {
+            //    sum += 1.f / v_count[t[j]];
+            //}
+
+            //for (int j = 0; j < elem_vert; ++j) {
+            //    smooth_stress[t[j]] += stress / (v_count[topo[j]] * sum);
+            //}
+            for (int j = 0; j < elem_vert; ++j) {
+                smooth_stress[t[j]] += stress / elem_vert;
+            }
+        }
+        return smooth_stress;
     }
 
 
     virtual void build_dynamic() {
-        FEM_System* s_fem= static_cast<FEM_System*>(this->_ps);
-        for (Particle* p : s_fem->particles()) p->mass = 0;
-
-        for (auto& topo : _mesh->topologies()) {
+        for (Particle* p : _ps->particles()) {
+            p->mass = 0;
+        }
+        for (auto &topo : _mesh->topologies()) {
             Element type = topo.first;
             int nb = elem_nb_vertices(type);
             std::vector<int> ids(nb);
@@ -54,19 +126,23 @@ public:
                 for (int j = 0; j < nb; ++j) {
                     ids[j] = topo.second[i + j];
                 }
-                FEM_Generic* fem = new FEM_Generic(ids.data(), get_fem_material(_material, _young, _poisson), get_fem_shape(type));
-                //FEM_SVD_Generic* fem = new FEM_SVD_Generic(ids.data(), get_svd_materials(_material, _young, _poisson), get_fem_shape(type));
-                s_fem->add_fem(fem);
-                fems.push_back(fem);
-                scalar volume = fem->get_volume();
+
+                scalar volume = 0;
+                std::vector<FEM_Generic*> e_fems = build_element(ids, type, volume);
+                for (FEM_Generic* fem : e_fems) {
+                    fems.push_back(fem);
+                    id_fems.push_back(i / nb);
+                }
+                    
+                
                 for (int j = 0; j < nb; ++j) {
-                    Particle* p = s_fem->get(ids[j]);
+                    Particle* p = _ps->get(ids[j]);
                     p->mass += _density * volume / nb;
                 }
             }
         }
         scalar total_mass = 0;
-        for (Particle* p : s_fem->particles()) {
+        for (Particle* p : _ps->particles()) {
             p->inv_mass = scalar(1) / p->mass;
             total_mass += p->mass;
         }
@@ -75,8 +151,8 @@ public:
 
 public:
     std::vector<FEM_Generic*> fems;
+    std::vector<int> id_fems;
     scalar _density;
-    int nb_step;
     scalar _young, _poisson;
     int _sub_iteration;
     Material _material;

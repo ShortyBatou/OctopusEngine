@@ -33,7 +33,7 @@ public:
         Jx[2] = x[2]->position - x[3]->position;
 
         F = Jx * _JX_inv;
-        _material->get_PK1_and_energy(F, P, C);
+        _material->get_pk1_and_energy(F, P, C);
         _V = std::abs(glm::determinant(Jx)) / scalar(6);
 
         P = P * glm::transpose(_JX_inv);

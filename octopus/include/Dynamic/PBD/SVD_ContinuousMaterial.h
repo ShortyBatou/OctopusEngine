@@ -1,12 +1,18 @@
 #pragma once
 #include "Dynamic/FEM/ContinuousMaterial.h"
-
+/*
 struct SVD_ContinuousMaterial : public ContinuousMaterial {
     SVD_ContinuousMaterial(const scalar _young, const scalar _poisson) : ContinuousMaterial(_young, _poisson) { }
     virtual scalar get_energy(const Vector3& s) = 0;
-    virtual void getConstraint(const Vector3& s, Vector3& C) = 0;
+    virtual void get_constraint(const Vector3& s, Vector3& C) = 0;
     virtual void get_stiffness(const Vector3& s, Matrix3x3& A) = 0;
-    virtual void getConstraintAndStiffness(const Vector3& s, Vector3& J, scalar& energy) {};
+    virtual scalar get_energy(const Matrix3x3& F) {
+        return 0;
+    }
+    virtual Matrix3x3 get_pk1(const Matrix3x3& F) {
+        return Matrix::Identity3x3();
+    }
+    virtual void get_constraint_and_stiffness(const Vector3& s, Vector3& J, scalar& energy) {};
     virtual ~SVD_ContinuousMaterial() {}
 };
 
@@ -21,7 +27,7 @@ struct SVD_StVK : public SVD_ContinuousMaterial {
         return this->lambda / scalar(8) * (I_c - 3) * (I_c - 3) + this->mu / 2 * (II_c - 2 * I_c + 3);
     }
 
-    virtual void getConstraint(const Vector3& s, Vector3& C) {
+    virtual void get_constraint(const Vector3& s, Vector3& C) {
         scalar I_c = s.x * s.x + s.y * s.y + s.z * s.z - 3;
         C.x = s.x * (lambda / 2 * I_c + mu * (s.x * s.x - 1));
         C.y = s.y * (lambda / 2 * I_c + mu * (s.y * s.y - 1));
@@ -60,7 +66,7 @@ struct SVD_Stable_Neohooke : public SVD_ContinuousMaterial {
         return this->mu / scalar(2) * (s.x * s.x + s.y * s.y + s.z * s.z) + this->lambda / 2 * (D * D);
     }
 
-    virtual void getConstraint(const Vector3& s, Vector3& C) {
+    virtual void get_constraint(const Vector3& s, Vector3& C) {
         scalar D = s.x * s.y * s.z - 1;
         C.x = this->mu * (s.x - s.y * s.z) + this->lambda * D * s.y * s.z;
         C.y = this->mu * (s.y - s.x * s.z) + this->lambda * D * s.x * s.z;
@@ -101,4 +107,4 @@ SVD_ContinuousMaterial* get_svd_materials(Material material, scalar young, scala
         break;
     }
     return m;
-}
+}*/

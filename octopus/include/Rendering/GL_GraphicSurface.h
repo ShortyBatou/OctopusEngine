@@ -19,16 +19,22 @@ public:
     }
 
     // find the surface of the mesh (pretty much brute force maybe, there is a better way)
-    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) override
+    virtual void get_topology(
+        Mesh::Topology& lines, 
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads, 
+        Mesh::Topology& tri_to_elem, 
+        Mesh::Topology& quad_to_elem) override
     {
         Mesh::Topology element_quads;
+        Mesh::Topology element_quad_to_elem;
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
 
             // convert all elements into triangles (quad are cuted in 2 triangles)
-            _converters[type]->convert_element(this->_mesh->topologies(), triangles, element_quads);
+            _converters[type]->convert_element(_mesh->topologies(), triangles, element_quads, tri_to_elem, element_quad_to_elem);
         }
 
         // revome duplicate faces
@@ -37,7 +43,7 @@ public:
 
         lines.resize(element_quads.size() / 4 * 8);
         quads.resize(element_quads.size() / 4 * 6);
-
+        quad_to_elem.resize(element_quads.size() / 4 * 6);
         int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
         int quad_triangle[6] = { 0,1,3, 3,1,2 };
 
@@ -46,10 +52,13 @@ public:
             for (int j = 0; j < 8; ++j) 
                 lines[i*8+j] = element_quads[i*4 + quad_lines[j]];
 
-            for (int j = 0; j < 6; ++j)
+            for (int j = 0; j < 6; ++j) {
                 quads[i * 6 + j] = element_quads[i * 4 + quad_triangle[j]];
+                quad_to_elem[i * 6 + j] = element_quad_to_elem[i * 4 + quad_triangle[j]];
+            }
         }
 
+        //remove duplicate
         get_surface<2>(lines, false); 
     }
 

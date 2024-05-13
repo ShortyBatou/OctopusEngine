@@ -36,6 +36,8 @@ public:
         _b_line     = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
         _b_triangle = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
         _b_quad     = new GL_Buffer<int>(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+        _sbo_tri_to_elem = new GL_Buffer<int>(GL_SHADER_STORAGE_BUFFER, GL_STATIC_DRAW);
+        _sbo_quad_to_elem = new GL_Buffer<int>(GL_SHADER_STORAGE_BUFFER, GL_STATIC_DRAW);
     }
 
     void init_vao() { 
@@ -50,20 +52,19 @@ public:
     }
 
     virtual void late_init() override {
-        update();
+        
     }
 
     virtual void update() override
     { 
         
-
         if (_mesh->need_update() || _mesh->has_dynamic_topology())
         {
             lines.clear();
             triangles.clear();
             quads.clear();
-            get_topology(lines, triangles, quads);
-            update_buffer_topology(lines, triangles, quads);
+            get_topology(lines, triangles, quads, tri_to_elem, quad_to_elem);
+            update_buffer_topology(lines, triangles, quads, tri_to_elem, quad_to_elem);
         }
 
         if (_mesh->need_update() || _mesh->has_dynamic_geometry())
@@ -92,6 +93,8 @@ public:
     GL_Buffer<int>* b_line() { return _b_line; }
     GL_Buffer<int>* b_triangle() { return _b_triangle; }
     GL_Buffer<int>* b_quad() { return _b_quad; }
+    GL_Buffer<int>* b_tri_to_elem() { return _sbo_tri_to_elem; }
+    GL_Buffer<int>* b_quad_to_elem() { return _sbo_quad_to_elem; }
 
     Mesh::Topology& get_lines() { return lines; }
     Mesh::Topology& get_triangles() { return triangles; }
@@ -99,10 +102,11 @@ public:
     Mesh::Geometry& get_geometry() { return geometry; }
 
     bool use_multi_color() { return _multi_color; }
-    void set_multi_color(bool state)
-    {
-        _multi_color = state;
-    }
+    void set_multi_color(bool state) { _multi_color = state; }
+
+    bool use_element_color() { return _element_color; }
+    void set_element_color(bool state) { _element_color = state; }
+
     bool& normals() { return _normals; }
 
     virtual ~GL_Graphic() { 
@@ -123,10 +127,43 @@ protected:
         geometry = _mesh->geometry();
     }
 
-    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) {
+    virtual void get_topology(
+        Mesh::Topology& lines, 
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads, 
+        Mesh::Topology& tri_to_elem, 
+        Mesh::Topology& quad_to_elem) {
         lines     = _mesh->topology(Line);
         triangles = _mesh->topology(Triangle);
-        quads     = _mesh->topology(Quad);
+
+        Mesh::Topology& element_quads = _mesh->topology(Quad);
+
+        quads.resize(element_quads.size() / 4 * 6);
+        quad_to_elem.resize(quads.size() / 3);
+
+        int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
+        int quad_triangle[6] = { 0,1,3, 3,1,2 };
+        for (int i = 0; i < element_quads.size() / 4; i++)
+        {
+            for (int j = 0; j < 8; ++j)
+                lines[i * 8 + j] = element_quads[i * 4 + quad_lines[j]];
+
+            for (int j = 0; j < 6; ++j) {
+                quads[i * 6 + j] = element_quads[i * 4 + quad_triangle[j]];
+            }
+            quad_to_elem[i*2] = i;
+            quad_to_elem[i*2+1] = i;
+        }
+
+        tri_to_elem.resize(triangles.size()/3);
+        for (int i = 0; i < tri_to_elem.size(); i++) {
+            tri_to_elem[i] = i;
+        }
+
+        quad_to_elem.resize(quads.size()/3);
+        for (int i = 0; i < quad_to_elem.size(); i++) {
+            quad_to_elem[i] = i;
+        }
     }
 
     virtual void get_normals(const Mesh::Geometry& geometry, const Mesh::Topology& triangles, const Mesh::Topology& quads, std::vector<Vector3>& v_normals)
@@ -147,8 +184,8 @@ protected:
 
     }
     virtual void compute_vertex_normals(const Mesh::Geometry& geometry, const Mesh::Topology& triangles, int i, std::vector<Vector3>& v_normals) {
-        Vector3 v[3];
-        int vid[3];
+        Vector3 v[3]{};
+        int vid[3]{};
         for (int j = 0; j < 3; ++j) {
             vid[j] = triangles[i + j];
             v[j] = geometry[vid[j]];
@@ -165,7 +202,12 @@ protected:
         _b_vertex->load_data(geometry);
     }
 
-    virtual void update_buffer_topology(const Mesh::Topology& lines, const Mesh::Topology& triangles, const Mesh::Topology& quads)
+    virtual void update_buffer_topology(
+        const Mesh::Topology& lines, 
+        const Mesh::Topology& triangles, 
+        const Mesh::Topology& quads, 
+        const Mesh::Topology& tri_to_elem, 
+        const Mesh::Topology& quad_to_elem)
     {
         if (lines.size() > 0)
             _b_line->load_data(lines);
@@ -173,12 +215,21 @@ protected:
             _b_triangle->load_data(triangles);
         if (quads.size() > 0)
             _b_quad->load_data(quads);
+        if (tri_to_elem.size() > 0)
+            _sbo_tri_to_elem->load_data(tri_to_elem);
+        if (quad_to_elem.size() > 0)
+            _sbo_quad_to_elem->load_data(quad_to_elem);
     }
 
     virtual void update_buffer_colors()
     {
-        assert(_colors.size() == _mesh->nb_vertices());
         if (_mesh->nb_vertices() == 0) return;
+        if (!_element_color) {
+            assert(_colors.size() == _mesh->nb_vertices());
+        }
+        else {
+            // check if colors.size == nb_element
+        }
         _b_color->load_data(_colors);
     }
 
@@ -189,6 +240,7 @@ protected:
     }
 
     bool _multi_color;
+    bool _element_color;
     bool _normals;
     Color _color;
     std::vector<Color> _colors;
@@ -199,9 +251,10 @@ protected:
     GL_Buffer<Vector3>* _b_vertex;
     GL_Buffer<Color>* _b_color;
     GL_Buffer<int> *_b_line, *_b_triangle, *_b_quad;
-
+    GL_Buffer<int> *_sbo_tri_to_elem, * _sbo_quad_to_elem;
 private:
     Mesh::Topology lines, triangles, quads;
+    Mesh::Topology tri_to_elem, quad_to_elem;
     Mesh::Geometry geometry;
 };
 

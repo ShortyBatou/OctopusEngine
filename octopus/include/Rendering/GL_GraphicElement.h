@@ -27,13 +27,18 @@ public:
 
     }
 
-    virtual void get_topology(Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads) override
+    virtual void get_topology(
+        Mesh::Topology& lines, 
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads, 
+        Mesh::Topology& tri_to_elem, 
+        Mesh::Topology& quad_to_elem) override
     {
         for (const auto& elem : this->_mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
-            _converters[type]->build_scaled_topology(this->_mesh->topologies(), lines, triangles, quads);
+            _converters[type]->build_scaled_topology(this->_mesh->topologies(), lines, triangles, quads, tri_to_elem, quad_to_elem);
         }
     }
 

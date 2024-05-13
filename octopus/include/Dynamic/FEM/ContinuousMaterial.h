@@ -28,6 +28,9 @@ struct ContinuousMaterial {
     scalar compute_lambda() const { return scalar(young * poisson / ((1. + poisson) * (1. - 2. * poisson))); }
     scalar compute_mu() const { return scalar(young / (2. * (1. + poisson))); }
 
+    virtual scalar get_energy(const Matrix3x3& F) = 0;
+    virtual Matrix3x3 get_pk1(const Matrix3x3& F) = 0;
+
     static Matrix3x3 get_strain_linear(const Matrix3x3& F)
     {
         return scalar(0.5) * (glm::transpose(F) + F) - Matrix::Identity3x3();
@@ -37,6 +40,7 @@ struct ContinuousMaterial {
     {
         return scalar(0.5) * (glm::transpose(F) * F - Matrix::Identity3x3());
     }
+
 
     static Matrix3x3 pk1_to_chauchy_stress(Matrix3x3& F, Matrix3x3& P) {
         return P * glm::transpose(F) * (1.f / glm::determinant(F));

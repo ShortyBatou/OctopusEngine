@@ -20,7 +20,6 @@ public:
         for (int i = 0; i < this->_mesh->nb_vertices(); ++i) {
             _mesh->geometry()[i] = _ps->get(i)->position;
         }
-        std::cout;
     }
 
     virtual ParticleSystem* getParticleSystem() {

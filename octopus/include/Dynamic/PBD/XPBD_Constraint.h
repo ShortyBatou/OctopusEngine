@@ -15,7 +15,7 @@ public:
 
         std::vector<Particle*> x(this->nb());
         for (int i = 0; i < this->nb(); ++i) {
-            x[i] = particles[this->_ids[i]];
+            x[i] = particles[ids[i]];
         }
 
         scalar C = 0;
@@ -39,7 +39,7 @@ public:
     virtual scalar get_dual_residual(const std::vector<Particle*>& particles, const scalar dt) {
         std::vector<Particle*> x(this->nb());
         for (int i = 0; i < this->nb(); ++i) {
-            x[i] = particles[this->_ids[i]];
+            x[i] = particles[ids[i]];
         }
         scalar C = 0;
         std::vector<Vector3> grads(this->nb(), Unit3D::Zero());
@@ -63,8 +63,8 @@ public:
     XPBD_DistanceConstraint(int a, int b, scalar stiffness, bool active = true) : XPBD_Constraint({a,b}, stiffness, active) {}
 
     virtual void init(const std::vector<Particle*>& particles) override {
-        Vector3 pa = particles[this->_ids[0]]->position;
-        Vector3 pb = particles[this->_ids[1]]->position;
+        Vector3 pa = particles[ids[0]]->position;
+        Vector3 pb = particles[ids[1]]->position;
         _rest_length = glm::distance(pa, pb);
     }
 

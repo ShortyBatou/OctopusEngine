@@ -44,23 +44,13 @@ struct MeshConverter
         }
     }
 
-    // use the geometry scaled version to create the topology of the scaled element
-    virtual void build_scaled_topology(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& triangles, Mesh::Topology& quads)
-    {
-        Element elem          = get_element_type();
-        const int nb = elem_nb_vertices(elem);
-        const int nb_elem = mesh_topologies[elem].size() / nb;
-        resize_topo(nb_elem, _topo_triangle.size(), triangles);
-        resize_topo(nb_elem, _topo_quad.size(), quads);
-        for (int i = 0; i < nb_elem; ++i)
-        {
-            build_scaled_element_topo(i * nb, i, _topo_triangle, triangles);
-            build_scaled_element_topo(i * nb, i, _topo_quad, quads);
-        }
-        
-    }
-
-    virtual void build_scaled_topology(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& lines, Mesh::Topology& triangles, Mesh::Topology& quads)
+    virtual void build_scaled_topology(
+        std::map<Element, Mesh::Topology>& mesh_topologies, 
+        Mesh::Topology& lines,
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads,
+        Mesh::Topology & tri_to_elem,
+        Mesh::Topology& quad_to_elem)
     {
         Element elem = get_element_type();
         const int nb = elem_nb_vertices(elem);
@@ -68,32 +58,54 @@ struct MeshConverter
         resize_topo(nb_elem, _topo_edge.size(), lines);
         resize_topo(nb_elem, _topo_triangle.size(), triangles);
         resize_topo(nb_elem, _topo_quad.size(), quads);
+
+        resize_topo(nb_elem, _topo_triangle.size()/3, tri_to_elem);
+        resize_topo(nb_elem, _topo_quad.size()/3, quad_to_elem);
         for (int i = 0; i < nb_elem; ++i)
         {
             build_scaled_element_topo(i * nb, i, _topo_edge, lines);
-            build_scaled_element_topo(i * nb, i, _topo_triangle, triangles);
-            build_scaled_element_topo(i * nb, i, _topo_quad, quads);
+            build_scaled_element_topo(i * nb, i, _topo_triangle, triangles, tri_to_elem);
+            build_scaled_element_topo(i * nb, i, _topo_quad, quads, quad_to_elem);
         }
-
     }
 
 
     // convert element into quads and triangles
-    virtual void convert_element(std::map<Element, Mesh::Topology>& mesh_topologies, Mesh::Topology& triangles, Mesh::Topology& quads)
+    virtual void convert_element(
+        std::map<Element, Mesh::Topology>& mesh_topologies, 
+        Mesh::Topology& triangles, 
+        Mesh::Topology& quads, 
+        Mesh::Topology& tri_to_elem, 
+        Mesh::Topology& quad_to_elem)
     {
         Element elem               = get_element_type();
         const int nb      = elem_nb_vertices(elem);
         const int nb_elem = mesh_topologies[elem].size() / nb;
         resize_topo(nb_elem, _topo_triangle.size(), triangles);
         resize_topo(nb_elem, _topo_quad.size(), quads);
+        resize_topo(nb_elem, _topo_triangle.size(), tri_to_elem);
+        resize_topo(nb_elem, _topo_quad.size(), quad_to_elem);
         for (int i = 0; i < nb_elem; ++i)
         {
-            convert_element_topo(i*nb, i, _topo_triangle, mesh_topologies[elem], triangles);
-            convert_element_topo(i*nb, i, _topo_quad, mesh_topologies[elem], quads);
+            convert_element_topo(i*nb, i, _topo_triangle, mesh_topologies[elem], triangles, tri_to_elem);
+            convert_element_topo(i*nb, i, _topo_quad, mesh_topologies[elem], quads, quad_to_elem);
         }
     }
 
-
+    virtual void convert_element_topo(int i_start,
+        int num_elem,
+        const Mesh::Topology& elem_topo,
+        const Mesh::Topology& mesh_topologies,
+        Mesh::Topology& topology,
+        Mesh::Topology& topo_to_elem)
+    {
+        const int size = elem_topo.size();
+        for (int i = 0; i < size; ++i) {
+            topology[num_elem * size + i] = mesh_topologies[i_start + elem_topo[i]];
+            topo_to_elem[num_elem * size + i] = num_elem;
+        }
+            
+    }
 
     Mesh::Topology& topo_triangle() { return _topo_triangle; }
     Mesh::Topology& topo_quad() { return _topo_quad; }
@@ -123,20 +135,21 @@ protected:
 
     virtual void build_scaled_element_topo(int vid, int num_elem, const Mesh::Topology& elem_topo, Mesh::Topology& topology) {
         const int size = elem_topo.size();
-        for (int i = 0; i < size; ++i)
+        for (int i = 0; i < size; ++i) {
             topology[num_elem * size + i] = vid + elem_topo[i];
+        }
     }
 
-    virtual void convert_element_topo(int i_start,
-                                      int num_elem,
-                                      const Mesh::Topology& elem_topo ,
-                                      const Mesh::Topology& mesh_topologies,
-                                      Mesh::Topology& topology)
-    {
+    virtual void build_scaled_element_topo(int vid, int num_elem, const Mesh::Topology& elem_topo, Mesh::Topology& topology, Mesh::Topology& face_to_elem) {
         const int size = elem_topo.size();
-        for (int i = 0; i < size; ++i)
-            topology[num_elem * size + i]  = mesh_topologies[i_start + elem_topo[i]];    
+        for (int i = 0; i < size; ++i) {
+            topology[num_elem * size + i] = vid + elem_topo[i];
+            face_to_elem[num_elem * size + i] = num_elem;
+        }
+            
     }
+
+   
 
 protected:
     FEM_Shape* _shape;
