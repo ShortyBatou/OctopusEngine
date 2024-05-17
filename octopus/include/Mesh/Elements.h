@@ -12,8 +12,24 @@ enum Element
     Tetra20
 };
 
-int elem_nb_vertices(Element elem) {
-    switch (elem)
+bool is_high_order(Element element) {
+    switch (element)
+    {
+        case Line:      return false;
+        case Triangle:  return false;
+        case Quad:      return false;
+        case Tetra:     return false;
+        case Pyramid:   return false;
+        case Prism:     return false;
+        case Hexa:      return false;
+        case Tetra10:   return true;
+        case Tetra20:   return true;
+        default:        return false;
+    }
+}
+
+int elem_nb_vertices(Element element) {
+    switch (element)
     {
         case Line:      return 2;
         case Triangle:  return 3;
@@ -28,8 +44,8 @@ int elem_nb_vertices(Element elem) {
 	}
 }
 
-char* element_name(Element elem) {
-    switch (elem)
+char* element_name(Element element) {
+    switch (element)
     {
     case Line:      return "Line";
     case Triangle:  return "Triangle";

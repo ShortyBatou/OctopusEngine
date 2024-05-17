@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 
-
+/*
 class GL_GraphicHighOrder : public GL_Graphic
 {
     using Edge = std::pair<int, int>;
@@ -349,3 +349,4 @@ protected:
     int _quality;
     std::map<Element, MeshConverter*> _converters; 
 };
+*/

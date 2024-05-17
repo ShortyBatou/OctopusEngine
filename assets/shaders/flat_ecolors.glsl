@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 #ifdef VERTEX_SHADER
 
@@ -9,12 +9,10 @@ layout(location = 1) in vec4 color;
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
-    
-    out vec4 g_color;
+
     out vec3 g_vert;
     void main( )
     {
-        g_color = color;
         g_vert = position;
         gl_Position= mvp * vec4(position.x, position.y, position.z, 1);
     }
@@ -22,10 +20,19 @@ layout(location = 1) in vec4 color;
 #endif
 
 #ifdef GEOMETRY_SHADER
+    layout(std430, binding=0) buffer FaceToElem
+    {
+        int face_to_elem[];
+    };
+
+    layout(std430, binding=1) buffer ElemColor
+    {
+        vec4 ecolor[];
+    };
+
     layout(triangles) in;
     layout(triangle_strip, max_vertices = 3) out;
 
-    in vec4 g_color[];
     in vec3 g_vert[];
 
     out vec3 f_vert;
@@ -34,6 +41,10 @@ layout(location = 1) in vec4 color;
 
     void main()
     {
+
+        int face_id = gl_PrimitiveIDIn;
+        int elem_id = face_to_elem[face_id];
+        vec4 color = ecolor[elem_id];
         f_normal = normalize( cross( vec3( g_vert[ 1 ] - g_vert[ 0 ] ),
                     vec3( g_vert[ 2 ] - g_vert[ 0 ] ) ) );
 
@@ -41,7 +52,7 @@ layout(location = 1) in vec4 color;
             // copy attributes
             gl_Position = gl_in[ i ].gl_Position;
             f_vert = g_vert[ i ];
-            f_color = g_color[i];
+            f_color = color;
             EmitVertex();
         }
     }

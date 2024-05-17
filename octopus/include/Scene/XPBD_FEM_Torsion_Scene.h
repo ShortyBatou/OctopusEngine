@@ -85,17 +85,15 @@ struct XPBD_FEM_Torsion_Scene : public Scene
         e->addComponent(new Constraint_Rigid_Controller(pos + Unit3D::right() * 0.01f, -Unit3D::right()));
         e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * 0.01f + size, Unit3D::right()));
         GL_Graphic* graphic;
-        if (element == Tetra10)
-            graphic = new GL_GraphicHighOrder(3, color);
-        else
+        //if (element == Tetra10)
+        //    graphic = new GL_GraphicHighOrder(3, color);
+        //else
             graphic = new GL_GraphicSurface(color);
 
-        graphic->normals() = true;
 
         e->addComponent(graphic);
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->point() = false;
-        display->normal() = false;
         e->addComponent(display);
     }
 };

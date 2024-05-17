@@ -152,19 +152,17 @@ struct MeshScene : public Scene
         //graphic = new GL_GraphicElement(0.7);
         switch (type) {
             case 0: graphic = new GL_GraphicSurface(color); break;
-            case 1 : graphic = new GL_GraphicElement(0.7f); break;
-            case 2 : graphic = new GL_GraphicHighOrder(5, color); break;
+            //case 1 : graphic = new GL_GraphicElement(0.7f); break;
+            //case 2 : graphic = new GL_GraphicHighOrder(5, color); break;
             default: graphic = new GL_GraphicSurface(color); break;
         }
 
-        graphic->normals() = false;
         e->addComponent(graphic);
 
         // Opengl Rendering
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->wireframe() = true;
         display->point() = false;
-        display->normal() = false;
         e->addComponent(display);
 
         // save mesh in VTK format (Paraview)

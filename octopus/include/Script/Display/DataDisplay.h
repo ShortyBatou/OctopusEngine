@@ -12,7 +12,7 @@ enum FEM_Data {
 };
 
 struct FEM_DataDisplay : public Component {
-    FEM_DataDisplay(FEM_Data mode = BaseColor) : _mode(mode), color_map(ColorMap::Type::Rainbow) {}
+    FEM_DataDisplay(FEM_Data mode = BaseColor, ColorMap::Type type = ColorMap::Type::Default) : _mode(mode), color_map(type) {}
 
     virtual void init() override {
         _graphic = entity()->get_component<GL_Graphic>();
@@ -30,22 +30,23 @@ struct FEM_DataDisplay : public Component {
         //    data[i] = glm::length(p->position - p->init_position);
         //}
 
-        std::vector<scalar> data = _fem_dynamic->get_stress_vertices();
+        std::vector<scalar> data = _fem_dynamic->get_volume_diff();
 
         // min max data for color interpolation
         scalar min = 0.f;
         scalar max = *std::max_element(data.begin(), data.end());
-        std::vector<Color> v_colors(data.size());
+        std::vector<Color> colors(data.size());
         
         ColorMap::Set_Type(color_map);
         for (size_t i = 0; i < data.size(); ++i) {
-            scalar t = data[i] / max;
-            v_colors[i] = ColorMap::evaluate(t);
+            scalar t = (data[i] - min) / scalar(max - min);
+            colors[i] = ColorMap::evaluate(t);
         }
        
         _graphic->set_multi_color(true);
-        //_graphic->set_element_color(true);
-        _graphic->colors() = v_colors;
+        _graphic->set_element_color(true);
+        _graphic->set_ecolors(Tetra, colors);
+        //_graphic->set_vcolors(colors);
     }
 
 

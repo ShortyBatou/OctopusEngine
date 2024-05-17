@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 #ifdef VERTEX_SHADER
 
@@ -26,6 +26,6 @@ layout(location = 1) in vec4 color;
     uniform float wireframe_intencity;
     void main( )
     {  
-        fragment_color = f_color * wireframe_intencity;
+        fragment_color = f_color;
     }
 #endif

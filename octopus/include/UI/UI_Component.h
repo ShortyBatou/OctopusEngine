@@ -74,23 +74,23 @@ public:
 		ImGui::ColorEdit3("Vertices Color", &GL_Graphic::vertice_color.x);
 		ImGui::SeparatorText("Element's Color");
 
-		bool change = false;
-		change = change + ImGui::ColorEdit3("Line", &GL_GraphicElement::element_colors[Line].x);
-		change = change + ImGui::ColorEdit3("Triangle", &GL_GraphicElement::element_colors[Triangle].x);
-		change = change + ImGui::ColorEdit3("Quad", &GL_GraphicElement::element_colors[Quad].x);
-		change = change + ImGui::ColorEdit3("Tetra", &GL_GraphicElement::element_colors[Tetra].x);
-		change = change + ImGui::ColorEdit3("Pyramid", &GL_GraphicElement::element_colors[Pyramid].x);
-		change = change + ImGui::ColorEdit3("Prysm", &GL_GraphicElement::element_colors[Prism].x);
-		change = change + ImGui::ColorEdit3("Hexa", &GL_GraphicElement::element_colors[Hexa].x);
-		change = change + ImGui::ColorEdit3("Tetra10", &GL_GraphicElement::element_colors[Tetra10].x);
-		if (change) {
-			for (Entity* e : Engine::GetEntities()) {
-				GL_GraphicElement* gl_elements = e->get_component<GL_GraphicElement>();
-				if (gl_elements) {
-					gl_elements->update_buffer_colors();
-				}
-			}
-		}
+		//bool change = false;
+		//change = change + ImGui::ColorEdit3("Line", &GL_GraphicElement::element_colors[Line].x);
+		//change = change + ImGui::ColorEdit3("Triangle", &GL_GraphicElement::element_colors[Triangle].x);
+		//change = change + ImGui::ColorEdit3("Quad", &GL_GraphicElement::element_colors[Quad].x);
+		//change = change + ImGui::ColorEdit3("Tetra", &GL_GraphicElement::element_colors[Tetra].x);
+		//change = change + ImGui::ColorEdit3("Pyramid", &GL_GraphicElement::element_colors[Pyramid].x);
+		//change = change + ImGui::ColorEdit3("Prysm", &GL_GraphicElement::element_colors[Prism].x);
+		//change = change + ImGui::ColorEdit3("Hexa", &GL_GraphicElement::element_colors[Hexa].x);
+		//change = change + ImGui::ColorEdit3("Tetra10", &GL_GraphicElement::element_colors[Tetra10].x);
+		//if (change) {
+		//	for (Entity* e : Engine::GetEntities()) {
+		//		GL_GraphicElement* gl_elements = e->get_component<GL_GraphicElement>();
+		//		if (gl_elements) {
+		//			gl_elements->update_buffer_colors();
+		//		}
+		//	}
+		//}
 	}
 protected:
 
@@ -198,10 +198,6 @@ public:
 			ImGui::Checkbox("Surface", &gl_display->surface());
 			ImGui::SameLine();
 			ImGui::Checkbox("Point", &gl_display->point());
-			ImGui::SameLine();
-			ImGui::Checkbox("Normal", &gl_display->normal());
-			ImGui::ColorEdit3("Normal Color", &gl_display->normal_color().r);
-			ImGui::SliderFloat("Normal Length", &gl_display->normal_length(), 0.0f, 1.0f, "ratio = %.3f");
 		}
 
 	}

@@ -75,7 +75,7 @@ struct BaseScene : public Scene
         SimulationArgs args;
         args.density = 1000;
         args.material = Neo_Hooke;
-        args.poisson = 0.49;
+        args.poisson = 0.499;
         args.young = 1e6;
         args.iteration = 1;
         args.sub_iteration = 50;
@@ -83,9 +83,9 @@ struct BaseScene : public Scene
         args.scenario_2 = 0;
         args.dir = Unit3D::right();
 
-        Vector3 size(3, 1, 1);
-        Vector3I cells = Vector3I(9,3,3);
-        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.3f, 1.f), Tetra, args);
+        Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(16,4,4);
+        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra, args);
         //build_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.8f, 0.3f, 0.3f, 1.f), Tetra10, args);
 
         //cells = Vector3I(8, 3, 3);
@@ -125,14 +125,13 @@ struct BaseScene : public Scene
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
 
-        //graphic = new GL_GraphicElement(0.7);
-        if (element == Tetra10 || element == Tetra20)
-            //graphic = new GL_GraphicElement(0.7);
-            graphic = new GL_GraphicHighOrder(3, color);
-        else
-            graphic = new GL_GraphicSurface(color);
+        //graphic = new GL_GraphicElement(color, 0.7);
+        //if (element == Tetra10 || element == Tetra20)
+        //    //graphic = new GL_GraphicElement(0.7);
+        //    graphic = new GL_GraphicHighOrder(3, color);
+        //else
+        graphic = new GL_GraphicSurface(color);
 
-        graphic->normals() = false;
         return graphic;
     }
 
@@ -140,7 +139,6 @@ struct BaseScene : public Scene
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->wireframe() = true;
         display->point() = false;
-        display->normal() = false;
         return display;
     }
 
@@ -188,7 +186,7 @@ struct BaseScene : public Scene
         e->addBehaviour(build_beam_mesh(pos, cells, size, element));
         e->addComponent(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.sub_iteration));
         add_constraint(e, pos, size, args);
-        e->addComponent(new FEM_DataDisplay());
+        e->addComponent(new FEM_DataDisplay(Stress, ColorMap::Rainbow));
         e->addComponent(build_graphic(color, element));
         e->addComponent(build_display());
         e->addComponent(build_data_recorder(cells, size, element));
@@ -199,7 +197,7 @@ struct BaseScene : public Scene
         e->addBehaviour(build_beam_mesh(pos, cells, size, element));
         e->addComponent(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, 4.));
         add_constraint(e, pos, size, args);
-        e->addComponent(new FEM_DataDisplay());
+        e->addComponent(new FEM_DataDisplay(Stress, ColorMap::Rainbow));
         e->addComponent(build_graphic(color, element));
         e->addComponent(build_display());      
         e->addComponent(build_data_recorder(cells, size, element));

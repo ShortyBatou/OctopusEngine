@@ -21,7 +21,7 @@ protected:
         assert(_mesh != nullptr);
         assert(_graphic != nullptr);
         _mesh->geometry().push_back(p);
-        _graphic->colors().push_back(_current_color);
+        _graphic->vcolors().push_back(_current_color);
     }
 
     void add_line(int a, int b) { 
@@ -29,7 +29,7 @@ protected:
         _mesh->topology(Element::Line).push_back(a);
         _mesh->topology(Element::Line).push_back(b);
     }
-
+    std::vector<Color> vcolors;
     Color _current_color;
     Mesh* _mesh;
     GL_Graphic* _graphic;
@@ -40,7 +40,7 @@ public:
     void clear()
     {
         _mesh->clear();
-        _graphic->colors().clear();
+        _graphic->vcolors().clear();
     }
 
     static void SetColor(const Color& color);

@@ -1,10 +1,11 @@
 #pragma once
 #include "Rendering/GL_Graphic.h"
 #include "Mesh/Converter/MeshConverter.h"
+
 class GL_GraphicElement : public GL_Graphic
 {
 public:
-    GL_GraphicElement(scalar scale = 0.9) : GL_Graphic(Color(0.9, 0.3, 0.3, 1.0)), _scale(scale)
+    GL_GraphicElement(Color color, scalar scale = 0.9) : GL_Graphic(color), _scale(scale)
     {
         _converters[Tetra]    = new TetraConverter();
         _converters[Pyramid]  = new PyramidConverter();
@@ -13,63 +14,81 @@ public:
         _converters[Tetra10]  = new Tetra10Converter();
         _converters[Tetra20] = new Tetra20Converter();
         for (auto& elem : _converters) elem.second->init();
-        this->_multi_color = true;
     }
 
-    virtual void get_geometry(Mesh::Geometry& geometry) override
-    {
-        for (const auto& elem : this->_mesh->topologies())
+    virtual void update_gl_geometry() override
+    { 
+        for (const auto& elem : _mesh->topologies())
         {
             Element type = elem.first;
             if (_converters.find(type) == _converters.end()) continue;
-            _converters[type]->build_scaled_geometry(this->_mesh->geometry(), this->_mesh->topologies(), geometry, _scale);
+            _converters[type]->build_scaled_geometry(_mesh->geometry(), _mesh->topologies(), _gl_geometry->geometry, _scale);
         }
-
     }
 
-    virtual void get_topology(
-        Mesh::Topology& lines, 
-        Mesh::Topology& triangles, 
-        Mesh::Topology& quads, 
-        Mesh::Topology& tri_to_elem, 
-        Mesh::Topology& quad_to_elem) override
+    virtual void update_gl_topology() override
     {
-        for (const auto& elem : this->_mesh->topologies())
+        for (const auto& it : _mesh->topologies())
         {
-            Element type = elem.first;
-            if (_converters.find(type) == _converters.end()) continue;
-            _converters[type]->build_scaled_topology(this->_mesh->topologies(), lines, triangles, quads, tri_to_elem, quad_to_elem);
+            Element element = it.first;
+            if (_converters.find(element) == _converters.end()) continue;
+            GL_Topology* gl_topo = _gl_topologies[element];
+            Mesh::Topology quads, quad_to_elem, triangles, tri_to_element;
+            _converters[element]->build_scaled_topology(_mesh->topology(element), triangles, quads, tri_to_element, quad_to_elem);
+            
+
+            static int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
+            int quad_triangle[6] = { 0,1,3, 3,1,2 };
+            
+            gl_topo->quads.resize(quads.size() / 4 * 6);
+            gl_topo->quad_to_elem.resize(quads.size() / 4 * 2);
+            for (int i = 0; i < quads.size() / 4; i++) {
+                for (int j = 0; j < 6; ++j) {
+                    gl_topo->quads[i * 6 + j] = quads[i * 4 + quad_triangle[j]];
+                }
+
+                gl_topo->quad_to_elem[i * 2] = quad_to_elem[i];
+                gl_topo->quad_to_elem[i * 2 + 1] = quad_to_elem[i];
+            }
+
+            if (!is_high_order(element)) {
+                gl_topo->triangles = triangles;
+                gl_topo->tri_to_elem = tri_to_element;
+                gl_topo->lines.resize(quads.size() / 4 * 8);
+                for (int i = 0; i < quads.size() / 4; i++) {
+                    for (int j = 0; j < 8; ++j) {
+                        gl_topo->lines[i * 8 + j] = quads[i * 4 + quad_lines[j]];
+                    }
+                }
+            }
+            else {
+                gl_topo->quads.insert(gl_topo->quads.end(), triangles.begin(), triangles.end());
+                gl_topo->quad_to_elem.insert(gl_topo->quad_to_elem.end(), tri_to_element.begin(), tri_to_element.end());
+                Mesh::Topology lines;
+                _converters[element]->get_scaled_wireframe(_mesh->topology(element), lines);
+                gl_topo->lines = lines;
+            }
+            
+
         }
     }
 
-    virtual void update_buffer_colors() override
+    virtual void update_gl_vcolors()
     {
-        this->_colors.clear();
-        for (const auto& elem : this->_mesh->topologies())
+        _gl_geometry->vcolors.clear();
+        for (const auto& it : _mesh->topologies())
         {
-            Element type = elem.first;
-            unsigned int nb_vertices = elem.second.size();
-            std::vector<Color> elem_colors(nb_vertices, element_colors[type]);
-            this->_colors.insert(this->_colors.end(), elem_colors.begin(), elem_colors.end());
+            Element element = it.first;
+            int size = _gl_geometry->vcolors.size();
+            _gl_geometry->vcolors.resize(_gl_geometry->vcolors.size() + it.second.size());
+            const Mesh::Topology& topology = it.second;
+
+            for (int i = 0; i < topology.size(); ++i) {
+                _gl_geometry->vcolors[size + i] = _vcolors[topology[i]];
+            }
         }
-        _b_color->load_data(_colors);
     }
-
-    static std::map<Element, Color> element_colors;
-
 protected:
     scalar _scale;
     std::map<Element, MeshConverter*> _converters;
-};
-
-std::map<Element, Color> GL_GraphicElement::element_colors = {
-    {Line, ColorBase::Red()},
-    {Triangle, ColorBase::Blue()},
-    {Quad, ColorBase::Green()},
-    {Tetra, Color(0.9, 0.3, 0.3, 1.0)},
-    {Pyramid, Color(0.9, 0.5, 0.1, 1.0)},
-    {Prism, Color(0.3, 0.9, 0.5, 1.0)},
-    {Hexa, Color(0.3, 0.9, 0.3, 1.0)},
-    {Tetra10, Color(0.3, 0.3, 0.9, 1.0)},
-    {Tetra20, Color(0.3, 0.7, 0.9, 1.0)}
 };
