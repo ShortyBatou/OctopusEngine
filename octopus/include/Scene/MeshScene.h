@@ -35,9 +35,9 @@ struct MeshScene : public Scene
 
     virtual void build_editor(UI_Editor* editor) {
         editor->add_manager_ui(new UI_Time());
-        editor->add_manager_ui(new UI_SceneColor());
+        editor->add_manager_ui(new UI_DisplaySettings());
         editor->add_manager_ui(new UI_Camera());
-        editor->add_component_ui(new UI_Mesh());
+        editor->add_component_ui(new UI_Mesh_Display());
         editor->add_component_ui(new UI_Data_Recorder());
         editor->add_component_ui(new UI_Graphic_Saver());
         editor->add_component_ui(new UI_PBD_Dynamic());
@@ -46,11 +46,11 @@ struct MeshScene : public Scene
 
     virtual void build_root(Entity* root) override
     {
-        root->addBehaviour(new TimeManager(1.f / 60.f));
-        root->addBehaviour(new InputManager());
-        root->addBehaviour(new CameraManager());
-        root->addBehaviour(new DebugManager(false));
-        root->addBehaviour(new OpenGLManager(Color(0.9f, 0.9f, 0.9f, 1.f)));
+        root->add_behaviour(new TimeManager(1.f / 60.f));
+        root->add_behaviour(new InputManager());
+        root->add_behaviour(new CameraManager());
+        root->add_behaviour(new DebugManager(false));
+        root->add_behaviour(new OpenGLManager(Color(0.9f, 0.9f, 0.9f, 1.f)));
     }
 
     // build scene's entities
@@ -144,7 +144,7 @@ struct MeshScene : public Scene
 
     void build_entity(Mesh* mesh, const Color& color) {
         Entity* e = Engine::CreateEnity();
-        e->addBehaviour(mesh);
+        e->add_behaviour(mesh);
 
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
@@ -157,13 +157,13 @@ struct MeshScene : public Scene
             default: graphic = new GL_GraphicSurface(color); break;
         }
 
-        e->addComponent(graphic);
+        e->add_component(graphic);
 
         // Opengl Rendering
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->wireframe() = true;
         display->point() = false;
-        e->addComponent(display);
+        e->add_component(display);
 
         // save mesh in VTK format (Paraview)
 
@@ -172,6 +172,6 @@ struct MeshScene : public Scene
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new Mesh_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
-        e->addComponent(data_recorder);
+        e->add_component(data_recorder);
     }
 };

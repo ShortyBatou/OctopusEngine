@@ -31,41 +31,67 @@ public:
         std::map < Element, Map_Quad> elem_surface_quad;
 
         // Find mesh surface 
+        find_surface(elem_surface_tri, elem_surface_quad, false);
+
+        // Get wireframe of quads (only for linear elements)
+        get_quad_wireframe(elem_surface_quad, elem_surface_line);
+
+        // Get wireframe of high-order elements
+        get_wireframe_all(elem_surface_tri, elem_surface_quad, elem_surface_line, true);
+
+        // Build final topology
+        extract_topology_in_gl(elem_surface_tri, elem_surface_quad, elem_surface_line);
+
+    }
+
+    void find_surface(std::map < Element, Map_Triangle>& elem_surface_tri, std::map < Element, Map_Quad>& elem_surface_quad, bool use_ref_geometry = false) {
         for (auto& it : _mesh->topologies()) {
             Element element = it.first;
             if (_converters.find(element) == _converters.end()) continue;
 
-            Mesh::Topology triangles, triangle_to_elem;
-            Mesh::Topology quads, quad_to_elem;
-            
+            Mesh::Topology triangles;
+            Mesh::Topology quads;
+
             // convert all elements into triangles and quads
-            _converters[element]->convert_element(_mesh->topology(element), triangles, quads, triangle_to_elem, quad_to_elem);
+            _converters[element]->convert_element(_mesh->topology(element), triangles, quads);
 
-            // get surface mesh for one type of element
+            // get surface faces 
+            const Mesh::Topology& ref_topology_tri = _converters[element]->topo_triangle();
+            const Mesh::Topology& ref_topology_quad = _converters[element]->topo_quad();
             Map_Triangle surface_tri; Map_Quad surface_quad;
-            get_surface<3>(surface_tri, triangles, triangle_to_elem);
-            get_surface<4>(surface_quad, quads, quad_to_elem);
-
+            if (!use_ref_geometry) {
+                MeshTools::GetSurface<3>(surface_tri, triangles, ref_topology_tri);
+                MeshTools::GetSurface<4>(surface_quad, quads, ref_topology_quad);
+            }
+            else {
+                const Mesh::Geometry& ref_geometry = _converters[element]->geo_ref();
+                MeshTools::GetSurface<3>(surface_tri, triangles, ref_topology_tri, ref_geometry);
+                MeshTools::GetSurface<4>(surface_quad, quads, ref_topology_quad, ref_geometry);
+            }
+            
             // compare to all previous surfaces and remove duplicates
             for (auto& it : elem_surface_tri) {
-                compare_surface<3>(surface_tri, it.second);
-            }                
+                MeshTools::RemoveDuplicates<3>(surface_tri, it.second);
+            }
 
             for (auto& it : elem_surface_quad) {
-                compare_surface<4>(surface_quad, it.second);
-            }  
+                MeshTools::RemoveDuplicates<4>(surface_quad, it.second);
+            }
             elem_surface_tri[element] = surface_tri;
             elem_surface_quad[element] = surface_quad;
         }
-        
+    }
+
+    void get_quad_wireframe(
+        std::map < Element, Map_Quad>& elem_surface_quad, 
+        std::map < Element, Map_Line>& elem_surface_line
+    ) {
         static int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
         static int tri_lines[6] = { 0,1,1,2,2,0 };
-        static int quad_triangle[6] = { 0,1,3, 3,1,2 };
-
         // get surface quad wireframe for linear elements
         for (auto& it : _mesh->topologies()) {
             Element element = it.first;
-            Map_Quad& surface_quad = elem_surface_quad[element];
+            const Map_Quad& surface_quad = elem_surface_quad[element];
             if (surface_quad.size() == 0) continue;
 
             // get quads line and remove duplicates
@@ -87,15 +113,24 @@ public:
 
             // compare to all previous surfaces and remove duplicates
             for (auto& it : elem_surface_line) {
-                compare_surface<2>(surface_line, it.second);
+                MeshTools::RemoveDuplicates<2>(surface_line, it.second);
             }
             elem_surface_line[element] = surface_line;
         }
+    }
 
+    void get_wireframe_all(
+        std::map < Element, Map_Triangle>& elem_surface_tri, 
+        std::map < Element, Map_Quad>& elem_surface_quad, 
+        std::map < Element, Map_Line>& elem_surface_line, 
+        bool high_order_only = true
+    ) {
+        static int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
+        static int tri_lines[6] = { 0,1,1,2,2,0 };
         // build surface wireframe for high-order element
         for (auto& it : _mesh->topologies()) {
             Element element = it.first;
-            if (!is_high_order(element)) continue;
+            if (high_order_only && !is_high_order(element)) continue;
 
             // build wireframe
             // For each element on surface generate its wireframe
@@ -130,7 +165,7 @@ public:
             for (const Face<3>&tri : elem_surface_tri[element]) {
                 for (int i = 0; i < 6; i += 2) {
                     int a = tri.ids[tri_lines[i]];
-                    int b = tri.ids[tri_lines[i+1]];
+                    int b = tri.ids[tri_lines[i + 1]];
                     Face<2> edge({ a, b });
                     if (element_wireframe.find(edge) == element_wireframe.end()) continue;
                     surface_wireframe.insert(edge);
@@ -149,106 +184,50 @@ public:
 
             // compare to all previous surfaces and remove duplicates
             for (auto& it : elem_surface_line) {
-                compare_surface<2>(surface_wireframe, it.second);
+                MeshTools::RemoveDuplicates<2>(surface_wireframe, it.second);
             }
 
             elem_surface_line[element] = surface_wireframe;
         }
+    }
 
-
-        // Build final topology
-        for (auto& it : _gl_topologies) 
+    void extract_topology_in_gl(
+        std::map < Element, Map_Triangle>& elem_surface_tri, 
+        std::map < Element, Map_Quad>& elem_surface_quad, 
+        std::map < Element, Map_Line>& elem_surface_line
+    ) {
+        int quad_triangle[6] = { 0,1,3, 3,1,2 };
+        for (auto& it : _gl_topologies)
         {
             Element element = it.first;
             GL_Topology* gl_topo = it.second;
 
-            extract_surface_topo<2>(elem_surface_line[element], gl_topo->lines);
+            MeshTools::ExtractTopo<2>(elem_surface_line[element], gl_topo->lines);
 
-            // quad need to be divided into two triangle
+            // get surface quads
             Mesh::Topology quads, quad_to_elem;
-            extract_surface_topo<4>(elem_surface_quad[element], quads, quad_to_elem);
+            MeshTools::ExtractTopo<4>(elem_surface_quad[element], quads);
+            MeshTools::ExtractFaceToElem<4>(elem_surface_quad[element], quad_to_elem);
 
+            // quad are divided into two triangles
             gl_topo->quads.resize(quads.size() / 4 * 6);
             gl_topo->quad_to_elem.resize(quads.size() / 4 * 2);
             for (int i = 0; i < quads.size() / 4; i++) {
                 for (int j = 0; j < 6; ++j) {
                     gl_topo->quads[i * 6 + j] = quads[i * 4 + quad_triangle[j]];
                 }
-                gl_topo->quad_to_elem[i*2] = quad_to_elem[i];
-                gl_topo->quad_to_elem[i*2+1] = quad_to_elem[i];
+                gl_topo->quad_to_elem[i * 2] = quad_to_elem[i];
+                gl_topo->quad_to_elem[i * 2 + 1] = quad_to_elem[i];
             }
 
             if (!is_high_order(element)) {
-                extract_surface_topo<3>(elem_surface_tri[element], gl_topo->triangles, gl_topo->tri_to_elem);
+                MeshTools::ExtractTopo<3>(elem_surface_tri[element], gl_topo->triangles);
+                MeshTools::ExtractFaceToElem<3>(elem_surface_tri[element], gl_topo->tri_to_elem);
             }
             else {
                 // we don't want automatic wire frame for high-order element triangles
-                extract_surface_topo<3>(elem_surface_tri[element], gl_topo->quads, gl_topo->quad_to_elem);
-            }
-        }
-
-    }
-
-protected:
-    /// convert the face set into an indices array
-    template<int nb>
-    void extract_surface_topo(const std::set<Face<nb>>& faces, Mesh::Topology& topology) {
-        topology.resize(nb * faces.size());
-        Mesh::Topology ids(nb);
-        int i = 0;
-        for (const Face<nb>& face : faces) {
-            for (int j = 0; j < nb; ++j) {
-                topology[i * nb + j] = face.ids[j];
-            }
-            i++;
-        }
-    }
-
-    /// convert the face set into a topology and "face_to_element" arrays
-    template<int nb>
-    void extract_surface_topo(const std::set<Face<nb>>& faces, Mesh::Topology& topology, Mesh::Topology& face_to_elem) {
-        int t_size = topology.size();
-        int f_size = face_to_elem.size();
-        topology.resize(t_size + nb * faces.size());
-        face_to_elem.resize(f_size + faces.size());
-        Mesh::Topology ids(nb);
-        int i = 0;
-        for (const Face<nb>& face : faces) {
-            face_to_elem[f_size + i] = face.element_id;
-            for (int j = 0; j < nb; ++j) {
-                topology[t_size + i * nb + j] = face.ids[j];
-            }
-            i++;
-        }
-    }
-
-    /// Build a face set from a topology and "face_to_element" arrays. Removes duplicates
-    template<int nb>
-    void get_surface(std::set<Face<nb>>& faces, Mesh::Topology& topology, Mesh::Topology& face_to_elem)
-    {
-        Mesh::Topology ids(nb);
-        for (int i = 0; i < topology.size(); i += nb)
-        {
-            for (int j = 0; j < nb; ++j) ids[j] = topology[i + j];
-
-            Face<nb> face(ids);
-            face.element_id = face_to_elem[i / nb];
-            auto it = faces.find(face);
-            if (it == faces.end()) 
-                faces.insert(face);
-            else
-                faces.erase(it);
-        }
-    }
-
-    /// removes duplicate between two face sets
-    template<int nb>
-    void compare_surface(std::set<Face<nb>>& a_faces, std::set<Face<nb>>& b_faces) {
-        for (const Face<nb>& face : a_faces) {
-            auto it = b_faces.find(face);
-            if (it != b_faces.end()) {
-                a_faces.erase(face);
-                b_faces.erase(it);
+                MeshTools::ExtractTopo<3>(elem_surface_tri[element], gl_topo->quads);
+                MeshTools::ExtractFaceToElem<3>(elem_surface_tri[element], gl_topo->quad_to_elem);
             }
         }
     }

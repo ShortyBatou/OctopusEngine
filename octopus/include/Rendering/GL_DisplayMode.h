@@ -21,6 +21,7 @@ public:
         }
     }
     std::vector<std::string> shader_path() { return _paths; }
+    void set_graphic(GL_Graphic* graphic) { _graphic = graphic; }
     virtual ~GL_DisplayMode() { 
         for (GL_Program* prog : _programs) delete prog;   
         _programs.clear();
@@ -36,8 +37,7 @@ protected:
 class GL_DisplayMesh : public GL_DisplayMode
 {
 public:
-    GL_DisplayMesh() : _wireframe(true), _surface(true), _point(true), _v(Matrix::Identity3x3()), _p(Matrix::Identity3x3()),
-    _pos(Unit3D::Zero()) { }
+    GL_DisplayMesh() : _wireframe(true), _surface(true), _point(true), _v(Matrix::Identity3x3()), _p(Matrix::Identity3x3()), _pos(Unit3D::Zero()) { }
 
     virtual void update() override {
     } // called before drawing anything
@@ -117,14 +117,14 @@ protected:
 
     virtual void draw_vertices(GL_Buffer<Vector3>* b_vertices)
     {
-        // emit uniform color or use color array buffer is multi color
+        // emit unifdraw_lineorm color or use color array buffer is multi color
         int shader_id = _graphic->use_multi_color() && !_graphic->use_element_color() && !_surface && !_wireframe;
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         
         if (shader_id == 0)
             this->_programs[shader_id]->uniform("color", GL_Graphic::vertice_color);
  
-        glPointSize(5.f);
+        glPointSize(GL_Graphic::vertice_size);
         glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         glDrawArrays(GL_POINTS, 0, b_vertices->nb_element());
         glPointSize(1.f);
@@ -147,7 +147,7 @@ protected:
         }
         b_line->bind_to_target(GL_ELEMENT_ARRAY_BUFFER);
         glEnable(GL_LINE_SMOOTH);
-        glLineWidth(2.f);
+        glLineWidth(GL_Graphic::line_size);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDrawElements(GL_LINES, b_line->nb_element(), GL_UNSIGNED_INT, 0);
         glDisable(GL_LINE_SMOOTH);
@@ -200,7 +200,6 @@ protected:
         b_triangle->unbind();
         this->_programs[shader_id]->unbind();
     }
-
 
     bool _wireframe, _surface, _point;
     Matrix4x4 _v, _p;

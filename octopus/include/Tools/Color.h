@@ -17,8 +17,19 @@ struct ColorBase
 
 
 struct ColorMap {
-    enum Type { Default, Rainbow, Viridis };
+    enum Type { Default, Rainbow, Viridis, BnW };
     
+    static char* Type_To_Str(Type type) {
+        switch (type)
+        {
+            case ColorMap::Default: return "Default";
+            case ColorMap::Rainbow: return "Rainbow";
+            case ColorMap::Viridis: return "Viridis";
+            case ColorMap::BnW: return "Black And White";
+            default: return "None";
+        }
+    }
+
     static Color evaluate(scalar t) {
         int n = _map[_type].size() - 1;
         int a = floor(t * n), b = ceil(t * n);
@@ -39,7 +50,8 @@ ColorMap::Type ColorMap::_type = ColorMap::Type::Default;
 std::map< ColorMap::Type, std::vector<Color> > ColorMap::_map = {
     {ColorMap::Type::Default, {Color(0.2, 0.2, 0.9, 1.), ColorBase::White(), Color(0.9, 0.2, 0.2, 1.)}},
     {ColorMap::Type::Rainbow, {Color(0.1f, 0.3f, 1.0f, 1.f), Color(0.1f, 0.85f, 0.4f, 1.f), Color(1.0f, 1.0f, 0.1f, 1.f), Color(1.0f, 0.5f, 0.3f, 1.f), Color(0.8f, 0.1f, 0.4f, 1.f)}},
-    {ColorMap::Type::Viridis, {Color(0.3f , 0.05f, 0.35f, 1.f), Color(0.25f, 0.45f, 0.7f , 1.f), Color(0.15f, 0.6f , 0.55f, 1.f), Color(0.5f , 0.8f , 0.3f , 1.f), Color(0.95f, 0.85f, 0.3f , 1.f)}}
+    {ColorMap::Type::Viridis, {Color(0.3f , 0.05f, 0.35f, 1.f), Color(0.25f, 0.45f, 0.7f , 1.f), Color(0.15f, 0.6f , 0.55f, 1.f), Color(0.5f , 0.8f , 0.3f , 1.f), Color(0.95f, 0.85f, 0.3f , 1.f)}},
+    {ColorMap::Type::BnW, {Color(0.), Color(1.)} }
 };
 
 

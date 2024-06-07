@@ -28,9 +28,9 @@ public:
 
     virtual void init() override { 
         Entity* root = Engine::GetEntity(0);
-        root->addBehaviour(_mesh);
-        root->addComponent(_graphic);
-        root->addComponent(_display_mode);
+        root->add_behaviour(_mesh);
+        root->add_component(_graphic);
+        root->add_component(_display_mode);
     }
 
     virtual void update() override { 

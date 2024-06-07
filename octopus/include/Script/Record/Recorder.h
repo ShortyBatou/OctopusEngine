@@ -199,12 +199,28 @@ public:
 		}
 
 		// get element saved data
-		std::vector<scalar> stress = _fem_dynamic->get_stress();
-		std::vector<scalar> volume = _fem_dynamic->get_volume();
-		std::vector<scalar> volume_diff = _fem_dynamic->get_volume_diff();
+		std::map<Element, std::vector<scalar>> e_stress = _fem_dynamic->get_stress();
+		std::map<Element, std::vector<scalar>> e_volume = _fem_dynamic->get_volume();
+		std::map<Element, std::vector<scalar>> e_volume_diff = _fem_dynamic->get_volume_diff();
+		std::vector<scalar> all_stress, all_volume, all_volume_diff;
+		for (auto& it : e_stress) {
+			Element type = it.first;
+			std::vector<scalar>& stress = e_stress[type];
+			std::vector<scalar>& volume = e_volume[type];
+			std::vector<scalar>& volume_diff = e_volume_diff[type];
+			size_t n = all_stress.size();
+			all_stress.resize(all_stress.size() + stress.size());
+			all_volume.resize(all_volume.size() + volume.size());
+			all_volume_diff.resize(all_volume_diff.size() + volume_diff.size());
+			for (size_t i = 0; i < stress.size(); ++i) {
+				all_stress[n + i] = stress[i];
+				all_volume[n + i] = volume[i];
+				all_volume_diff[n + i] = volume_diff[i];
+			}
+		}
+
 		std::vector<scalar> smooth_stress = _fem_dynamic->get_stress_vertices();
 		
-
 		VTK_Formater vtk;
 		vtk.open(_file_name);
 		vtk.save_mesh(init_pos, _mesh->topologies());
@@ -213,9 +229,9 @@ public:
 		vtk.add_vector_data(displacements, "u");
 		vtk.add_scalar_data(smooth_stress, "smooth_stress");
 		vtk.start_cell_data();
-		vtk.add_scalar_data(stress, "stress");
-		vtk.add_scalar_data(volume, "volume");
-		vtk.add_scalar_data(volume_diff, "volume_diff");
+		vtk.add_scalar_data(all_stress, "stress");
+		vtk.add_scalar_data(all_volume, "volume");
+		vtk.add_scalar_data(all_volume_diff, "volume_diff");
 		vtk.close();
 	}
 protected:

@@ -1,352 +1,169 @@
 #pragma once
-#include "Rendering/GL_Graphic.h"
+#include "Rendering/GL_GraphicSurface.h"
 #include "Mesh/Converter/MeshConverter.h"
+#include "Mesh/MeshTools.h"
 #include <map>
 #include <set>
 
-/*
-class GL_GraphicHighOrder : public GL_Graphic
+
+class GL_GraphicHighOrder : public GL_GraphicSurface
 {
-    using Edge = std::pair<int, int>;
+    using Map_Line = std::set<Face<2>>;
+    using Map_Triangle = std::set<Face<3>>;
+    using Map_Quad = std::set<Face<4>>;
 public:
-    GL_GraphicHighOrder(int quality, const Color& color = Color(0.8, 0.4, 0.4, 1.0)) : GL_Graphic(color), _quality(quality)
+    GL_GraphicHighOrder(int quality, const Color& color = Color(0.8, 0.4, 0.4, 1.0)) : GL_GraphicSurface(color), _quality(quality)
     {
         _converters[Tetra] = new TetraConverter();
+        _converters[Pyramid] = new PyramidConverter();
+        _converters[Prism] = new PrysmConverter();
+        _converters[Hexa] = new HexaConverter();
         _converters[Tetra10] = new Tetra10Converter();
         _converters[Tetra20] = new Tetra20Converter();
         for (auto& elem : _converters) elem.second->init();
     }
 
-    virtual void update_buffer_colors() override
+    virtual void update_gl_vcolors()
     {
-        assert(_colors.size() == _mesh->nb_vertices());
-        if (_mesh->nb_vertices() == 0) return;
-
-        // mono element ...
-        Element elem;
-        for (auto& t : _mesh->topologies()) {
-            if (t.second.size() > 0) {
-                elem = t.first;
-                break;
+        Element element = Element::Line;
+        FEM_Shape* shape = nullptr;
+        unsigned int element_size;
+        _gl_geometry->vcolors.resize(_ref_geometry.size());
+        for (int i = 0; i < _ref_geometry.size(); ++i) {
+            if (element != _v_to_element_type[i]) {
+                delete shape;
+                element = _v_to_element_type[i];
+                element_size = elem_nb_vertices(element);
+                shape = get_fem_shape(element);
+            }
+            std::vector<scalar> N_v = shape->build_shape(_ref_geometry[i].x, _ref_geometry[i].y, _ref_geometry[i].z);
+            _gl_geometry->vcolors[i] = ColorBase::Black();
+            for (unsigned int j = 0; j < N_v.size(); ++j) {
+                int id = _mesh->topology(element)[_v_to_element[i] * element_size + j];
+                _gl_geometry->vcolors[i] += N_v[j] * _vcolors[id];
             }
         }
-        int elem_size = elem_nb_vertices(elem);
-
-        auto& tetras = _mesh->topology(elem);
-        FEM_Shape* shape = _converters[elem]->shape();
-        std::vector<Color> refined_colors(refined_geometry.size());
-        for (size_t i = 0; i < refined_geometry.size(); ++i) {
-            std::vector<scalar> N_v = shape->build_shape(refined_geometry[i].x, refined_geometry[i].y, refined_geometry[i].z);
-            for (size_t j = 0; j < N_v.size(); ++j) {
-                refined_colors[i] += N_v[j] * _colors[tetras[v_tetra_id[i] * elem_size + j]];
-            }
-        }
-
-        _b_color->load_data(refined_colors);
+        delete shape;
     }
 
-    virtual void get_geometry(Mesh::Geometry& geometry) override {
-
-        Element elem;
-        // mono element ...
-        for (auto& t : _mesh->topologies()) {
-            if (t.second.size() > 0) {
-                elem = t.first;
-                break;
+    virtual void update_gl_geometry() override
+    { 
+        Element element = Element::Line;
+        FEM_Shape* shape = nullptr;
+        unsigned int element_size;
+        _gl_geometry->geometry.resize(_ref_geometry.size());
+        for (int i = 0; i < _ref_geometry.size(); ++i) {
+            if (element != _v_to_element_type[i]) {
+                delete shape;
+                element = _v_to_element_type[i];
+                element_size = elem_nb_vertices(element);
+                shape = get_fem_shape(element);
+            }
+            std::vector<scalar> N_v = shape->build_shape(_ref_geometry[i].x, _ref_geometry[i].y, _ref_geometry[i].z);
+            _gl_geometry->geometry[i] = Unit3D::Zero();
+            for (unsigned int j = 0; j < N_v.size(); ++j) {
+                int id = _mesh->topology(element)[_v_to_element[i] * element_size + j];
+                _gl_geometry->geometry[i] += N_v[j] * _mesh->geometry()[id];
             }
         }
-        int elem_size = elem_nb_vertices(elem);
-
-        auto& tetras = _mesh->topology(elem);
-        FEM_Shape* shape = _converters[elem]->shape();
-        geometry.resize(refined_geometry.size());
-        
-        for (int i = 0; i < refined_geometry.size(); ++i) {
-            std::vector<scalar> N_v = shape->build_shape(refined_geometry[i].x, refined_geometry[i].y, refined_geometry[i].z);
-            geometry[i] = Unit3D::Zero();
-            for (int j = 0; j < N_v.size(); ++j) {
-                geometry[i] += N_v[j] * _mesh->geometry()[tetras[v_tetra_id[i] * elem_size + j]];
-            }  
-        }
+        delete shape;
     }
 
-    virtual void get_topology(
-        Mesh::Topology& lines, 
-        Mesh::Topology& triangles, 
-        Mesh::Topology& quads, 
-        Mesh::Topology& tri_to_elem, 
-        Mesh::Topology& quad_to_elem) override
+    virtual void update_gl_topology() override
     {
-        
-        // triangle subdivision pattern;
-        std::vector<int> subdivision_pattern = { 0,3,5, 3,1,4, 3,4,5, 5,4,2 };
-        std::vector<Edge> subdivision_edges = { Edge(0,1), Edge(1,2), Edge(0,2) };
+        std::map < Element, Map_Line> elem_surface_line;
+        std::map < Element, Map_Triangle> elem_surface_tri;
+        std::map < Element, Map_Quad> elem_surface_quad;
 
-        // convert tetra10 into quads and triangles
-        Element elem;
-        for (auto& t : _mesh->topologies()) {
-            if (t.second.size() > 0) {
-                elem = t.first;
-                break;
-            }
-        }
-        int elem_size = elem_nb_vertices(elem);
-        Mesh::Topology elem_triangles, elem_quads;
-        _converters[elem]->convert_element(_mesh->topologies(), elem_triangles, elem_quads, tri_to_elem, quad_to_elem);
+        // Find mesh surface 
+        find_surface(elem_surface_tri, elem_surface_quad, true);
 
-        // get surface triangles associated with their tetra and face num and their coordinate in referential element
-        std::vector<Face<3>> surface_triangles = get_surface<3>(
-            elem_triangles,
-            _converters[elem]->geo_ref(),
-            _converters[elem]->topo_triangle()
-        );
+        // Get wireframe of high-order elements
+        get_wireframe_all(elem_surface_tri, elem_surface_quad, elem_surface_line, false);
 
-        auto& elements = _mesh->topology(elem);
-        auto& elem_edges = _converters[elem]->topo_edge();
-        
-        std::set<Edge> wireframe;
-        build_wireframe(elem_size, elements, elem_edges, subdivision_edges, surface_triangles, wireframe);
-
-        // change surface face ids to only use surface vertices and get their tetra_id
+        // build the geometry in the reference elements and only keep surface vertices
         std::map<int, int> map_id;
-        rebuild_faces<3>(surface_triangles, map_id);
+        rebuild_geometry(elem_surface_tri, elem_surface_quad, map_id);
 
-        // change vertices ids for wireframe
-        rebuild_wireframe(map_id, wireframe);
+        // rebuild the wireframe with the new vertices
+        rebuild_wireframe(elem_surface_line, map_id);
+
+        // refinement
+        refine(elem_surface_tri, elem_surface_quad, elem_surface_line);
         
-
-        // TODO quad subdivision pattern
-        for (int i = 0; i < _quality; ++i) {
-            std::map<Edge, int> edges;
-            subdivise<3>(subdivision_pattern, subdivision_edges, surface_triangles, edges, wireframe, v_tetra_id, refined_geometry);
-            // TODO quad
-        }
-        tri_to_elem.clear();
-
-       
-
-        // we use quads list to store triangle because we don't want wireframe ! (automatic for triangles)
-        quads.resize(surface_triangles.size()*3);
-        quad_to_elem.resize(surface_triangles.size() * 3);
-        for (int i = 0; i < surface_triangles.size(); ++i) {
-            for (int j = 0; j < 3; ++j) {
-                quads[i*3+j] = surface_triangles[i].ids[j];
-                quad_to_elem[i*3+j] = surface_triangles[i].element_id;
-            }
-        } 
-
-        lines.resize(wireframe.size() * 2);
-        int e = 0;
-        for (const Edge& edge : wireframe) {
-            lines[e] = edge.first;
-            lines[e + 1] = edge.second;
-            e+=2;
-        }
+        // Build final topology
+        extract_topology_in_gl(elem_surface_tri, elem_surface_quad, elem_surface_line);
     }
 
-    // nb = face nb vertices
-    // ref_geometry = refence element geometry 
-    // ref_topology = refence element topology 
-    // faces        = surface faces
-    template<int nb> 
-    std::vector<Face<nb>> get_surface(
-        const Mesh::Topology& topology,
-        const Mesh::Geometry& ref_geometry,
-        const Mesh::Topology& ref_topology)
-    {
-        std::set<Face<nb>> faces;
-        Mesh::Topology face_ids(nb);
-        Mesh::Geometry face_vertices(nb);
-        int nb_id_per_element = ref_topology.size();
-        for (int i = 0; i < topology.size(); i += nb)
-        { 
-            int element_id = i / nb_id_per_element;
-            int face_id = (i % nb_id_per_element) / nb;
-
-            // get the face in element
-            // get the face vertices in referece geometry 
-            for (int j = 0; j < nb; ++j) 
-            {
-                face_ids[j] = topology[i + j];
-                face_vertices[j] = ref_geometry[ref_topology[face_id * nb + j]];
-            }
-
-            // check if face allready exist, if not add it to faces, if yes, delete both faces
-            Face<nb> face(face_ids, face_vertices, element_id, face_id);
-            auto it = faces.find(face);
-            if (it == faces.end())
-                faces.insert(face);
-            else
-                faces.erase(it);
-        }
-
-        return std::vector<Face<nb>>(faces.begin(), faces.end());
-    }
-
-    void build_wireframe(int element_size,
-        const Mesh::Topology& elements,
-        const Mesh::Topology& elem_edges,
-        const std::vector<Edge>& subdivision_edges,
-        const std::vector<Face<3>>& triangles,
-        std::set<Edge>& wireframe) {
-        // for each triangle, get the element id, if found allready don't add
-        std::set<int> surface_element;
-        std::set<Edge> wireframe_elem;
-        for (const Face<3>&tri : triangles) {
-            if (surface_element.find(tri.element_id) == surface_element.end()) {
-                surface_element.insert(tri.element_id);
-                for (int i = 0; i < elem_edges.size(); i += 2) {
-                    int a = elements[tri.element_id * element_size + elem_edges[i]];
-                    int b = elements[tri.element_id * element_size + elem_edges[i + 1]];
-                    Edge edge = (a < b) ? Edge(a, b) : Edge(b, a);
-                    wireframe_elem.insert(edge);
-                }
-            }
-        }
-
-        for (const Face<3>&tri : triangles) {
-            for (const Edge& e : subdivision_edges) {
-                int a = tri.ids[e.first];
-                int b = tri.ids[e.second];
-                Edge edge = (a < b) ? Edge(a, b) : Edge(b, a);
-                auto it = wireframe_elem.find(edge);
-                if (it == wireframe_elem.end()) continue;
-                wireframe.insert(edge);
-            }
-        }
-    }
-
-    template<int NB>
-    void rebuild_faces(std::vector<Face<NB>>& faces, std::map<int, int>& map_id) {
-        refined_geometry.clear();
-        v_tetra_id.clear();
-        for (Face<NB>&face : faces) {
-            for (int i = 0; i < NB; ++i) {
-                int id = face.ids[i];
-                auto it = map_id.find(id);
-                // if not found
-                if (it == map_id.end()) {
-                    map_id[id] = refined_geometry.size();
-                    id = refined_geometry.size();
-                    refined_geometry.push_back(face.vertices[i]);
-                    v_tetra_id.push_back(face.element_id);
-                }
-                else {
-                    id = map_id[id];
-                }
-
-                face.ids[i] = id;
-            }
-            face = Face<NB>(face.ids, face.vertices, face.element_id, face.face_id);
-        }
-    }
-
-    void rebuild_wireframe(std::map<int, int>& map_id, std::set<Edge>& wireframe) {
-        std::set<Edge> remaped_wireframe;
-        for (const Edge& edge : wireframe) {
-            int a = map_id[edge.first];
-            int b = map_id[edge.second];
-            Edge edge2 = (a < b) ? Edge(a, b) : Edge(b, a);
-            remaped_wireframe.insert(edge2);
-        }
-        wireframe = remaped_wireframe;
-    }
-
-    // subdivision_pattern = which triangles are created when all edges have been splited
-    // subdivision_edges   = which edges must be splited
-    // faces               = surface faces of mesh
-    // edges               = edges that are allready existing in this subdivision
-    // v_element_id        = vertice's element id to know which element influence the vertice
-    // refined_geometry    = surface mesh geometry
-    template<int NB>
-    void subdivise(
-        const Mesh::Topology& subdivision_pattern,
-        const std::vector<Edge>& subdivision_edges,
-        std::vector<Face<NB>>& faces,
-        std::map<Edge, int>& edges,
-        std::set<Edge>& wireframe,
-        std::vector<int>& v_element_id,
-        Mesh::Geometry& refined_geometry
-    ) {
-        //// SUBDIVISION FUNCTION
-        
-         // existing edges and it's associated mid point
-        int nb_triangles = faces.size();
-        Mesh::Topology face_topo(NB);
-        Mesh::Geometry face_vertices(NB);
-        // subdivise each triangle in mesh
-        for (int i = 0; i < nb_triangles; ++i)
+    void rebuild_geometry(std::map < Element, Map_Triangle>& elem_surface_tri, std::map < Element, Map_Quad>& elem_surface_quad, std::map<int, int>& map_id) {
+        _ref_geometry.clear();
+        _v_to_element.clear();
+        _v_to_element_type.clear();
+        for (const auto& it : _mesh->topologies())
         {
-            int j = 0;
-            std::vector<int> v_ids(NB + subdivision_edges.size()); // nb vertices in subdivision
-            std::vector<Vector3> v_tri(v_ids.size());
-            for (; j < faces[i].ids.size(); ++j) {
-                v_ids[j] = faces[i].ids[j]; // copy the face ids
-                v_tri[j] = faces[i].vertices[j];
+            Element element = it.first;
+            int nb = _ref_geometry.size();
+            MeshTools::RebuildFaces<3>(elem_surface_tri[element], _ref_geometry, _v_to_element, map_id);
+            MeshTools::RebuildFaces<4>(elem_surface_quad[element], _ref_geometry, _v_to_element, map_id);
+            _v_to_element_type.insert(_v_to_element_type.end(), _ref_geometry.size() - nb, element);
+        }
+    }
+
+    void rebuild_wireframe(std::map < Element, Map_Line>& elem_surface_line, std::map<int, int>& map_id) {
+        for (const auto& it : _mesh->topologies())
+        {
+            Element element = it.first;
+            std::set<Face<2>> remaped_wireframe;
+            for (const Face<2>&edge : elem_surface_line[element]) {
+                int a = map_id[edge.ids[0]];
+                int b = map_id[edge.ids[1]];
+                Face<2> edge2 = (a < b) ? Face<2>({ a, b }) : Face<2>({ b, a });
+                remaped_wireframe.insert(edge2);
+            }
+            elem_surface_line[element] = remaped_wireframe;
+        }
+    }
+
+    void refine(std::map < Element, Map_Triangle>& elem_surface_tri, std::map < Element, Map_Quad>& elem_surface_quad, std::map < Element, Map_Line>& elem_surface_line) {
+        static const Mesh::Topology tri_subdivision_pattern = { 0,3,5, 3,1,4, 3,4,5, 5,4,2 };
+        static const Mesh::Topology tri_subdivision_edges = { 0,1, 1,2, 0,2 };
+        static const Mesh::Topology quad_subdivision_pattern = { 0,4,8,7, 4,1,5,8, 8,5,2,6, 7,8,3,6 };
+        static const Mesh::Topology quad_subdivision_edges = { 0,1, 1,2, 2,3, 3,0, 4,6 }; // will not work
+        for (int i = 0; i < _quality; ++i)
+        {
+            for (const auto& it : _mesh->topologies())
+            {
+                std::map<Face<2>, int> edges;
+                Element element = it.first;
+                int nb = _ref_geometry.size();
+
+                MeshTools::Subdivise<3>(
+                    tri_subdivision_pattern,    // how to subdivise face
+                    tri_subdivision_edges,      // how to subdivise edges (create new vertices)
+                    elem_surface_tri[element],  // surface mesh
+                    elem_surface_line[element], // wireframe
+                    edges,                      // subdivided edges and their corresponding mid vertice id
+                    _ref_geometry,     // the new geometry
+                    _v_to_element);    // in which element is defined each vertices
+
+                MeshTools::Subdivise<4>(
+                    quad_subdivision_pattern,
+                    quad_subdivision_edges,
+                    elem_surface_quad[element],
+                    elem_surface_line[element],
+                    edges,
+                    _ref_geometry,
+                    _v_to_element);
+                _v_to_element_type.insert(_v_to_element_type.end(), _ref_geometry.size() - nb, element);
             }
 
-            // for each edge, find or create the middle point
-            for (const Edge& sub_edge : subdivision_edges) {
-
-                int a = faces[i].ids[sub_edge.first];
-                int b = faces[i].ids[sub_edge.second];
-                
-                Edge edge = (a < b) ? Edge(a, b) : Edge(b,a);
-
-                Vector3 pa = v_tri[sub_edge.first];
-                Vector3 pb = v_tri[sub_edge.second];
-                Vector3 center = (pa + pb) * scalar(0.5);
-                // if the edge allready exist, get the middle point id, else, create the middle point
-                int cid;
-                auto it = edges.find(edge);
-                if (it == edges.end()) {
-                    cid = refined_geometry.size();
-                    refined_geometry.push_back(center);
-                    v_element_id.push_back(faces[i].element_id);
-                    edges[edge] = cid;
-
-                    if (wireframe.find(edge) != wireframe.end()) {
-                        wireframe.erase(edge);
-                        Edge w1 = (a < cid) ? Edge(a, cid) : Edge(cid, a);
-                        Edge w2 = (b < cid) ? Edge(b, cid) : Edge(cid, b);
-                        wireframe.insert(w1);
-                        wireframe.insert(w2);
-                    }
-                   
-                }
-                else {
-                    cid = edges[edge];
-                }
-
-                v_ids[j] = cid;
-                v_tri[j] = center;
-
-                j++;
-            }
-
-            for (int k = 0; k < subdivision_pattern.size(); k += NB) {
-
-                for (int l = 0; l < NB; ++l) {
-                    face_topo[l] = v_ids[subdivision_pattern[k + l]];
-                    face_vertices[l] = v_tri[subdivision_pattern[k + l]];
-                }
-
-                Face<NB> new_tri(face_topo, face_vertices, faces[i].element_id, faces[i].face_id);
-
-                if (k == 0) {
-                    faces[i] = new_tri;
-                }
-                else {
-                    faces.push_back(new_tri);
-                }
-            }
         }
     }
 
 protected:
-    Mesh::Geometry refined_geometry;
-    std::vector<int> v_tetra_id;
+    std::vector<Element> _v_to_element_type;
+    std::vector<int> _v_to_element;
+    Mesh::Geometry _ref_geometry;
     int _quality;
     std::map<Element, MeshConverter*> _converters; 
 };
-*/

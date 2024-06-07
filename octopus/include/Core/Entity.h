@@ -70,19 +70,24 @@ struct Entity : public Behaviour {
     }
 
     template<class T>
-    T* getComponentById(int i) {
+    T* get_component_by_id(int i) {
         if(i >= _components.size()) return nullptr;
         
         return static_cast<T>(_components[i]);
     }
 
-    void addBehaviour(Behaviour* behaviour) {
+    void add_behaviour(Behaviour* behaviour) {
         _components.push_back(behaviour);
     }
 
-    void addComponent(Component* component) {
+    void add_component(Component* component) {
         component->_entity = this;
         _components.push_back(component);
+    }
+
+    void remove_component(Component* component) {
+        _components.erase(std::remove(_components.begin(), _components.end(), component), _components.end());
+        delete component;
     }
 
     virtual ~Entity(){

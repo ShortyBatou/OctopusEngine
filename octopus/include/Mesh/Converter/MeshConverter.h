@@ -47,9 +47,7 @@ struct MeshConverter
     virtual void build_scaled_topology(
         Mesh::Topology& mesh_topology, 
         Mesh::Topology& triangles, 
-        Mesh::Topology& quads,
-        Mesh::Topology & tri_to_elem,
-        Mesh::Topology& quad_to_elem)
+        Mesh::Topology& quads)
     {
         Element elem = get_element_type();
         const int nb = elem_nb_vertices(elem);
@@ -57,18 +55,10 @@ struct MeshConverter
         resize_topo(nb_elem, _topo_triangle.size(), triangles);
         resize_topo(nb_elem, _topo_quad.size(), quads);
 
-        resize_topo(nb_elem, _topo_triangle.size() / 3, tri_to_elem);
-        resize_topo(nb_elem, _topo_quad.size() / 4, quad_to_elem);
         for (int i = 0; i < nb_elem; ++i)
         {
             build_scaled_element_topo(i * nb, i, _topo_triangle, triangles);
             build_scaled_element_topo(i * nb, i, _topo_quad, quads);
-            for (int j = 0; j < _topo_triangle.size() / 3; ++j) {
-                tri_to_elem[i * _topo_triangle.size() / 3 + j] = i;
-            }
-            for (int j = 0; j < _topo_quad.size() / 4; ++j) {
-                quad_to_elem[i * _topo_quad.size() / 4 + j] = i;
-            }
         }
     }
 
@@ -88,27 +78,17 @@ struct MeshConverter
     virtual void convert_element(
         Mesh::Topology& mesh_topology, 
         Mesh::Topology& triangles, 
-        Mesh::Topology& quads, 
-        Mesh::Topology& tri_to_elem, 
-        Mesh::Topology& quad_to_elem)
+        Mesh::Topology& quads)
     {
         Element elem      = get_element_type();
         const int nb      = elem_nb_vertices(elem);
         const int nb_elem = mesh_topology.size() / nb;
         resize_topo(nb_elem, _topo_triangle.size(), triangles);
         resize_topo(nb_elem, _topo_quad.size(), quads);
-        resize_topo(nb_elem, _topo_triangle.size()/3, tri_to_elem);
-        resize_topo(nb_elem, _topo_quad.size()/4, quad_to_elem);
         for (int i = 0; i < nb_elem; ++i)
         {
             convert_element_topo(i*nb, i, _topo_triangle, mesh_topology, triangles);
             convert_element_topo(i*nb, i, _topo_quad, mesh_topology, quads);
-            for (int j = 0; j < _topo_triangle.size() / 3; ++j) {
-                tri_to_elem[i * _topo_triangle.size() / 3 + j] = i;
-            }
-            for (int j = 0; j < _topo_quad.size() / 4; ++j) {
-                quad_to_elem[i * _topo_quad.size() / 4 + j] = i;
-            }
         }
     }
 

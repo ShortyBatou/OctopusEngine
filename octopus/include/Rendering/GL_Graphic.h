@@ -7,6 +7,7 @@
 #include "Mesh/Elements.h"
 #include "Tools/Color.h"
 #include "Rendering/GL_Buffer.h"
+#include "Mesh/MeshTools.h"
 #include "gl_base.h"
 #include <vector>
 #include <map>
@@ -206,7 +207,9 @@ public:
 
     std::map<Element, GL_Topology*> gl_topologies() {return _gl_topologies; };
     GL_Geometry* gl_geometry() { return _gl_geometry; };
-
+    std::vector<Color> get_vcolor() {
+        return _vcolors;
+    }
     virtual ~GL_Graphic() { 
         delete _gl_geometry;
         for (auto& it : _gl_topologies) {
@@ -217,6 +220,8 @@ public:
 
     static scalar wireframe_intencity;
     static Color vertice_color;
+    static scalar vertice_size;
+    static scalar line_size;
 
 protected:
 
@@ -260,5 +265,7 @@ protected:
     std::map<Element, GL_Topology*> _gl_topologies;
 };
 
+scalar GL_Graphic::vertice_size = scalar(2.);
+scalar GL_Graphic::line_size = scalar(2.);
 scalar GL_Graphic::wireframe_intencity = scalar(0.7);
 Color GL_Graphic::vertice_color = ColorBase::Grey(scalar(0.1));

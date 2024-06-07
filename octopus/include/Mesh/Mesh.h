@@ -22,9 +22,7 @@ struct Face
         int _face_id = 0) : element_id(_element_id), face_id(_face_id), vertices(_vertices)
     {
         assert(_ids.size() == nb);
-        ids = _ids; 
-        ids_sorted = _ids;
-        std::sort(ids_sorted.begin(), ids_sorted.end());
+        build_ids(_ids);
     }
 
     bool operator<(const Face<nb>& f) const
@@ -46,6 +44,12 @@ struct Face
     {
         if (*this == f) return false;
         return true;
+    }
+
+    void build_ids(const std::vector<int>& _ids) {
+        ids = _ids;
+        ids_sorted = _ids;
+        std::sort(ids_sorted.begin(), ids_sorted.end());
     }
 };
 
@@ -94,7 +98,9 @@ public:
 
     void update_mesh() { _need_update = true; }
     void set_dynamic_geometry(bool state) { _dynamic_geometry = state; }
-    void set_dynamic_topology(bool state) { _dynamic_topology = state; }
+    void set_dynamic_topology(bool state) { 
+        _dynamic_topology = state; 
+    }
     bool& need_update() { return _need_update; }
     bool has_dynamic_geometry() const { return _dynamic_geometry; }
     bool has_dynamic_topology() const { return _dynamic_topology; }

@@ -28,6 +28,7 @@ public:
 	}
 
 	virtual void update() override {
+
 		if (Input::Down(Key::NUM_0)) _mode = 0;
 		if (Input::Down(Key::NUM_1)) _mode = 1;
 		if (Input::Down(Key::NUM_2)) _mode = 2;
@@ -55,6 +56,7 @@ public:
 			rgn_crush();
 		}
 
+		_fixation->set_active(_mode != -1);
 		if (_mode == 1) {
 			Matrix4x4 rot = _fixation->rot;
 			_fixation->rot = glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);

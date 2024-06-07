@@ -19,8 +19,7 @@
 #include "Script/Record/DataRecorder.h"
 #include "Script/Dynamic/XPBD_FEM_Dynamic.h"
 #include "Script/Dynamic/Constraint_Rigid_Controller.h"
-
-
+#include "Script/Display/DataDisplay.h"
 class UI_SceneManager : public UI_Display {
 public:
 	UI_SceneManager() : _item_current(SceneManager::SceneID()) 
@@ -54,7 +53,7 @@ protected:
 	int _item_current;
 };
 
-class UI_SceneColor : public UI_Component {
+class UI_DisplaySettings : public UI_Component {
 public:
 	virtual char* name() override {
 		return "Colors";
@@ -73,6 +72,9 @@ public:
 		ImGui::SliderFloat("Wireframe Intencity", &GL_Graphic::wireframe_intencity, 0.0f, 1.0f, "ratio = %.3f");
 		ImGui::ColorEdit3("Vertices Color", &GL_Graphic::vertice_color.x);
 		ImGui::SeparatorText("Element's Color");
+
+		ImGui::SliderFloat("Vertices Size", &GL_Graphic::vertice_size, 1.0f, 20.0f, "ratio = %.5f");
+		ImGui::SliderFloat("Line Size", &GL_Graphic::line_size, 1.0f, 10.0f, "ratio = %.5f");
 
 		//bool change = false;
 		//change = change + ImGui::ColorEdit3("Line", &GL_GraphicElement::element_colors[Line].x);
@@ -171,27 +173,51 @@ protected:
 
 
 
-class UI_Mesh : public UI_Component {
+class UI_Mesh_Display : public UI_Component {
 public:
+
+
 	virtual char* name() override {
-		return "Mesh";
+		return "Mesh Display";
 	}
 
 
 	bool can_draw(Entity* entity) override {
-		GL_GraphicSurface* gl_surface = entity->get_component<GL_GraphicSurface>();
 		GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
-		if (gl_surface || gl_display) return true;
+		if (gl_display) return true;
 		return false;
 	}
 
 	virtual void draw(Entity* entity) override {
-		GL_GraphicSurface* gl_surface = entity->get_component< GL_GraphicSurface>();
-		if (gl_surface) {
-			ImGui::ColorEdit3("Color", &gl_surface->color().r);
+		GL_Graphic* gl_graphic = entity->get_component< GL_Graphic>();
+		GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
+		static const char* modes[] = { "Point", "Surface", "Surface High-Order", "Element" };
+		if (ImGui::Combo("Color Map", &current_mode, modes, 4)) {
+			GL_Graphic* new_graphic = nullptr;
+			gl_display->surface() = true;
+			switch (current_mode)
+			{
+				case 0: new_graphic = new GL_Graphic(gl_graphic->color()); gl_display->point() = true; gl_display->surface() = false;  gl_display->wireframe() = false; break;
+				case 1: new_graphic = new GL_GraphicSurface(gl_graphic->color()); break;
+				case 2: new_graphic = new GL_GraphicHighOrder(2, gl_graphic->color()); break;
+				case 3: new_graphic = new GL_GraphicElement(gl_graphic->color()); break;
+			}
+
+			Mesh* mesh = entity->get_component<Mesh>();
+			mesh->update_mesh();
+			entity->remove_component(gl_graphic);
+			entity->add_component(new_graphic);
+			new_graphic->init();
+			new_graphic->late_init();
+
+			gl_display->set_graphic(new_graphic);
+			gl_graphic = new_graphic;
 		}
 
-		GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
+		if (gl_graphic) {
+			ImGui::ColorEdit3("Color", &gl_graphic->color().r);
+		}
+
 		if (gl_display) {
 			ImGui::Checkbox("Wireframe", &gl_display->wireframe());
 			ImGui::SameLine();
@@ -201,7 +227,11 @@ public:
 		}
 
 	}
+
+private:
+	int current_mode;
 };
+
 
 class UI_Data_Recorder : public UI_Component {
 public:
@@ -236,6 +266,48 @@ public:
 protected: 
 	bool saved;
 	int save_frame;
+};
+
+class UI_Data_Displayer : public UI_Component {
+public:
+	UI_Data_Displayer() : UI_Component() {
+		for (int d = FEM_DataDisplay::Type::BaseColor; d != FEM_DataDisplay::Type::None; ++d) {
+			if (d == FEM_DataDisplay::Type::None) break;
+			str_display_types.push_back(FEM_DataDisplay::Type_To_Str(FEM_DataDisplay::Type(d)));
+		}
+		for (int d = ColorMap::Type::Default; d != ColorMap::Type::BnW + 1; ++d) {
+			str_colormap_types.push_back(ColorMap::Type_To_Str(ColorMap::Type(d)));
+		}
+	}
+
+	virtual char* name() override {
+		return "FEM Data Displayer";
+	}
+
+
+	bool can_draw(Entity* entity) override {
+		FEM_DataDisplay* data_display = entity->get_component<FEM_DataDisplay>();
+		if (data_display) return true;
+		return false;
+	}
+
+	virtual void draw(Entity* entity) override {
+		FEM_DataDisplay* data_recorder = entity->get_component<FEM_DataDisplay>();
+		int _current_display = data_recorder->_mode;
+		int _current_colormap = data_recorder->color_map;
+		if (ImGui::Combo("Data Type", &_current_display, str_display_types.data(), str_display_types.size())) {
+			data_recorder->_mode = FEM_DataDisplay::Type(_current_display);
+			//data_recorder->update();
+		}
+		if (ImGui::Combo("Color Map", &_current_colormap, str_colormap_types.data(), str_colormap_types.size())) {
+			data_recorder->color_map = ColorMap::Type(_current_colormap);
+			//data_recorder->update();
+		}
+	}
+protected:
+	
+	std::vector<char*> str_colormap_types;
+	std::vector<char*> str_display_types;
 };
 
 class UI_Graphic_Saver : public UI_Component {

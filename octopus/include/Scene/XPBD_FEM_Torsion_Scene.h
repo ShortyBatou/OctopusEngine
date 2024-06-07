@@ -32,18 +32,18 @@ struct XPBD_FEM_Torsion_Scene : public Scene
 
     virtual void build_editor(UI_Editor* editor) {
         editor->add_manager_ui(new UI_Time());
-        editor->add_manager_ui(new UI_SceneColor());
+        editor->add_manager_ui(new UI_DisplaySettings());
         editor->add_manager_ui(new UI_Camera());
-        editor->add_component_ui(new UI_Mesh());
+        editor->add_component_ui(new UI_Mesh_Display());
     }
 
     virtual void build_root(Entity* root) override
     {
-        root->addBehaviour(new TimeManager(1.f / 60.f));
-        root->addBehaviour(new InputManager());
-        root->addBehaviour(new CameraManager(Unit3D::up() * 8.f  + Unit3D::right() * 0.001f));
-        root->addBehaviour(new DebugManager(false));
-        root->addBehaviour(new OpenGLManager(Color(1., 1., 1., 1.)));
+        root->add_behaviour(new TimeManager(1.f / 60.f));
+        root->add_behaviour(new InputManager());
+        root->add_behaviour(new CameraManager(Unit3D::up() * 8.f  + Unit3D::right() * 0.001f));
+        root->add_behaviour(new DebugManager(false));
+        root->add_behaviour(new OpenGLManager(Color(1., 1., 1., 1.)));
     }
 
     // build scene's entities
@@ -80,10 +80,10 @@ struct XPBD_FEM_Torsion_Scene : public Scene
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
 
         mesh->set_dynamic_geometry(true);
-        e->addBehaviour(mesh);
-        e->addComponent(new XPBD_FEM_Dynamic(100, 100000, 0.49f, Neo_Hooke, 1, 50, GaussSeidel));
-        e->addComponent(new Constraint_Rigid_Controller(pos + Unit3D::right() * 0.01f, -Unit3D::right()));
-        e->addComponent(new Constraint_Rigid_Controller(pos - Unit3D::right() * 0.01f + size, Unit3D::right()));
+        e->add_behaviour(mesh);
+        e->add_component(new XPBD_FEM_Dynamic(100, 100000, 0.49f, Neo_Hooke, 1, 50, GaussSeidel));
+        e->add_component(new Constraint_Rigid_Controller(pos + Unit3D::right() * 0.01f, -Unit3D::right()));
+        e->add_component(new Constraint_Rigid_Controller(pos - Unit3D::right() * 0.01f + size, Unit3D::right()));
         GL_Graphic* graphic;
         //if (element == Tetra10)
         //    graphic = new GL_GraphicHighOrder(3, color);
@@ -91,9 +91,9 @@ struct XPBD_FEM_Torsion_Scene : public Scene
             graphic = new GL_GraphicSurface(color);
 
 
-        e->addComponent(graphic);
+        e->add_component(graphic);
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->point() = false;
-        e->addComponent(display);
+        e->add_component(display);
     }
 };
