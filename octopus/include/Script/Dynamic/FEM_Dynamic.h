@@ -182,6 +182,7 @@ struct FEM_Dynamic : public ParticleSystemDynamic {
         for (Particle* p : _ps->particles()) {
             p->mass = 0;
         }
+        scalar total_volume = 0.f;
         for (auto &topo : _mesh->topologies()) {
             Element type = topo.first;
             int nb = elem_nb_vertices(type);
@@ -198,7 +199,8 @@ struct FEM_Dynamic : public ParticleSystemDynamic {
                     e_id_fems[type].push_back(i / nb);
                 }
                     
-                
+                total_volume += volume;
+
                 for (int j = 0; j < nb; ++j) {
                     Particle* p = _ps->get(ids[j]);
                     p->mass += _density * volume / nb;
@@ -207,6 +209,7 @@ struct FEM_Dynamic : public ParticleSystemDynamic {
         }
         scalar total_mass = 0;
         for (Particle* p : _ps->particles()) {
+            p->mass = total_volume * _density / _ps->nb_particles();
             p->inv_mass = scalar(1) / p->mass;
             total_mass += p->mass;
         }

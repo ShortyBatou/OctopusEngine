@@ -2,7 +2,7 @@
 #include "Core/Base.h"
 #include <vector>
 enum Material {
-    Hooke, StVK, Neo_Hooke, Developed_Neohooke
+    Hooke, StVK, NeoHooke, Stable_NeoHooke
 };
 
 std::string get_material_name(Material material) {
@@ -10,8 +10,8 @@ std::string get_material_name(Material material) {
     {
         case Hooke: return "Hooke";
         case StVK: return "SaintVenant";
-        case Neo_Hooke: return "Stable Neo-Hooke";
-        case Developed_Neohooke: return "Stable Neo-Hooke";
+        case NeoHooke: return "Neo-Hooke";
+        case Stable_NeoHooke: return "Stable Neo-Hooke";
         default: return "";
     }
 }

@@ -222,7 +222,7 @@ public:
 		std::vector<scalar> smooth_stress = _fem_dynamic->get_stress_vertices();
 		
 		VTK_Formater vtk;
-		vtk.open(_file_name);
+		vtk.open(_file_name + "_" + std::to_string(Time::Frame()));
 		vtk.save_mesh(init_pos, _mesh->topologies());
 		vtk.start_point_data();
 		vtk.add_scalar_data(massses, "weights");

@@ -11,7 +11,7 @@ struct Particle {
 	scalar mass, inv_mass;
     Vector3 init_position, position, last_position;
 	Vector3 offset;
-	Vector3 velocity;
+    Vector3 velocity, last_velocity;
 	Vector3 force;
     Vector3 external_forces;
 
@@ -21,6 +21,7 @@ struct Particle {
         last_position = _position;
         offset = Unit3D::Zero();
         velocity = Unit3D::Zero();
+        last_velocity = Unit3D::Zero();
         force = Unit3D::Zero();
         external_forces = Unit3D::Zero();
         mass = _mass;

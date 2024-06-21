@@ -50,10 +50,30 @@ struct M_StVK : public FEM_ContinuousMaterial {
     }
 };
 
-
 struct M_NeoHooke : public FEM_ContinuousMaterial {
-    scalar alpha;
     M_NeoHooke(const scalar _young, const scalar _poisson) : FEM_ContinuousMaterial(_young, _poisson) {
+    }
+
+    virtual Matrix3x3 get_pk1(const Matrix3x3& F) override {
+        scalar I_3 = glm::determinant(F);
+        Matrix3x3 d_detF;
+        d_detF[0] = glm::cross(F[1], F[2]);
+        d_detF[1] = glm::cross(F[2], F[0]);
+        d_detF[2] = glm::cross(F[0], F[1]);
+        return this->lambda * (I_3 - 1.f) * d_detF + this->mu * F;
+    }
+
+    virtual scalar get_energy(const Matrix3x3& F) override {
+        scalar I_3 = glm::determinant(F);
+        scalar I_2 = Matrix::SquaredNorm(F);
+        return 0.5f * this->mu * (I_2 - 3.f) + 0.5f * this->lambda * (I_3 - 1.f) * (I_3 - 1.f);
+    }
+};
+
+
+struct M_Stable_NeoHooke : public FEM_ContinuousMaterial {
+    scalar alpha;
+    M_Stable_NeoHooke(const scalar _young, const scalar _poisson) : FEM_ContinuousMaterial(_young, _poisson) {
         alpha = 1 + this->mu / this->lambda;
     }
 
@@ -78,8 +98,8 @@ FEM_ContinuousMaterial* get_fem_material(Material material, scalar young, scalar
     {
     case Hooke: return new M_Hooke(young, poisson);
     case StVK: return new M_StVK(young, poisson);
-    case Neo_Hooke: return new M_NeoHooke(young, poisson);
-    case Developed_Neohooke: return new M_NeoHooke(young, poisson);
+    case NeoHooke: return new M_NeoHooke(young, poisson);
+    case Stable_NeoHooke: return new M_Stable_NeoHooke(young, poisson);
     default:
         std::cout << "Material not found" << std::endl;
         return nullptr;

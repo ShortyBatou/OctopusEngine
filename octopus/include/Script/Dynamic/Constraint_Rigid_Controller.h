@@ -23,6 +23,7 @@ public:
 		_plane = new PlaneConstraint(_plane_pos, -_plane_normal);
 		ps->add_constraint(_fixation);
 		ps->add_effect(_plane);
+		_plane->set_active(false);
 		_timer = _event_rate;
 		_smooth_step = _smooth_iterations;
 	}

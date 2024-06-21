@@ -316,11 +316,11 @@ std::vector<PBD_ContinuousMaterial*> get_pbd_materials(Material material, scalar
         materials.push_back(new StVK_First(young, poisson));
         materials.push_back(new StVK_Second(young, poisson));
         break;
-    case Neo_Hooke:
+    case NeoHooke:
         materials.push_back(new Stable_NeoHooke_First(young, poisson));
         materials.push_back(new Stable_NeoHooke_Second(young, poisson));
         break;
-    case Developed_Neohooke:
+    case Stable_NeoHooke:
         materials.push_back(new Developed_Stable_NeoHooke_First(young, poisson));
         materials.push_back(new Developed_Stable_NeoHooke_Second(young, poisson));
         break;

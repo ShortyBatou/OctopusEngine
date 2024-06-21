@@ -60,11 +60,11 @@ struct MeshScene : public Scene
         Vector3I cells;
 
         cells = Vector3I(1, 1, 1);
-        build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.4f, 0.4f, 0.8f, 1.f), Tetra20);
+        //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.4f, 0.4f, 0.8f, 1.f), Tetra20);
         //build_beam_mesh(Vector3(0, 0, 0), cells, size, Color(0.8, 0.3, 0.8, 1.), Hexa);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
-        //build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "mesh/vtk/hexa.vtk");
+        build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "mesh/vtk/beam-s-3-1-1-n-6-2-2-tetra.vtk");
         //convert_vtk_mesh("Tetra10_8_2_2_4x1x1.vtk", "Torsion_", Tetra10, 4);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
@@ -125,10 +125,10 @@ struct MeshScene : public Scene
         VTK_Loader loader(AppInfo::PathToAssets() + file);
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
-        std::vector<Vector3> u_v3 = loader.get_point_data_v3("u");
-        for (int i = 0; i < mesh->geometry().size(); ++i) {
-            mesh->geometry()[i] += u_v3[i];
-        }
+        //std::vector<Vector3> u_v3 = loader.get_point_data_v3("u");
+        //for (int i = 0; i < mesh->geometry().size(); ++i) {
+        //    mesh->geometry()[i] += u_v3[i];
+        //}
         build_entity(mesh, color);
     }
 

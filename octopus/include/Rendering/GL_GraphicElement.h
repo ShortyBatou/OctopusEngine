@@ -94,6 +94,11 @@ public:
             }
         }
     }
+
+    scalar& scale() {
+        return _scale;
+    }
+
 protected:
     scalar _scale;
     std::map<Element, MeshConverter*> _converters;

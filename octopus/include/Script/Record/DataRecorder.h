@@ -5,7 +5,7 @@
 
 class DataRecorder : public Component {
 public:
-	DataRecorder(std::string experiment) : _experiment(experiment)
+	DataRecorder(std::string experiment) : _experiment(experiment), save_loop(true)
 	{}
 
 	virtual void late_init() {
@@ -16,7 +16,7 @@ public:
 
 	virtual void late_update() {
 		// check if data need to be saved
-		if (Input::Down(Key::S) && Input::Loop(Key::LEFT_SHIFT)) {
+		if (Input::Down(Key::S) && Input::Loop(Key::LEFT_SHIFT) || save_loop) {
 			save();
 		}
 	}
@@ -52,6 +52,8 @@ public:
 	std::string json_path() {
 		return AppInfo::PathToAssets() + _experiment + ".json";
 	};
+
+	bool save_loop;
 protected:
 	unsigned int nb_save;
 	std::string _experiment;

@@ -81,7 +81,7 @@ struct XPBD_FEM_Torsion_Scene : public Scene
 
         mesh->set_dynamic_geometry(true);
         e->add_behaviour(mesh);
-        e->add_component(new XPBD_FEM_Dynamic(100, 100000, 0.49f, Neo_Hooke, 1, 50, GaussSeidel));
+        e->add_component(new XPBD_FEM_Dynamic(100, 100000, 0.49f, NeoHooke, 1, 50, GaussSeidel));
         e->add_component(new Constraint_Rigid_Controller(pos + Unit3D::right() * 0.01f, -Unit3D::right()));
         e->add_component(new Constraint_Rigid_Controller(pos - Unit3D::right() * 0.01f + size, Unit3D::right()));
         GL_Graphic* graphic;

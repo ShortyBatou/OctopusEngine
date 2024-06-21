@@ -49,7 +49,7 @@ struct Entity : public Behaviour {
     }
 
     template<class T>
-    std::vector<T*> getComponents() {
+    std::vector<T*> get_components() {
         std::vector<T*> compontents;
         for (int i = 0; i < _components.size(); ++i)
         {

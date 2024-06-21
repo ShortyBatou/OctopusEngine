@@ -202,18 +202,23 @@ public:
 				case 2: new_graphic = new GL_GraphicHighOrder(2, gl_graphic->color()); break;
 				case 3: new_graphic = new GL_GraphicElement(gl_graphic->color()); break;
 			}
-
+			std::cout << gl_graphic->color().r << " " << gl_graphic->color().g << " " << gl_graphic->color().b << std::endl;
 			Mesh* mesh = entity->get_component<Mesh>();
 			mesh->update_mesh();
+			new_graphic->color() = gl_graphic->color();
 			entity->remove_component(gl_graphic);
 			entity->add_component(new_graphic);
 			new_graphic->init();
 			new_graphic->late_init();
-
+			
 			gl_display->set_graphic(new_graphic);
 			gl_graphic = new_graphic;
 		}
 
+		if (current_mode == 3) {
+			GL_GraphicElement* gl_graphic_element = entity->get_component< GL_GraphicElement>();
+			ImGui::SliderFloat("Element Scale", &gl_graphic_element->scale(), 0.0f, 1.0f, "ratio = %.05f");
+		}
 		if (gl_graphic) {
 			ImGui::ColorEdit3("Color", &gl_graphic->color().r);
 		}
@@ -393,7 +398,7 @@ public:
 	}
 
 	virtual void draw(Entity* entity) override {
-		std::vector<Constraint_Rigid_Controller*> components = entity->getComponents<Constraint_Rigid_Controller>();
+		std::vector<Constraint_Rigid_Controller*> components = entity->get_components<Constraint_Rigid_Controller>();
 		if (components.size() == 0) return;
 		
 		Constraint_Rigid_Controller* rc = components[0];

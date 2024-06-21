@@ -163,7 +163,7 @@ protected:
         shader_id += _graphic->use_element_color();
 
         _programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
-        if (shader_id == 3) {
+        if (shader_id == 2) {
             _programs[shader_id]->uniform("color", _graphic->color());
         }
         
@@ -183,7 +183,7 @@ protected:
 
         this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
         if (shader_id == 0)
-            this->_programs[shader_id]->uniform("color", this->_graphic->color() * GL_Graphic::wireframe_intencity);
+            this->_programs[shader_id]->uniform("color", _graphic->color() * GL_Graphic::wireframe_intencity);
         else if (_surface && this->_graphic->use_multi_color()) {
             this->_programs[shader_id]->uniform("wireframe_intencity", GL_Graphic::wireframe_intencity);
         }

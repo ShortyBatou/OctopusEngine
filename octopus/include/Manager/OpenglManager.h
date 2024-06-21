@@ -27,7 +27,7 @@ public:
         for (Entity* e : Engine::GetEntities())
         {
             std::cout << "Search Renderers in " << e->name() << std::endl;
-            std::vector<Renderer*> renderers = e->getComponents<Renderer>();
+            std::vector<Renderer*> renderers = e->get_components<Renderer>();
             if (renderers.size() > 0)
             {
                 _renderers.insert(_renderers.begin(), renderers.begin(), renderers.end());
