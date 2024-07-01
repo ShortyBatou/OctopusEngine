@@ -194,7 +194,8 @@ public:
     void extract_topology_in_gl(
         std::map < Element, Map_Triangle>& elem_surface_tri, 
         std::map < Element, Map_Quad>& elem_surface_quad, 
-        std::map < Element, Map_Line>& elem_surface_line
+        std::map < Element, Map_Line>& elem_surface_line,
+        bool high_order_only = true
     ) {
         int quad_triangle[6] = { 0,1,3, 3,1,2 };
         for (auto& it : _gl_topologies)
@@ -220,7 +221,7 @@ public:
                 gl_topo->quad_to_elem[i * 2 + 1] = quad_to_elem[i];
             }
 
-            if (!is_high_order(element)) {
+            if (!is_high_order(element) && high_order_only) {
                 MeshTools::ExtractTopo<3>(elem_surface_tri[element], gl_topo->triangles);
                 MeshTools::ExtractFaceToElem<3>(elem_surface_tri[element], gl_topo->tri_to_elem);
             }

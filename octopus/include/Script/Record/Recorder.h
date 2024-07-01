@@ -182,7 +182,7 @@ public:
 	}
 
 	virtual void add_data_json(std::ofstream& json) override {
-		json << "\"" << AppInfo::PathToAssets() + _file_name + ".vtk\"";
+		json << "\"" << AppInfo::PathToAssets() + _file_name + "_" + std::to_string(Time::Frame())+ ".vtk\"";
 	}
 
 	void save() override {
@@ -256,17 +256,20 @@ public:
 	}
 
 	virtual void add_data_json(std::ofstream& json) override {
-		json << "\"" << AppInfo::PathToAssets() + _file_name + "_Graphic" + ".vtk\"";
+		json << "\"" << AppInfo::PathToAssets() + _file_name + "_Graphic_" + std::to_string(Time::Frame()) +".vtk\"";
 	}
 
 	void save() override {
 		
-		//std::map<Element, Mesh::Topology> topologies;
-		//topologies[Line] = _graphic->get_lines();
-		//VTK_Formater vtk;
-		//vtk.open(_file_name + "_Graphic");
-		//vtk.save_mesh(_graphic->get_geometry(), topologies);
-		//vtk.close();
+		std::map<Element, Mesh::Topology> topologies;
+		topologies[Line] = Mesh::Topology();
+		for (auto& it : _graphic->gl_topologies()) {
+			topologies[Line].insert(topologies[Line].end(), it.second->lines.begin(), it.second->lines.end());
+		}
+		VTK_Formater vtk;
+		vtk.open(_file_name + "_Graphic_" + std::to_string(Time::Frame()));
+		vtk.save_mesh(_graphic->gl_geometry()->geometry, topologies);
+		vtk.close();
 	}
 private:
 	std::string _file_name;

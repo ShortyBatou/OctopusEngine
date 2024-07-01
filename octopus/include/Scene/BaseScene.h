@@ -62,7 +62,7 @@ struct BaseScene : public Scene
     virtual void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 120.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -76,18 +76,24 @@ struct BaseScene : public Scene
         args.density = 1000;
         args.material = Stable_NeoHooke;
         args.poisson = 0.49;
-        args.young = 5e6;
-        args.damping = 0.25;
+        args.young = 1e6;
+        args.damping = 1.;
         args.iteration = 1;
         args.sub_iteration = 25;
-        args.scenario_1 = -1;
-        args.scenario_2 = 0;
+        args.scenario_1 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::up();
 
-        Vector3 size(1, 0.9, 1);
-        Vector3I cells = Vector3I(12,4,4);
-        cells = Vector3I(16, 4, 4);
-        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
+        Vector3 size(1, 1, 1);
+        Vector3I cells;
+        cells = Vector3I(6, 6, 6);
+        build_xpbd_fem_entity(Vector3(0, 0, 0.), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
+        //cells = Vector3I(12, 4, 4);
+        //build_xpbd_fem_entity(Vector3(0, 0, -0.8), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
+        //cells = Vector3I(6, 2, 2);
+        //build_xpbd_fem_entity(Vector3(0, 0, 0.8), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
+        //cells = Vector3I(4, 2, 2);
+        //build_xpbd_fem_entity(Vector3(0, 0, 2.4), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra20, args);
         //build_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.0f, 0.0f, 0.0f, 1.f), Hexa, args);
         //cells = Vector3I(8, 3, 3);
         //cells = Vector3I(6, 2, 2);
@@ -127,11 +133,10 @@ struct BaseScene : public Scene
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
 
-        //if (element == Tetra10 || element == Tetra20)
-        //graphic = new GL_GraphicElement(color, 0.7);
-        //graphic = new GL_Graphic(color);
-        //else
-        graphic = new GL_GraphicSurface(color);
+        if (element == Tetra10 || element == Tetra20)
+            graphic = new GL_GraphicHighOrder(3, color);
+        else 
+            graphic = new GL_GraphicSurface(color);
 
         return graphic;
     }
@@ -147,7 +152,7 @@ struct BaseScene : public Scene
     void add_constraint(Entity* e, const Vector3& pos, const Vector3& size, SimulationArgs& args) {
         // constraint for Particle system
         if (args.scenario_1 != -1) {
-            auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero()-args.dir * 0.05f, -args.dir, args.scenario_1);
+            auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero() + args.dir*0.01f, -args.dir, args.scenario_1);
             e->add_component(rd_constraint_1);
             rd_constraint_1->_rot_speed = 90;
             rd_constraint_1->_move_speed = 1.;
@@ -155,8 +160,10 @@ struct BaseScene : public Scene
 
         if (args.scenario_2 != -1) {
             auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, args.dir, args.scenario_2);
-            rd_constraint_2->_rot_speed = 90;
+            rd_constraint_2->_rot_speed = -90;
             rd_constraint_2->_move_speed = 1.;
+            rd_constraint_2->_event_rate = 1.5;
+            rd_constraint_2->_smooth_iterations = 10;
             e->add_component(rd_constraint_2);
         }
     }
@@ -172,7 +179,7 @@ struct BaseScene : public Scene
     DataRecorder* build_data_recorder(const Vector3I& cells, const Vector3& size, Element element) {
         std::string file_name = std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z)
             + "_" + std::to_string(int(size.x)) + "x" + std::to_string(int(size.y)) + "x" + std::to_string(int(size.z));
-        DataRecorder* data_recorder = new DataRecorder(file_name);
+        DataRecorder* data_recorder = new DataRecorder(file_name, true);
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new FEM_Dynamic_Recorder());
@@ -196,11 +203,11 @@ struct BaseScene : public Scene
 
     void build_xpbd_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
-        //e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_behaviour(build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk"));
+        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        //e->add_behaviour(build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk"));
         e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping));
         add_constraint(e, pos, size, args);
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Volume_Diff, ColorMap::Viridis));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());      
         e->add_component(build_data_recorder(cells, size, element));

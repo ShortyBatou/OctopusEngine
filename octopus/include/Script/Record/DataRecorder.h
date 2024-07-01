@@ -5,7 +5,7 @@
 
 class DataRecorder : public Component {
 public:
-	DataRecorder(std::string experiment) : _experiment(experiment), save_loop(true)
+	DataRecorder(std::string experiment, bool loop = false) : _experiment(experiment), save_loop(loop)
 	{}
 
 	virtual void late_init() {

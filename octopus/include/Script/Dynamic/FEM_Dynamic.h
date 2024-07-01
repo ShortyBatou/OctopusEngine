@@ -105,7 +105,7 @@ struct FEM_Dynamic : public ParticleSystemDynamic {
             std::vector<int> count(nb_elem, 0);
             for (size_t i = 0; i < fems.size(); ++i) {
                 std::vector<Vector3> p = _mesh->get_elem_vertices(type, id_fems[i]);
-                diff_volumes[id_fems[i]] = abs(fems[i]->compute_volume(p) - fems[i]->get_init_volume());
+                diff_volumes[id_fems[i]] = abs(fems[i]->compute_volume(p) - fems[i]->get_init_volume()) / fems[i]->get_init_volume();
                 count[id_fems[i]]++;
             }
             for (size_t i = 0; i < diff_volumes.size(); ++i) {

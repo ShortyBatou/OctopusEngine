@@ -24,7 +24,7 @@ public:
 		ps->add_constraint(_fixation);
 		ps->add_effect(_plane);
 		_plane->set_active(false);
-		_timer = _event_rate;
+		_timer = 0;
 		_smooth_step = _smooth_iterations;
 	}
 
@@ -77,7 +77,6 @@ public:
 		if (_mode == 5) {
 			_timer += Time::Fixed_DeltaTime();
 			if (_timer >= _event_rate) _smooth_step = 0;
-			
 			if (_smooth_step < _smooth_iterations) {
 				Matrix4x4 rot = _fixation->rot;
 				_fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / scalar(_smooth_iterations)), _plane_normal);

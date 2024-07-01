@@ -43,9 +43,11 @@ struct FEM_DataDisplay : public Component {
     std::vector<Color> convert_to_color(std::vector<scalar>& data) {
         scalar min = *std::min_element(data.begin(), data.end());
         scalar max = *std::max_element(data.begin(), data.end());
+        scalar diff = max - min;
+        
         std::vector<Color> colors(data.size());
         for (size_t i = 0; i < data.size(); ++i) {
-            scalar t = (data[i] - min) / scalar(max - min);
+            scalar t = (diff > eps) ? (data[i] - min) / diff : 0.f;
             colors[i] = ColorMap::evaluate(t);
         }
         return colors;

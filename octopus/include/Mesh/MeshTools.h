@@ -66,12 +66,13 @@ public:
     /// convert the face set into an indices array
     template<int NB>
     static void ExtractTopo(const std::set<Face<NB>>& faces, Mesh::Topology& topology) {
-        topology.resize(NB * faces.size());
+        size_t size = topology.size();
+        topology.resize(size + NB * faces.size());
         Mesh::Topology ids(NB);
         int i = 0;
         for (const Face<NB>& face : faces) {
             for (int j = 0; j < NB; ++j) {
-                topology[i * NB + j] = face.ids[j];
+                topology[size + i * NB + j] = face.ids[j];
             }
             i++;
         }

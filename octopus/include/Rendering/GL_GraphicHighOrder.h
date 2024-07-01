@@ -92,7 +92,7 @@ public:
         refine(elem_surface_tri, elem_surface_quad, elem_surface_line);
         
         // Build final topology
-        extract_topology_in_gl(elem_surface_tri, elem_surface_quad, elem_surface_line);
+        extract_topology_in_gl(elem_surface_tri, elem_surface_quad, elem_surface_line, false);
     }
 
     void rebuild_geometry(std::map < Element, Map_Triangle>& elem_surface_tri, std::map < Element, Map_Quad>& elem_surface_quad, std::map<int, int>& map_id) {
@@ -127,7 +127,7 @@ public:
     void refine(std::map < Element, Map_Triangle>& elem_surface_tri, std::map < Element, Map_Quad>& elem_surface_quad, std::map < Element, Map_Line>& elem_surface_line) {
         static const Mesh::Topology tri_subdivision_pattern = { 0,3,5, 3,1,4, 3,4,5, 5,4,2 };
         static const Mesh::Topology tri_subdivision_edges = { 0,1, 1,2, 0,2 };
-        static const Mesh::Topology quad_subdivision_pattern = { 0,4,8,7, 4,1,5,8, 8,5,2,6, 7,8,3,6 };
+        static const Mesh::Topology quad_subdivision_pattern = { 0,4,8,7, 4,1,5,8, 8,5,2,6, 7,8,6,3 };
         static const Mesh::Topology quad_subdivision_edges = { 0,1, 1,2, 2,3, 3,0, 4,6 }; // will not work
         for (int i = 0; i < _quality; ++i)
         {
