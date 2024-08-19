@@ -88,7 +88,7 @@ public:
             A += stiffness * _V[i];
 
             for (int j = 0; j < 3; ++j) {
-                W[j] = glm::outerProduct(U[j], V[j]) * glm::transpose(_JX_inv[i]);
+                W[j] = V * glm::transpose(U) * glm::transpose(_JX_inv[i]);
             }
 
             // get grads 
