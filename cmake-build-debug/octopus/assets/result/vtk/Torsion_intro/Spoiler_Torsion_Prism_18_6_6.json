@@ -1,0 +1,24 @@
+{
+  "mesh": {
+    "Prism": 1296,
+    "vertices": 931
+  },
+  "Time": {
+    "frame": 120,
+    "time": 48.1531,
+    "dt": 0.358344,
+    "fixed_Time": 2,
+    "fixed_dt": 0.0166667
+  },
+  "vtk_file": "assets/Spoiler_Torsion_Prism_18_6_6.vtk",
+  "vtk_graphic": "assets/Spoiler_Torsion_Prism_18_6_6_Graphic.vtk",
+  "XPBD_FEM_Dynamic": {
+    "mean_cost": 198.559,
+    "material": "Stable Neo-Hooke",
+    "poisson": 0.49,
+    "young": 1e+06,
+    "iteration": 1,
+    "sub_itetrations": 50,
+    "density": 1000
+  }
+}

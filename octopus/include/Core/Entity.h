@@ -5,101 +5,40 @@
 #include "Component.h"
 
 struct Entity : public Behaviour {
-    Entity(int id) : _id(id) {
-        _name = "Entity_" + std::to_string(id);
-    }
-    Entity(std::string name, int id) : _name(name), _id(id) {}
+    Entity(const int id);
 
-    virtual void init() override
-    {
-        for (int i = 0; i < _components.size(); ++i)
-            _components[i]->init();
+    Entity(const std::string &name, int id);
 
-    }
+    void init() override;
 
-    virtual void late_init() override {
-        for (int i = 0; i < _components.size(); ++i)
-            _components[i]->late_init();
-    }
+    void late_init() override;
 
-    virtual void update() override
-    {
-        for (int i = 0; i < _components.size(); ++i)
-            if (_components[i]->active()) _components[i]->update();     
-    }
+    void update() override;
 
-    virtual void late_update() override
-    {
-        for (int i = 0; i < _components.size(); ++i)
-            if (_components[i]->active()) _components[i]->late_update();
-    }
+    void late_update() override;
 
     template<class T>
-    T* get_component() {
-        for (int i = 0; i < _components.size(); ++i)
-        {
-            if (typeid(*_components[i]) == typeid(T))
-                return dynamic_cast<T*>(_components[i]);
-            
-            T* _c = dynamic_cast<T*>(_components[i]);
-            if (_c != nullptr) return _c;
-        }
-            
-        return nullptr;
-    }
+    T *get_component();
 
     template<class T>
-    std::vector<T*> get_components() {
-        std::vector<T*> compontents;
-        for (int i = 0; i < _components.size(); ++i)
-        {
-            if (typeid(*_components[i]) == typeid(T)) {
-                compontents.push_back(static_cast<T*>(_components[i]));
-            }
-            else {
-                T* _c = dynamic_cast<T*>(_components[i]);
-                if (_c != nullptr)
-                    compontents.push_back(_c);
-            }
-                
-
-            
-            
-        }
-        return compontents;
-    }
+    std::vector<T *> get_components();
 
     template<class T>
-    T* get_component_by_id(int i) {
-        if(i >= _components.size()) return nullptr;
-        
-        return static_cast<T>(_components[i]);
-    }
+    T *get_component_by_id(int i);
 
-    void add_behaviour(Behaviour* behaviour) {
-        _components.push_back(behaviour);
-    }
+    void add_behaviour(Behaviour *behaviour);
 
-    void add_component(Component* component) {
-        component->_entity = this;
-        _components.push_back(component);
-    }
+    void add_component(Component *component);
 
-    void remove_component(Component* component) {
-        _components.erase(std::remove(_components.begin(), _components.end(), component), _components.end());
-        delete component;
-    }
+    void remove_component(Component *component);
 
-    virtual ~Entity(){
-        for(int i = 0; i < _components.size(); ++i){
-            delete _components[i];
-        }
-        _components.clear();
-    }
-    inline int id() { return _id; }
-    std::string& name() {return _name;}
-protected: 
+    virtual ~Entity();
+
+    int id() const { return _id; }
+    std::string &name() { return _name; }
+
+protected:
     int _id;
     std::string _name;
-    std::vector<Behaviour*> _components;
+    std::vector<Behaviour *> _components;
 };

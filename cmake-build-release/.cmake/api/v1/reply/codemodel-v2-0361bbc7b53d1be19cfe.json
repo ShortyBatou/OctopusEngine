@@ -1,0 +1,302 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						3,
+						4,
+						6,
+						7,
+						8
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "extern/glfw",
+					"childIndexes" : 
+					[
+						2
+					],
+					"jsonFile" : "directory-extern.glfw-Release-be28dadd70a35a0f762f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "extern/glfw"
+				},
+				{
+					"build" : "extern/glfw/src",
+					"jsonFile" : "directory-extern.glfw.src-Release-431dc4d4bcbde19be476.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "extern/glfw/src",
+					"targetIndexes" : 
+					[
+						0,
+						6
+					]
+				},
+				{
+					"build" : "extern/glew",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-extern.glew-Release-24a2d440b0c796c2a392.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "extern/glew",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "extern/glm",
+					"childIndexes" : 
+					[
+						5
+					],
+					"jsonFile" : "directory-extern.glm-Release-35cf56aad8212f7e4bdb.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.6"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 3,
+					"source" : "extern/glm",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "extern/glm/glm",
+					"jsonFile" : "directory-extern.glm.glm-Release-3d9dd3b79f75f73626b8.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.6"
+					},
+					"parentIndex" : 4,
+					"projectIndex" : 3,
+					"source" : "extern/glm/glm"
+				},
+				{
+					"build" : "extern/imgui-cmake",
+					"jsonFile" : "directory-extern.imgui-cmake-Release-5d7dcd777f942945e804.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 4,
+					"source" : "extern/imgui-cmake",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "extern/spdlog",
+					"jsonFile" : "directory-extern.spdlog-Release-f669497d22f2dfb4f89c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.11"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 5,
+					"source" : "extern/spdlog",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "octopus",
+					"jsonFile" : "directory-octopus-Release-10997da9514b12b5ea7e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "octopus",
+					"targetIndexes" : 
+					[
+						3
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						8
+					],
+					"name" : "octopus-engine",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1,
+						2
+					],
+					"name" : "GLFW",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0,
+						6
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						3
+					],
+					"name" : "glew",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4,
+						5
+					],
+					"name" : "glm",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						6
+					],
+					"name" : "imgui-cmake",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						7
+					],
+					"name" : "spdlog",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 2,
+					"id" : "glfw::@81d610105217ee077306",
+					"jsonFile" : "target-glfw-Release-11b20beffd2ce0d38c4f.json",
+					"name" : "glfw",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "imgui-cmake::@c363a805cb8cb0d8d328",
+					"jsonFile" : "target-imgui-cmake-Release-3b108b2a1bb7d8c28afc.json",
+					"name" : "imgui-cmake",
+					"projectIndex" : 4
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "libglew_static::@06db6c4704c71a7d9aa4",
+					"jsonFile" : "target-libglew_static-Release-90199637d411703af455.json",
+					"name" : "libglew_static",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "octopus-engine::@20f635f841346484db4c",
+					"jsonFile" : "target-octopus-engine-Release-ce17b4ab3ccff57d6b60.json",
+					"name" : "octopus-engine",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "spdlog::@2be8bbbfd43a5375bf0e",
+					"jsonFile" : "target-spdlog-Release-be4e084a6d6a07a80b41.json",
+					"name" : "spdlog",
+					"projectIndex" : 5
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "uninstall::@bea0ded583ee34b016a1",
+					"jsonFile" : "target-uninstall-Release-b80ba8493c8dfa5b3805.json",
+					"name" : "uninstall",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "update_mappings::@81d610105217ee077306",
+					"jsonFile" : "target-update_mappings-Release-2fea27690c590c5c12c6.json",
+					"name" : "update_mappings",
+					"projectIndex" : 1
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/cmake-build-release",
+		"source" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

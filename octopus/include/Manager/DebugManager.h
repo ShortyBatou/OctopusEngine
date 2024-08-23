@@ -1,74 +1,32 @@
 #pragma once
 #include "Core/Base.h"
 #include "Core/Pattern.h"
-#include "Core/Engine.h"
 #include "Mesh/Mesh.h"
-#include "Rendering/GL_Graphic.h"
 #include "Rendering/GL_DisplayMode.h"
-#include "Manager/Debug.h"
-class DebugManager : public Behaviour
-{
+
+class DebugManager : public Behaviour {
 public:
-    DebugManager(bool default_draw = true) : _default_color(ColorBase::Grey(0.8f)), _pause(false), _default_draw(default_draw)
-    {
-        _graphic = new GL_Graphic();
-        _graphic->set_multi_color(true);
+    explicit DebugManager(bool default_draw = true);
 
-        _display_mode = new GL_DisplayMesh();
-        _display_mode->point() = false;
-        _display_mode->surface() = false;
+    void init() override;
 
-        _mesh = new Mesh();
-        _mesh->set_dynamic_geometry(true);
-        _mesh->set_dynamic_topology(true);
+    void update() override;
 
-        Debug::Instance().set_mesh(_mesh);
-        Debug::Instance().set_graphic(_graphic);
-    }
+    void late_update() override;
 
-    virtual void init() override { 
-        Entity* root = Engine::GetEntity(0);
-        root->add_behaviour(_mesh);
-        root->add_component(_graphic);
-        root->add_component(_display_mode);
-    }
+    void clear();
 
-    virtual void update() override { 
-        if (!_pause && _default_draw) {
-            Debug::Axis(Unit3D::up() * 0.005f, 1.f);
-            Debug::Instance().SetColor(ColorBase::Red());
-            Debug::Cube(Vector3(0.05f), scalar(0.1f));
-            Debug::Instance().SetColor(_default_color);
-            Debug::UnitGrid(5);
-        }
-    }
+    void play();
 
-    virtual void late_update() {
-        if (!_pause) clear();
-    }
+    void pause() { _pause = true; }
 
-    virtual void clear() {
-        Debug::Instance().clear();
-    }
-
-    void play() {
-        clear();
-        _pause = false;
-    }
-
-    void pause() {
-        _pause = true;
-    }
-
-    bool& default_draw() {
-        return _default_draw;
-    }
+    bool &default_draw() { return _default_draw; }
 
 protected:
     bool _default_draw;
     bool _pause;
-    Color _default_color;
-    GL_Graphic* _graphic;
-    GL_DisplayMesh* _display_mode;
-    Mesh* _mesh;
+    Color _default_color{};
+    GL_Graphic *_graphic;
+    GL_DisplayMesh *_display_mode;
+    Mesh *_mesh;
 };

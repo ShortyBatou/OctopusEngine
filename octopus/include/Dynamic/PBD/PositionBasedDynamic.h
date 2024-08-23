@@ -5,206 +5,48 @@
 #include <algorithm>
 #include <random>
 #include <iterator>
+
 enum PBDSolverType {
     GaussSeidel, Jacobi, GaussSeidel_RNG
 };
 
-struct PBD_Thread_Graph {
-    void create_graph_color(std::vector<Particle*>& parts, std::vector<std::vector<XPBD_Constraint*>>& g_constraints) {
-        int max_color = 0;
-        std::vector<int> c_colors(g_constraints.size());
-        std::vector<std::set<int>> parts_colors(parts.size());
-        for (int i = 0; i < g_constraints.size(); ++i) {
-            if (g_constraints[i].size() == 0) continue;
-            Mesh::Topology c_topo = g_constraints[i][0]->ids;
-            int current_color = 0;
-            
-            /// get neighbors' color
-            std::set<int> unavailable_colors;
-            for (int id : c_topo) 
-            for (int p_color : parts_colors[id]) {
-                unavailable_colors.insert(p_color);
-            }
-            
-            // find the minimum available color
-            for (int u_color : unavailable_colors) {
-                if (u_color == current_color) current_color++;
-                else break;
-            }
-            
-            max_color = std::max(current_color, max_color);
-
-            // update vertices color
-            for (int id : c_topo) {
-                parts_colors[id].insert(current_color);
-            }
-
-            c_colors[i] = current_color;
-        }
-        std::cout << "NB COLORS = " << max_color << std::endl;
-        // create tread group
-
-    }
-};
-
-
 struct PBD_System : public ParticleSystem {
-    PBD_System(Solver* solver, int nb_step, int nb_substep = 1, PBDSolverType solver_type = GaussSeidel, scalar global_damping = scalar(0)) :
-        ParticleSystem(solver), _nb_step(nb_step), _nb_substep(nb_substep), _type(solver_type), _global_damping(global_damping)
-    { 
-        _groups.push_back(std::vector<XPBD_Constraint*>());
+    PBD_System(Solver *solver, int nb_step, int nb_substep = 1, PBDSolverType solver_type = GaussSeidel,
+               scalar global_damping = scalar(0)) : ParticleSystem(solver), _nb_step(nb_step), _nb_substep(nb_substep),
+                                                    _type(solver_type), _global_damping(global_damping) {
+        _groups.emplace_back();
     }
 
-    virtual void step(const scalar dt) override {
-        //if (!_init) {
-        //    PBD_Thread_Graph graph;
-        //    graph.create_graph_color(this->particles(), this->_groups);
-        //    _init = true;
-        //}
-        
-        scalar h = dt / (scalar)_nb_substep;
-        for (int i = 0; i < _nb_substep; i++)
-        {
-            this->step_solver(h);
-            this->reset_lambda();
-            for (int j = 0; j < _nb_step; ++j) {
-                if (_type == Jacobi)
-                    step_constraint_jacobi(h);
-                if(_type == GaussSeidel_RNG) 
-                    step_constraint_gauss_seidel_rng(h);
-                else
-                    step_constraint_gauss_seidel(h);
-            }
+    void step(scalar dt) override;
 
-            this->step_constraint(dt); // optional 
+    scalar get_residual(scalar dt) const;
 
-            this->step_effects(dt); // optional
+    ~PBD_System() override;
 
-            this->update_velocity(h);
-        }
-        this->reset_external_forces();
-    }
+    void clear_xpbd_constraints();
 
-    scalar get_residual(const scalar dt) {
-        scalar sub_dt = dt / (scalar)_nb_substep;
-        scalar residual = 0;
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            residual += xpbd->get_dual_residual(this->_particles, sub_dt);
-        }
-        return residual / _xpbd_constraints.size();
-    }
+    int add_xpbd_constraint(XPBD_Constraint *constraint);
 
-    virtual ~PBD_System() {
-        clear_xpbd_constraints();
-    }
+    void new_group();
 
-    void clear_xpbd_constraints() {
-        for (XPBD_Constraint* c : _xpbd_constraints) delete c;
-        _xpbd_constraints.clear();
-    }
+    void draw_debug_xpbd() const;
 
-    int add_xpbd_constraint(XPBD_Constraint* constraint) {
-        _xpbd_constraints.push_back(constraint);
-        _xpbd_constraints.back()->init(this->_particles);
-        _groups[_groups.size() - 1].push_back(constraint);
-        return _xpbd_constraints.size();
-    }
+    virtual void reset_lambda();
 
-    void new_group() {
-        _groups.push_back(std::vector<XPBD_Constraint*>());
-    }
+    virtual void update_velocity(scalar dt);
 
-    void draw_debug_xpbd() {
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            xpbd->draw_debug(this->_particles);
-        }
-    }
+    virtual void step_constraint_gauss_seidel(scalar dt);
 
-public:
-    virtual void reset_lambda() {
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            xpbd->set_lambda(0);
-        }
-    }
+    virtual void step_constraint_gauss_seidel_rng(scalar dt);
 
-    virtual void update_velocity(scalar dt) {
-        for(Particle* p : this->_particles)
-        {
-            if (!p->active) continue;
-            p->velocity = (p->position - p->last_position) / dt;
-            
-            scalar norm_v = glm::length(p->velocity);
-            if (norm_v > 1e-12) {
-                scalar damping = -norm_v * std::min(scalar(1), _global_damping * dt * p->inv_mass);
-                p->velocity += glm::normalize(p->velocity) * damping ;
-            }
-        }
-    }
+    virtual void step_constraint_jacobi(scalar dt);
 
-    virtual void step_constraint_gauss_seidel(const scalar dt) {
-
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            if (!xpbd->active()) continue;
-
-            // compute corrections
-            xpbd->apply(this->_particles, dt);
-
-            // apply correction dt_p on particles' position
-            for (int id : xpbd->ids) {
-                this->_particles[id]->position += this->_particles[id]->force; // here: force = delta x
-                this->_particles[id]->force *= 0;
-            }
-        }
-    }
-
-    virtual void step_constraint_gauss_seidel_rng(const scalar dt) {
-        
-        auto rng = std::default_random_engine{};
-        std::shuffle(std::begin(_groups), std::end(_groups), rng);
-
-        for (std::vector<XPBD_Constraint*>& group : _groups) {
-            std::reverse(group.begin(), group.end());
-            for (XPBD_Constraint* xpbd : group) {
-                if (!xpbd->active()) continue;
-                
-                // compute corrections
-                xpbd->apply(this->_particles, dt);
-
-                // apply correction dt_p on particles' position
-                for (int id : xpbd->ids) {
-                    this->_particles[id]->position += this->_particles[id]->force;
-                    this->_particles[id]->force *= 0;
-                }
-            }
-        }
-    }
-
-    virtual void step_constraint_jacobi(const scalar dt) {
-        std::vector<int> counts(this->_particles.size(), 0);
-
-        for (XPBD_Constraint* xpbd : _xpbd_constraints) {
-            if (!xpbd->active()) continue;
-            xpbd->apply(this->_particles, dt); // if xpbd
-
-            for (int id : xpbd->ids) {
-                counts[id]++;
-            }
-        }
-
-        for (int i = 0; i < this->_particles.size(); ++i) 
-        {
-            Particle*& part = this->_particles[i];
-            part->position += part->force / scalar(counts[i]);
-            part->force *= 0;
-        }
-    }
-
-public:
     bool _init = false;
     scalar _global_damping;
     int _nb_step, _nb_substep;
     PBDSolverType _type;
+
 protected:
-    std::vector<std::vector<XPBD_Constraint*>> _groups;
-    std::vector<XPBD_Constraint*> _xpbd_constraints;
+    std::vector<std::vector<XPBD_Constraint *> > _groups;
+    std::vector<XPBD_Constraint *> _xpbd_constraints;
 };

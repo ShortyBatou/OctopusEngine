@@ -1,5 +1,7 @@
 #pragma once
 #include <cassert>
+#include <iostream>
+
 class Behaviour {
 protected:
     bool _active;
@@ -9,11 +11,11 @@ public:
     virtual void late_init() {}
     virtual void update() {}
     virtual void late_update() { }
-    inline bool active() {return _active;}
-    inline void setActive(bool state) { _active = state; std::cout << "set active " << state << std::endl; }
-    virtual inline void enable() { _active = true; }
-    virtual inline void disable() { _active = false;}
-    virtual ~Behaviour() { }
+    [[nodiscard]] bool active() const {return _active;}
+    void setActive(bool state) { _active = state; std::cout << "set active " << state << std::endl; }
+    virtual void enable() { _active = true; }
+    virtual void disable() { _active = false;}
+    virtual ~Behaviour() = default;
 };
 
 
@@ -28,7 +30,7 @@ class Singleton {
 
 protected:
     Singleton() { }
-    ~Singleton() { }
+    ~Singleton() = default;
 public:
     
     static T& Instance() {
@@ -53,6 +55,8 @@ T* Singleton<T>::_instance = nullptr;
 
 struct UniqueBinder
 {
+    virtual ~UniqueBinder() = default;
+
     UniqueBinder() : _binded(false) { }
     void bind() {
         assert(!_binded);
@@ -66,7 +70,7 @@ struct UniqueBinder
         _binded = false;
     }
 
-    bool binded() { return _binded; }
+    virtual bool binded() { return _binded; }
 
 protected:
     virtual void bind_action()   = 0;

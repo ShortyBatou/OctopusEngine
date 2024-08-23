@@ -71,14 +71,6 @@ struct MeshScene : public Scene
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
     }
 
-    Mesh* get_sphere_mesh(const Vector3& pos, Element& element) {
-        MeshGenerator* generator = new TetraSphere(element);
-        generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
-        Mesh* mesh = generator->build();
-        delete generator;
-        return mesh;
-    }
-
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
         BeamMeshGenerator* generator;
         switch (element)
@@ -134,8 +126,7 @@ struct MeshScene : public Scene
 
     void build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element) {
         Mesh* mesh;
-        //mesh = get_beam_mesh(pos, cells, size, element);
-        mesh = get_sphere_mesh(pos, element);
+        mesh = get_beam_mesh(pos, cells, size, element);
         //if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         //if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);

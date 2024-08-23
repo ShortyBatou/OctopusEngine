@@ -1,57 +1,36 @@
 #pragma once
 #include "Core/Base.h"
+#include <string>
+#include <map>
+#include <vector>
 
-struct ColorBase
-{
-    static Vector4 White() { return Vector4(1., 1., 1., 1.); }
-    static Vector4 Red() { return Vector4(1., 0., 0., 1.); }
-    static Vector4 Green() { return Vector4(0., 1., 0., 1.); }
-    static Vector4 Blue() { return Vector4(0., 0., 1., 1.); }
-    static Vector4 Yellow() { return Vector4(1., 1., 0., 1.); }
-    static Vector4 Magenta() { return Vector4(1., 0., 1., 1.); }
-    static Vector4 Cyan() { return Vector4(0., 1., 1., 1.); }
-    static Vector4 Grey(scalar s = 0.5) { return Vector4(s, s, s, 1.); }
-    static Vector4 Black() { return Vector4(0., 0., 0., 1.); }
+struct ColorBase {
+    static Vector4 White() { return {1.f, 1.f, 1.f, 1.f}; }
+    static Vector4 Red() { return {1.f, 0.f, 0.f, 1.f}; }
+    static Vector4 Green() { return {0.f, 1.f, 0.f, 1.f}; }
+    static Vector4 Blue() { return {0.f, 0.f, 1.f, 1.f}; }
+    static Vector4 Yellow() { return {1.f, 1.f, 0.f, 1.f}; }
+    static Vector4 Magenta() { return {1.f, 0.f, 1.f, 1.f}; }
+    static Vector4 Cyan() { return {0.f, 1.f, 1.f, 1.f}; }
+    static Vector4 Grey(scalar s = 0.5f) { return {s, s, s, 1.f}; }
+    static Vector4 Black() { return {0.f, 0.f, 0.f, 1.f}; }
+
+    static float Hue2RGB(scalar p, scalar q, scalar t);
+
+    static Color HSL2RGB(scalar h, scalar s, scalar l);
 };
-    
-
 
 struct ColorMap {
     enum Type { Default, Rainbow, Viridis, BnW };
-    
-    static char* Type_To_Str(Type type) {
-        switch (type)
-        {
-            case ColorMap::Default: return "Default";
-            case ColorMap::Rainbow: return "Rainbow";
-            case ColorMap::Viridis: return "Viridis";
-            case ColorMap::BnW: return "Black And White";
-            default: return "None";
-        }
-    }
 
-    static Color evaluate(scalar t) {
-        int n = _map[_type].size() - 1;
-        int a = floor(t * n), b = ceil(t * n);
-        scalar x = t * n - a;
-        return glm::mix(_map[_type][a], _map[_type][b], x);
-    }
-   
-    static ColorMap::Type& Get_Type() { return _type; }
-    static void Set_Type(ColorMap::Type type) { _type = type; }
-    
+    static std::string Type_To_Str(Type type);
+
+    static Color evaluate(scalar t);
+
+    static Type &Get_Type() { return _type; }
+    static void Set_Type(const Type type) { _type = type; }
+
 private:
-    static ColorMap::Type _type;
-    static std::map< ColorMap::Type, std::vector<Color> > _map;
+    static Type _type;
+    static std::map<Type, std::vector<Color> > _map;
 };
-
-ColorMap::Type ColorMap::_type = ColorMap::Type::Default;
-
-std::map< ColorMap::Type, std::vector<Color> > ColorMap::_map = {
-    {ColorMap::Type::Default, {Color(0.2, 0.2, 0.9, 1.), ColorBase::White(), Color(0.9, 0.2, 0.2, 1.)}},
-    {ColorMap::Type::Rainbow, {Color(0.1f, 0.3f, 1.0f, 1.f), Color(0.1f, 0.85f, 0.4f, 1.f), Color(1.0f, 1.0f, 0.1f, 1.f), Color(1.0f, 0.5f, 0.3f, 1.f), Color(0.8f, 0.1f, 0.4f, 1.f)}},
-    {ColorMap::Type::Viridis, {Color(0.3f , 0.05f, 0.35f, 1.f), Color(0.25f, 0.45f, 0.7f , 1.f), Color(0.15f, 0.6f , 0.55f, 1.f), Color(0.5f , 0.8f , 0.3f , 1.f), Color(0.95f, 0.85f, 0.3f , 1.f)}},
-    {ColorMap::Type::BnW, {Color(0.), Color(1.)} }
-};
-
-

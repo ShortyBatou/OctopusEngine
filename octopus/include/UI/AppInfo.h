@@ -1,19 +1,15 @@
 #pragma once
 #include "Core/Pattern.h"
-#include "Rendering/gl_base.h"
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
 
-struct AppInfo : public Singleton<AppInfo>
+struct AppInfo : Singleton<AppInfo>
 {
 protected:
-    friend Singleton<AppInfo>;
-    AppInfo() : _exit(false), _height(0), _width(0), _window(nullptr){ }
+    friend Singleton;
+    AppInfo() : _exit(false), _height(0), _width(0), _window(nullptr), _path_to_assets("assets/"){ }
 
 public:
-    static bool Running()
-    {
-        return !Instance()._exit || !glfwWindowShouldClose(Instance()._window);
-    }
+    static bool Running();
     static void Window_sizes(int& w, int& h)
     {
         w = Instance()._width;
@@ -32,8 +28,6 @@ public:
     protected :
     int _width, _height;
     GLFWwindow* _window;
-    static const std::string _path_to_assets; 
+    const std::string _path_to_assets;
     bool _exit;
 };
-
-const std::string AppInfo::_path_to_assets = "assets/";

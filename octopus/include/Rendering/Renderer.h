@@ -1,5 +1,4 @@
 #pragma once
-#include "Core/Pattern.h"
 #include "Core/Component.h"
 class Renderer : public Component {
 public:

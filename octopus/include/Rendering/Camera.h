@@ -2,13 +2,12 @@
 #include "Core/Base.h"
 #include "Core/Pattern.h"
 #include "Tools/Axis.h"
-#include "UI/AppInfo.h"
 enum ProjectionType{ Persective, Orthographic };
 
 class Camera : public Singleton<Camera>
 {
 protected:
-    friend Singleton<Camera>;
+    friend Singleton;
     Camera()
         : _far(1000.f)
         , _near(0.01f)
@@ -22,39 +21,9 @@ protected:
     { }
 
 public:
-    void build(scalar near = 0.01f, scalar far = 1000.f, scalar fov = 60.f, ProjectionType type = Persective)
-    { 
-        _near = near;
-        _far  = far;
-        _fov  = fov;
-        _type = type;
-        update_vp();
-    }
+    void build(scalar near = 0.01f, scalar far = 1000.f, scalar fov = 60.f, ProjectionType type = Persective);
 
-    void update_vp()
-    {
-        int w, h;
-        AppInfo::Window_sizes(w, h);
-        _ratio = float(w) / float(h);
-        if (_type == Persective)
-        {
-            _projection
-                = glm::perspective(glm::radians(_fov), _ratio, _near, _far);
-        }
-        else
-        {
-            float right = float(w) * 0.005f;
-            float top   = float(h) * 0.005f; 
-            _projection = glm::ortho(-right, right, -top, top, _near, _far);
-        }
-
-        Vector3 lookDir = _target - _position;
-        _up = glm::cross(lookDir, glm::vec3(0.f, 1.f, 0.f));
-        _up = glm::cross(_up, lookDir);
-        _up = glm::normalize(_up);
-
-        _view = glm::lookAt(_position, _target, _up);
-    }
+    void update_vp();
 
     void set_type(ProjectionType type) { _type = type;}
     void set_near(scalar near) { _near = near;}
@@ -63,16 +32,16 @@ public:
     
     Vector3& position() { return _position; }
     Vector3& target() { return _target; }
-    scalar near() const { return _near; }
-    scalar far() const { return _far; }
-    scalar fov() const { return _fov; }
+    [[nodiscard]] scalar near() const { return _near; }
+    [[nodiscard]] scalar far() const { return _far; }
+    [[nodiscard]] scalar fov() const { return _fov; }
 
-    const Matrix4x4& view() { return _view; }
-    const Matrix4x4& projection() { return _projection; }
+    [[nodiscard]] const Matrix4x4& view() const { return _view; }
+    [[nodiscard]] const Matrix4x4& projection() const { return _projection; }
 
 protected:
     scalar _near, _far, _fov, _ratio;
     Vector3 _target, _position, _up;
-    Matrix4x4 _projection, _view;
+    Matrix4x4 _projection, _view{};
     ProjectionType _type;
 };

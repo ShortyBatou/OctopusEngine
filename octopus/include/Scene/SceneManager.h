@@ -9,9 +9,7 @@ class SceneManager : public Singleton<SceneManager>
 {
 public:
     friend Singleton<SceneManager>;
-    SceneManager() {
-        _scene_id = 0;
-    }
+    SceneManager() : _scene_id(0),_scenes({}), _need_to_load(false) {}
 
     void load_scene(UI_Editor* editor) {
         _need_to_load = false;
@@ -50,7 +48,7 @@ public:
     }
 
     static std::vector<Scene*>& Scenes() { return Instance()._scenes; }
-    static unsigned int SceneID() { return Instance()._scene_id; }
+    static int SceneID() { return Instance()._scene_id; }
     static void Add(Scene* scene) { Instance()._scenes.push_back(scene); }
 
     virtual ~SceneManager()
@@ -66,5 +64,5 @@ public:
 protected:
     bool _need_to_load;
     std::vector<Scene*> _scenes;
-    unsigned int _scene_id;
+    int _scene_id;
 };

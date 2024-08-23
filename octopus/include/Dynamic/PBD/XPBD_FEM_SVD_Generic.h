@@ -3,7 +3,7 @@
 #include "Dynamic/PBD/SVD_ContinuousMaterial.h"
 #include "Dynamic/FEM/FEM_Shape.h"
 #include "Tools/MatrixAlgo.h"
-
+/*
 class XPBD_FEM_SVD_Generic : public XPBD_Constraint {
 public:
     XPBD_FEM_SVD_Generic(int* ids, SVD_ContinuousMaterial* material, FEM_Shape* shape)
@@ -137,3 +137,4 @@ public:
     SVD_ContinuousMaterial* _material;
     FEM_Shape* _shape;
 };
+*/

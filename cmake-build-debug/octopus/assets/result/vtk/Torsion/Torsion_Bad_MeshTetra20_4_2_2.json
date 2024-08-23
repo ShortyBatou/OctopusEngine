@@ -1,0 +1,57 @@
+{
+    "Time": {
+        "frame": 240,
+        "time": 17.2672,
+        "dt": 0.0702469,
+        "fixed_Time": 4,
+        "fixed_dt": 0.0166667
+    },
+    "mesh": {
+        "Tetra20": 96,
+        "vertices": 637
+    },
+    "XPBD_FEM_Dynamic": {
+        "mean_cost": 35.136,
+        "material": "Stable Neo-Hooke",
+        "poisson": 0.35,
+        "young": 1e+06,
+        "iteration": 1,
+        "sub_itetrations": 50,
+        "density": 1000
+    },
+    "vtk_file": "assets/Torsion_Bad_MeshTetra20_4_2_2.vtk",
+    "rotation_error": {
+        "rot_max": 180,
+        "beam_lenght": 4,
+        "distance": [
+            0,
+            0.0833333,
+            0.166667,
+            0.25,
+            0.333333,
+            0.416667,
+            0.5,
+            0.583333,
+            0.666667,
+            0.75,
+            0.833333,
+            0.916667,
+            1
+        ],
+        "angles": [
+            0,
+            13.6865,
+            29.1313,
+            44.6285,
+            59.7142,
+            74.7924,
+            90.1288,
+            105.233,
+            120.334,
+            135.676,
+            151.083,
+            166.179,
+            180
+        ]
+    }
+}

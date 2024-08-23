@@ -5,6 +5,8 @@
 
 struct Scene
 {
+    virtual ~Scene() = default;
+
     virtual char* name() = 0;
     
     virtual void init() { }

@@ -1,0 +1,28 @@
+{
+  "flexion_error": {
+    "error": 6.33129e-05,
+    "p": [ 2.81913, -2.30075, 0.499837 ],
+    "target": [ 2.82376, -2.29429, 0.500275 ]
+  },
+  "mesh": {
+    "Tetra10": 160,
+    "vertices": 393
+  },
+  "Time": {
+    "frame": 720,
+    "time": 32.8839,
+    "dt": 0.0434126,
+    "fixed_Time": 12,
+    "fixed_dt": 0.0166667
+  },
+  "vtk_file": "assets/Flexion_Tetra10_8_2_2.vtk",
+  "XPBD_FEM_Dynamic": {
+    "mean_cost": 22.2098,
+    "material": "Stable Neo-Hooke",
+    "poisson": 0.35,
+    "young": 1e+06,
+    "iteration": 1,
+    "sub_itetrations": 50,
+    "density": 1000
+  }
+}

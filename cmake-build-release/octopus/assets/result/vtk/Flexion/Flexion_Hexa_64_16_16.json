@@ -1,0 +1,28 @@
+{
+  "flexion_error": {
+    "error": 13.4876,
+    "p": [ 2.82376, -2.29429, 0.500275 ],
+    "target": [ 0, 0, 0 ]
+  },
+  "mesh": {
+    "Hexa": 16384,
+    "vertices": 18785
+  },
+  "Time": {
+    "frame": 730,
+    "time": 3602.24,
+    "dt": 5.24619,
+    "fixed_Time": 12.1667,
+    "fixed_dt": 0.0166667
+  },
+  "vtk_file": "assets/Flexion_Hexa_64_16_16.vtk",
+  "XPBD_FEM_Dynamic": {
+    "mean_cost": 2466.41,
+    "material": "Stable Neo-Hooke",
+    "poisson": 0.35,
+    "young": 1e+06,
+    "iteration": 1,
+    "sub_itetrations": 50,
+    "density": 1000
+  }
+}

@@ -6,9 +6,9 @@ struct Entity;
 struct Component : Behaviour {
     friend Entity; 
 
-    Component(Entity* entity = nullptr) : _entity(entity) { }
+    explicit Component(Entity* entity = nullptr) : _entity(entity) { }
 
-    inline Entity* entity() { return _entity; }
+    [[nodiscard]] Entity* entity() const { return _entity; }
 
 protected:
     Entity* _entity;

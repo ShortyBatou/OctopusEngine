@@ -1,0 +1,261 @@
+{
+	"archive" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "/machine:x64",
+				"role" : "flags"
+			}
+		]
+	},
+	"artifacts" : 
+	[
+		{
+			"path" : "extern/imgui-cmake/imgui-cmake.lib"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries",
+			"target_compile_definitions",
+			"target_include_directories",
+			"target_compile_features"
+		],
+		"files" : 
+		[
+			"extern/imgui-cmake/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 5,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 27,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 21,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 17,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MD /O2 /Ob2 /DNDEBUG -std:c++17"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "/W4"
+				},
+				{
+					"backtrace" : 2,
+					"fragment" : "/permissive-"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 2,
+					"define" : "GLEW_NO_GLU"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "GLEW_STATIC"
+				},
+				{
+					"backtrace" : 3,
+					"define" : "GLEW_STATIC=1"
+				},
+				{
+					"backtrace" : 3,
+					"define" : "IMGUI_IMPL_OPENGL_LOADER_GLEW=1"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VC_EXTRALEAN"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "WIN32_MEAN_AND_LEAN"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "_CRT_SECURE_NO_WARNINGS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 4,
+					"path" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/extern/imgui-cmake/imgui"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/extern/imgui-cmake/imgui/backends"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/extern/imgui-cmake/imgui/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/extern/glfw/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "C:/Users/Basti/OneDrive/Documents/Bureau/OctopusEngine/extern/glew/include"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					5
+				],
+				"standard" : "17"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				6,
+				8
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "libglew_static::@06db6c4704c71a7d9aa4"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "glfw::@81d610105217ee077306"
+		}
+	],
+	"id" : "imgui-cmake::@c363a805cb8cb0d8d328",
+	"name" : "imgui-cmake",
+	"nameOnDisk" : "imgui-cmake.lib",
+	"paths" : 
+	{
+		"build" : "extern/imgui-cmake",
+		"source" : "extern/imgui-cmake"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				6,
+				8
+			]
+		},
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				5,
+				7
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/imgui.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/imgui_demo.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/imgui_draw.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/imgui_tables.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/imgui_widgets.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "extern/imgui-cmake/imgui/backends/imgui_impl_glfw.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/backends/imgui_impl_glfw.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "extern/imgui-cmake/imgui/backends/imgui_impl_opengl3.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "extern/imgui-cmake/imgui/backends/imgui_impl_opengl3.cpp",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

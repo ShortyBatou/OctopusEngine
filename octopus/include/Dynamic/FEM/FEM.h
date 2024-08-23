@@ -4,46 +4,20 @@
 
 class FEM_System : public ParticleSystem {
 public:
-    FEM_System(Solver* solver, unsigned int nb_substep = 1) :
-        ParticleSystem(solver), _nb_substep(nb_substep)
-    { }
-
-    virtual void step(const scalar dt) override {
-        scalar h = dt / (scalar)_nb_substep;
-        this->step_effects(dt);
-        for (unsigned int i = 0; i < _nb_substep; i++)
-        {
-            this->step_force(h);
-            this->step_solver(h);
-            this->step_constraint(dt);
-        }
+    explicit FEM_System(Solver *solver, unsigned int nb_substep = 1) : ParticleSystem(solver), _nb_substep(nb_substep) {
     }
 
-    virtual ~FEM_System() {
-        clear_fem();
-    }
+    void step(scalar dt) override;
 
-    void clear_fem() {
-        for (Constraint* c : _fems) delete c;
-        _fems.clear();
-    }
+    virtual void step_force(scalar dt);
 
-    unsigned int add_fem(Constraint* constraint) {
-        _fems.push_back(constraint);
-        _fems.back()->init(this->_particles);
-        return _fems.size();
-    }
+    int add_fem(Constraint *constraint);
+
+    void clear_fem();
+
+    ~FEM_System() override;
 
 protected:
-
-    virtual void step_force(const scalar dt) {
-        for (Constraint* fem : _fems) {
-            if (!fem->active()) continue;
-            fem->apply(this->_particles, dt); // if xpbd
-        }
-    }
-
-protected:
-    std::vector<Constraint*> _fems;
+    std::vector<Constraint *> _fems;
     unsigned int _nb_substep;
 };
