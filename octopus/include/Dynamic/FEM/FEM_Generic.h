@@ -12,19 +12,19 @@ struct FEM_Generic {
 
     ~FEM_Generic();
 
-    FEM_Shape *get_shape() const { return _shape; }
-    ContinuousMaterial *get_material() const { return _material; }
-    scalar get_init_volume() const { return _init_volume; }
+    [[nodiscard]] FEM_Shape *get_shape() const { return _shape; }
+    [[nodiscard]] ContinuousMaterial *get_material() const { return _material; }
+    [[nodiscard]] scalar get_init_volume() const { return _init_volume; }
 
     static Matrix3x3 get_jacobian(const std::vector<Particle *> &p, const std::vector<Vector3> &dN);
 
     static Matrix3x3 get_jacobian(const std::vector<Vector3> &p, const std::vector<Vector3> &dN);
 
-    scalar compute_volume(const std::vector<Particle *> &p) const;
+    [[nodiscard]] scalar compute_volume(const std::vector<Particle *> &p) const;
 
-    scalar compute_volume(const std::vector<Vector3> &p) const;
+    [[nodiscard]] scalar compute_volume(const std::vector<Vector3> &p) const;
 
-    scalar compute_stress(const std::vector<Vector3> &p) const;
+    [[nodiscard]] scalar compute_stress(const std::vector<Vector3> &p) const;
 
 
     // particles : element's particles only and in the right order

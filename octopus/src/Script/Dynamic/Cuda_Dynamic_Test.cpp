@@ -41,12 +41,6 @@ int create_graph_color(Mesh::Topology& topology, Element element, int nb_vert, s
     return nb_color;
 }
 
-
-
-
-
-
-
 void Cuda_Dynamic::init() {
     _mesh = _entity->get_component<Mesh>();
     for(auto& it : _mesh->topologies()) {

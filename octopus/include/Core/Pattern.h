@@ -12,7 +12,7 @@ public:
     virtual void update() {}
     virtual void late_update() { }
     [[nodiscard]] bool active() const {return _active;}
-    void setActive(bool state) { _active = state; std::cout << "set active " << state << std::endl; }
+    void setActive(const bool state) { _active = state; std::cout << "set active " << state << std::endl; }
     virtual void enable() { _active = true; }
     virtual void disable() { _active = false;}
     virtual ~Behaviour() = default;

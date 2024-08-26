@@ -1,4 +1,7 @@
 #pragma once
+#include <iostream>
+#include <ostream>
+
 #include "Core/Base.h"
 #include <string>
 
@@ -7,7 +10,6 @@ enum Material {
 };
 
 std::string get_material_name(Material material);
-
 struct ContinuousMaterial {
     scalar lambda, mu;
     scalar young, poisson;
@@ -17,8 +19,8 @@ struct ContinuousMaterial {
         mu = compute_mu();
     }
 
-    [[nodiscard]] scalar compute_lambda() const { return scalar(young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson))); }
-    [[nodiscard]] scalar compute_mu() const { return scalar(young / (2.f * (1.f + poisson))); }
+    [[nodiscard]] scalar compute_lambda() const { return young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson)); }
+    [[nodiscard]] scalar compute_mu() const { return young / (2.f * (1.f + poisson)); }
 
     virtual scalar get_energy(const Matrix3x3 &F) = 0;
 

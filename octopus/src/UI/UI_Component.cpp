@@ -81,18 +81,30 @@ void UI_Camera::draw(Entity* entity) {
 
 
 void UI_Mesh_Display::draw(Entity* entity) {
+
 	GL_Graphic* gl_graphic = entity->get_component< GL_Graphic>();
 	GL_DisplayMesh* gl_display = entity->get_component<GL_DisplayMesh>();
+
+	const int id = entity->id() - 1;
+	if(id >= current_mode.size()) {
+		int c = 0;
+		if(dynamic_cast<GL_GraphicSurface*>(gl_graphic)) c = 1;
+		else if(dynamic_cast<GL_GraphicHighOrder*>(gl_graphic)) c = 2;
+		else if(dynamic_cast<GL_GraphicElement*>(gl_graphic)) c = 3;
+		current_mode.push_back(c);
+	}
+
 	static const char* modes[] = { "Point", "Surface", "Surface High-Order", "Element" };
-	if (ImGui::Combo("Color Map", &current_mode, modes, 4)) {
+	if (ImGui::Combo("Color Map", &current_mode[id], modes, 4)) {
 		GL_Graphic* new_graphic = nullptr;
 		gl_display->surface() = true;
-		switch (current_mode)
+		switch (current_mode[id])
 		{
 			case 0: new_graphic = new GL_Graphic(gl_graphic->color()); gl_display->point() = true; gl_display->surface() = false;  gl_display->wireframe() = false; break;
 			case 1: new_graphic = new GL_GraphicSurface(gl_graphic->color()); break;
 			case 2: new_graphic = new GL_GraphicHighOrder(2, gl_graphic->color()); break;
 			case 3: new_graphic = new GL_GraphicElement(gl_graphic->color()); break;
+			default: break;
 		}
 		std::cout << gl_graphic->color().r << " " << gl_graphic->color().g << " " << gl_graphic->color().b << std::endl;
 		Mesh* mesh = entity->get_component<Mesh>();
@@ -107,7 +119,7 @@ void UI_Mesh_Display::draw(Entity* entity) {
 		gl_graphic = new_graphic;
 	}
 
-	if (current_mode == 3) {
+	if (current_mode[id] == 3) {
 		GL_GraphicElement* gl_graphic_element = entity->get_component< GL_GraphicElement>();
 		ImGui::SliderFloat("Element Scale", &gl_graphic_element->scale(), 0.0f, 1.0f, "ratio = %.05f");
 	}
@@ -129,16 +141,21 @@ void UI_Mesh_Display::draw(Entity* entity) {
 
 
 void UI_Data_Recorder::draw(Entity* entity) {
+	int id = entity->id() - 1;
+	if(saved.size() <= id) {
+		saved.push_back(false);
+		save_frame.push_back(0);
+	}
 	DataRecorder* data_recorder = entity->get_component<DataRecorder>();
 	ImGui::Text(("File : " + data_recorder->json_path()).c_str());
 	if (ImGui::Button("Save")) {
 		data_recorder->save();
-		saved = true;
-		save_frame = Time::Frame();
+		saved[id] = true;
+		save_frame[id] = Time::Frame();
 	}
-	if (saved) {
+	if (saved[id]) {
 		ImGui::SameLine();
-		ImGui::Text("Last save at frame %d", save_frame);
+		ImGui::Text("Last save at frame %d", save_frame[id]);
 	}
 }
 

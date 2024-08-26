@@ -7,7 +7,7 @@
 using scalar = float;
 const scalar min_limit = std::numeric_limits<scalar>::min();
 const scalar max_limit = std::numeric_limits<scalar>::max();
-const scalar eps = min_limit * scalar(1e5);
+const scalar eps = min_limit * static_cast<scalar>(1e5);
 const glm::precision precision = glm::precision::defaultp;
 
 
@@ -31,26 +31,26 @@ typedef glm::mat<2, 2, scalar, precision> Matrix2x2;
 typedef glm::mat<3, 3, scalar, precision> Matrix3x3; 
 typedef glm::mat<4, 4, scalar, precision> Matrix4x4; 
 
-struct Matrix
+namespace Matrix
 {
-    static Matrix2x2 Zero2x2() { return Matrix2x2(0.); }
-    static Matrix3x3 Zero3x3() { return Matrix3x3(0.); }
-    static Matrix4x4 Zero4x4() { return Matrix4x4(0.); }
+    inline Matrix2x2 Zero2x2() { return Matrix2x2(0.); }
+    inline Matrix3x3 Zero3x3() { return Matrix3x3(0.); }
+    inline Matrix4x4 Zero4x4() { return Matrix4x4(0.); }
 
-    static Matrix2x2 Identity2x2() { return Matrix2x2(1.); }
-    static Matrix3x3 Identity3x3() { return Matrix3x3(1.); }
-    static Matrix4x4 Identity4x4() { return Matrix4x4(1.); }
+    inline Matrix2x2 Identity2x2() { return Matrix2x2(1.); }
+    inline Matrix3x3 Identity3x3() { return Matrix3x3(1.); }
+    inline Matrix4x4 Identity4x4() { return Matrix4x4(1.); }
 
-    static scalar Trace(const Matrix2x2& m);
-    static scalar Trace(const Matrix3x3& m);
-    static scalar Trace(const Matrix4x4& m);
+    scalar Trace(const Matrix2x2& m);
+    scalar Trace(const Matrix3x3& m);
+    scalar Trace(const Matrix4x4& m);
 
-    static scalar SquaredTrace(const Matrix2x2& m);
-    static scalar SquaredTrace(const Matrix3x3& m);
-    static scalar SquaredTrace(const Matrix4x4& m);
-    static scalar SquaredNorm(const Matrix2x2& m);
-    static scalar SquaredNorm(const Matrix3x3& m);
-    static scalar SquaredNorm(const Matrix4x4& m);
+    scalar SquaredTrace(const Matrix2x2& m);
+    scalar SquaredTrace(const Matrix3x3& m);
+    scalar SquaredTrace(const Matrix4x4& m);
+    scalar SquaredNorm(const Matrix2x2& m);
+    scalar SquaredNorm(const Matrix3x3& m);
+    scalar SquaredNorm(const Matrix4x4& m);
 
 };
 

@@ -11,23 +11,28 @@ Entity::Entity(const std::string &name, int id) : _name(name), _id(id) {
 }
 
 void Entity::init() {
-    for (auto &_component: _components)
-        _component->init();
+    // component can add new composents
+    for(int i = 0; i < _components.size(); ++i) {
+        _components[i]->init();
+    }
 }
 
 void Entity::late_init() {
-    for (auto &_component: _components)
-        _component->late_init();
+    for(int i = 0; i < _components.size(); ++i) {
+        _components[i]->late_init();
+    }
 }
 
 void Entity::update() {
-    for (auto &_component: _components)
-        if (_component->active()) _component->update();
+    for(int i = 0; i < _components.size(); ++i) {
+        if (_components[i]->active()) _components[i]->update();
+    }
 }
 
 void Entity::late_update() {
-    for (auto &_component: _components)
-        if (_component->active()) _component->late_update();
+    for(int i = 0; i < _components.size(); ++i) {
+        if (_components[i]->active()) _components[i]->late_update();
+    }
 }
 
 void Entity::add_behaviour(Behaviour *behaviour) {

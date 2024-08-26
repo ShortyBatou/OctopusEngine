@@ -22,7 +22,7 @@
 #include "Script/Dynamic/XPBD_FEM_Dynamic.h"
 #include "Script/Dynamic/Constraint_Rigid_Controller.h"
 #include "Script/Display/DataDisplay.h"
-class UI_SceneManager : public UI_Display {
+class UI_SceneManager final : public UI_Display {
 public:
 	UI_SceneManager() : _item_current(SceneManager::SceneID()) 
 	{ 
@@ -38,7 +38,7 @@ protected:
 	int _item_current;
 };
 
-class UI_DisplaySettings : public UI_Component {
+class UI_DisplaySettings final : public UI_Component {
 public:
 	[[nodiscard]] std::string name() const override { return "Colors";}
 
@@ -49,13 +49,13 @@ public:
 	void draw(Entity* entity) override;
 };
 
-class UI_Time : public UI_Component {
+class UI_Time final : public UI_Component {
 public:
 	UI_Time() : UI_Component(), _fixed_delta_t(0) {}
 	[[nodiscard]] std::string name() const override {
 		return "Time";
 	}
-	virtual void init() {
+	void init() override {
 		_fixed_delta_t = Time::Fixed_DeltaTime();
 	}
 
@@ -69,7 +69,7 @@ protected:
 	scalar _fixed_delta_t;
 };
 
-class UI_Dynamic : public UI_Component {
+class UI_Dynamic final : public UI_Component {
 public:
 	UI_Dynamic() : UI_Component(), _gravity({}) {}
 
@@ -106,17 +106,19 @@ public:
 	bool can_draw(Entity* entity) override {
 		return entity->get_component<GL_DisplayMesh>() != nullptr;
 	}
+	int get_mode(Entity* ) {
 
+	}
 	void draw(Entity* entity) override;
 
 private:
-	int current_mode;
+	std::vector<int> current_mode;
 };
 
 
 class UI_Data_Recorder final : public UI_Component {
 public:
-	UI_Data_Recorder() : UI_Component(), saved(false), save_frame(0){
+	UI_Data_Recorder() : UI_Component(), saved({}), save_frame({}){
 	}
 
 	[[nodiscard]] std::string name() const override { return "Data Recorder"; }
@@ -129,20 +131,25 @@ public:
 	 void draw(Entity* entity) override;
 
 protected: 
-	bool saved;
-	int save_frame;
+	std::vector<bool> saved;
+	std::vector<int> save_frame;
 };
 
 class UI_Data_Displayer final : public UI_Component {
 public:
 	UI_Data_Displayer() : UI_Component() {
 		for (int d = FEM_DataDisplay::Type::BaseColor; d != FEM_DataDisplay::Type::None; ++d) {
-			char* str = FEM_DataDisplay::Type_To_Str(FEM_DataDisplay::Type(d)).data();
-			str_display_types.push_back(str);
+			std::string str = FEM_DataDisplay::Type_To_Str(static_cast<FEM_DataDisplay::Type>(d));
+			const char* c_str = str.c_str();
+			char* copy_str = new char[strlen(c_str) + 1]; strcpy(copy_str, c_str);
+			std::cout << c_str << " " << copy_str << " " << FEM_DataDisplay::Type_To_Str(static_cast<FEM_DataDisplay::Type>(d)) << std::endl;
+			str_display_types.push_back(copy_str);
 		}
 		for (int d = ColorMap::Type::Default; d != ColorMap::Type::BnW + 1; ++d) {
-			char* str = ColorMap::Type_To_Str(ColorMap::Type(d)).data();
-			str_colormap_types.push_back(str);
+			std::string str = ColorMap::Type_To_Str(static_cast<ColorMap::Type>(d));
+			const char* c_str = str.c_str();
+			char* copy_str = new char[strlen(c_str) + 1]; strcpy(copy_str, c_str);
+			str_colormap_types.push_back(copy_str);
 		}
 	}
 
@@ -153,7 +160,10 @@ public:
 	}
 
 	void draw(Entity* entity) override;
-
+	~UI_Data_Displayer() override {
+		for(auto str : str_colormap_types) {delete str;}
+		for(auto str : str_display_types) {delete str;}
+	}
 protected:
 	
 	std::vector<char*> str_colormap_types;

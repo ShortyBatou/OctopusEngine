@@ -6,7 +6,7 @@
 
 class ParticleSystemDynamic : public Component {
 public:
-    explicit ParticleSystemDynamic(scalar particle_mass) : _particle_mass(particle_mass), _mesh(nullptr), _ps(nullptr) {
+    explicit ParticleSystemDynamic(const scalar particle_mass) : _particle_mass(particle_mass), _mesh(nullptr), _ps(nullptr) {
     }
 
     void init() override;

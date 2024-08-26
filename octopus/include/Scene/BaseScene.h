@@ -33,7 +33,7 @@ struct SimulationArgs {
     Vector3 dir;
 };
 
-struct BaseScene : public Scene
+struct BaseScene final : Scene
 {
     char* name() override { return "Basic Scene"; }
 
@@ -61,17 +61,16 @@ struct BaseScene : public Scene
     }
 
     // build scene's entities
-    virtual void build_entities() override 
+    void build_entities() override
     {  
-        SimulationArgs args;
+        SimulationArgs args{};
         args.density = 1000;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::up();
 
-        Vector3 size(1, 1, 1);
-        Vector3I cells;
-        cells = Vector3I(5, 5, 5);
+        const Vector3 size(1, 1, 1);
+        const Vector3I cells = Vector3I(5, 5, 5);
         build_obj(Vector3(0,0,0), cells,size, Color(0.9,0.4,0.4,1.), Tetra, args);
     }
 
@@ -102,7 +101,7 @@ struct BaseScene : public Scene
         return mesh;
     }
 
-    GL_Graphic* build_graphic(const Color& color, Element element) {
+    GL_Graphic* build_graphic(const Color& color, const Element element) {
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
 
@@ -122,7 +121,7 @@ struct BaseScene : public Scene
         return display;
     }
 
-    void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element, SimulationArgs& args) {
+    void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_component(new Cuda_Dynamic(args.density));
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));

@@ -1,6 +1,5 @@
 #pragma once
 #include "Core/Base.h"
-#include "Core/Pattern.h"
 #include "Mesh/Mesh.h"
 #include "Core/Entity.h"
 #include "Dynamic/PBD/PositionBasedDynamic.h"
@@ -12,10 +11,10 @@ public:
                      const scalar young, const scalar poisson,
                      const Material material,
                      const int iteration = 1, const int sub_iteration = 30,
-                     scalar global_damping = 0,
-                     PBDSolverType type = GaussSeidel)
+                     const scalar global_damping = 0,
+                     const PBDSolverType type = GaussSeidel)
     : FEM_Dynamic(density, young, poisson, material, sub_iteration),
-      _iteration(iteration), _type(type), _global_damping(global_damping) {
+    _global_damping(global_damping), _iteration(iteration), _type(type) {
     }
 
     [[nodiscard]] int get_iteration() const { return _iteration; }

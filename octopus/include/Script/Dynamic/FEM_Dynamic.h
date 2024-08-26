@@ -13,9 +13,9 @@
 #include "Dynamic/FEM/FEM_Generic_Force.h"
 #include "Script/Dynamic/ParticleSystemDynamic.h"
 
-struct FEM_Dynamic : public ParticleSystemDynamic {
-    FEM_Dynamic(scalar density, scalar young, scalar poisson, Material material, int sub_iteration = 30)
-        : ParticleSystemDynamic(density), _young(young), _poisson(poisson), _material(material), _sub_iteration(sub_iteration), _density(density) {
+struct FEM_Dynamic : ParticleSystemDynamic {
+    FEM_Dynamic(const scalar density,const scalar young,const scalar poisson,const Material material,const int sub_iteration = 30)
+        : ParticleSystemDynamic(density), _density(density), _young(young), _poisson(poisson), _sub_iteration(sub_iteration), _material(material) {
     }
 
     void update() override;
@@ -44,7 +44,6 @@ struct FEM_Dynamic : public ParticleSystemDynamic {
 
     void build_dynamic() override;
 
-public:
     std::map<Element, std::vector<FEM_Generic*>> e_fems;
     std::map<Element, std::vector<int>> e_id_fems;
     scalar _density;

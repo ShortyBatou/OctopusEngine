@@ -31,7 +31,7 @@ scalar Matrix::SquaredTrace(const Matrix4x4 &m) {
 
 // tr(m^T m)
 scalar Matrix::SquaredNorm(const Matrix2x2 &m) {
-    scalar st(0.);
+    scalar st(0.f);
     for (int i = 0; i < 2; ++i)
         for (int j = 0; j < 2; ++j)
             st += m[i][j] * m[i][j];
@@ -39,7 +39,7 @@ scalar Matrix::SquaredNorm(const Matrix2x2 &m) {
 }
 
 scalar Matrix::SquaredNorm(const Matrix3x3 &m) {
-    scalar st(0.);
+    scalar st(0.f);
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             st += m[i][j] * m[i][j];
@@ -47,7 +47,7 @@ scalar Matrix::SquaredNorm(const Matrix3x3 &m) {
 }
 
 scalar Matrix::SquaredNorm(const Matrix4x4 &m) {
-    scalar st(0.);
+    scalar st(0.f);
     for (int i = 0; i < 4; ++i)
         for (int j = 0; j < 4; ++j)
             st += m[i][j] * m[i][j];

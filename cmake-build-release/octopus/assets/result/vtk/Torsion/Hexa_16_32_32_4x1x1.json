@@ -1,1 +1,0 @@
-{"Time" : {"frame" : 180,"time" : 870.243,"dt" : 4.8164,"fixed_Time" : 3,"fixed_dt" : 0.0166667},"mesh" : {"Hexa" : 16384,"vertices" : 18513},"XPBD_FEM_Dynamic" : {"material" : "Stable Neo-Hooke","poisson" : 0.35,"young" : 1e+06,"sub_step" : 300,"density" : 1000},"vtk_file" : "assets/Hexa_16_32_32_4x1x1.vtk","vtk_graphic" : "assets/Hexa_16_32_32_4x1x1_Graphic.vtk"}

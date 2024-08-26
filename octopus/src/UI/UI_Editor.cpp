@@ -70,7 +70,6 @@ void UI_Editor::draw() {
         for (Entity *entity: Engine::GetEntities()) {
             if (entity->id() == 0) continue;
             if (!ImGui::TreeNodeEx(entity->name().c_str())) continue;
-
             for (UI_Component *ui: _components_ui) {
                 if (!ui->can_draw(entity)) continue;
                 if (!ImGui::TreeNodeEx(ui->name().c_str())) continue;
