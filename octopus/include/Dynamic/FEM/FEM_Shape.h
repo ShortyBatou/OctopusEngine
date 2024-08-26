@@ -21,12 +21,12 @@ struct FEM_Shape {
 
     [[nodiscard]] virtual std::vector<Vector3> build_shape_derivatives(scalar s, scalar t, scalar l) const = 0;
 
-    virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) const = 0;
+    [[nodiscard]] virtual std::vector<scalar> build_shape(scalar s, scalar t, scalar l) const = 0;
 
-    virtual std::vector<Vector3> convert_dN_to_vector3(scalar *dN) const;
+    [[nodiscard]] virtual std::vector<Vector3> convert_dN_to_vector3(scalar *dN) const;
 
-    virtual void debug_draw(std::vector<Vector3> &pts) {
-    }
+    virtual void debug_draw(std::vector<Vector3> &pts)
+    {}
 
     virtual ~FEM_Shape() = default;
 };

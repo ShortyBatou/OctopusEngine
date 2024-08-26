@@ -25,5 +25,5 @@ private:
 
     scalar _density;
     Mesh* _mesh;
-    GPU_PB_FEM* _gpu_pbd;
+    GPU_PBD_FEM* _gpu_pbd;
 };

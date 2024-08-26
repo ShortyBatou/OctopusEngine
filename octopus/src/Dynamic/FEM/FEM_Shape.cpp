@@ -12,6 +12,16 @@ void FEM_Shape::build() {
     }
 }
 
+std::vector<Vector3> FEM_Shape::convert_dN_to_vector3(scalar* dN) const {
+    std::vector<Vector3> dN_v3(nb);
+    for (int i = 0; i < nb; ++i) {
+        dN_v3[i].x = dN[i];
+        dN_v3[i].y = dN[i + nb];
+        dN_v3[i].z = dN[i + nb * 2];
+    }
+    return dN_v3;
+}
+
 
 FEM_Shape *get_fem_shape(Element type) {
     switch (type) {

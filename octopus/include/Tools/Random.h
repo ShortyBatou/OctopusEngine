@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Base.h"
+#include "Tools/Interpolation.h"
 #include <random>
 
 struct Random {

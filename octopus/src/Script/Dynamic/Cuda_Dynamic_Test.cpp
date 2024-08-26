@@ -3,7 +3,8 @@
 #include "Tools/Color.h"
 #include <Rendering/GL_Graphic.h>
 #include "Script/Dynamic/Cuda_Dynamic_Test.h"
-
+#include "Tools/Random.h"
+#include "GPU/GPU_PBD.h"
 #include <random>
 #include <algorithm>
 #include <set>
@@ -67,7 +68,7 @@ void Cuda_Dynamic::init() {
             }
         }
         // create CUDA PBD Gauss-Seidel
-        _gpu_pbd = new GPU_PB_FEM(e, _mesh->geometry(), sorted_topology, offsets, _density);
+        _gpu_pbd = new GPU_PBD_FEM(e, _mesh->geometry(), sorted_topology, offsets, _density);
 
     }
 }

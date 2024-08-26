@@ -42,7 +42,7 @@ std::string ColorMap::Type_To_Str(const Type type) {
     }
 }
 
-Color ColorMap::evaluate(scalar t) {
+Color ColorMap::evaluate(const scalar t) {
     const scalar n = static_cast<scalar>(_map[_type].size()) - 1;
     const int a = floor(t * n), b = ceil(t * n);
     const scalar x = t * static_cast<scalar>(n) - static_cast<scalar>(a);

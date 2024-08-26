@@ -15,9 +15,7 @@ public:
     /// Create Opengl Context
     void init_glfw();
 
-    /// <summary>
     /// Create imgui context
-    /// </summary>
     void init_imgui();
 
     virtual void build_editor();

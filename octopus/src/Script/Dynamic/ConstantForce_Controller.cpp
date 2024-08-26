@@ -1,6 +1,6 @@
+#include "Manager/Debug.h"
 #include "Script/Dynamic/ConstantForce_Controller.h"
 #include "Script/Dynamic/ParticleSystemDynamic.h"
-#include "Manager/Debug.h"
 
 void ConstantForce_Controller::late_init() {
 	ParticleSystemDynamic* ps_dynamic = _entity->get_component<ParticleSystemDynamic>();

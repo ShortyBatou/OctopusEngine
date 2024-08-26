@@ -24,11 +24,11 @@ void Debug::clear() const {
 }
 
 
-inline void Debug::SetColor(const Color &color) {
+void Debug::SetColor(const Color &color) {
     Instance().set_current_color(color);
 }
 
-inline void Debug::Line(const Vector3 &a, const Vector3 &b) {
+void Debug::Line(const Vector3 &a, const Vector3 &b) {
     Debug *debug = Instance_ptr();
     int _i_start = debug->_mesh->nb_vertices();
     debug->add_vertice(a);
@@ -36,11 +36,11 @@ inline void Debug::Line(const Vector3 &a, const Vector3 &b) {
     debug->add_line(_i_start, _i_start + 1);
 }
 
-inline void Debug::Vector(const Vector3 &p, const Vector3 &direction, scalar length = 1.) {
+void Debug::Vector(const Vector3 &p, const Vector3 &direction, scalar length = 1.) {
     Line(p, p + direction * length);
 }
 
-inline void Debug::UnitGrid(int _size) {
+void Debug::UnitGrid(int _size) {
     _size = std::max(0, _size);
     int nb_square = (_size + 1) * 2;
     Vector3 o(-static_cast<scalar>(_size + 1), 0., -static_cast<scalar>(_size + 1u));
@@ -52,7 +52,7 @@ inline void Debug::UnitGrid(int _size) {
     }
 }
 
-inline void Debug::Axis(const Vector3 &p, const Matrix4x4 &rot, scalar length = 1.) {
+void Debug::Axis(const Vector3 &p, const Matrix4x4 &rot, scalar length = 1.) {
     Matrix3x3 r = rot;
     Color color = Instance()._current_color;
     SetColor(ColorBase::Red());
@@ -64,11 +64,11 @@ inline void Debug::Axis(const Vector3 &p, const Matrix4x4 &rot, scalar length = 
     SetColor(color);
 }
 
-inline void Debug::Axis(const Vector3 &p, scalar length = 1.) {
+void Debug::Axis(const Vector3 &p, scalar length = 1.) {
     Debug::Axis(p, Matrix::Identity4x4(), length);
 }
 
-inline void Debug::Cube(const Vector3 &p_min, const Vector3 &p_max) {
+void Debug::Cube(const Vector3 &p_min, const Vector3 &p_max) {
     Debug *debug = Instance_ptr();
     int _i_start = debug->_mesh->nb_vertices();
     for (int i = 0; i < 8; ++i) {
@@ -87,7 +87,7 @@ inline void Debug::Cube(const Vector3 &p_min, const Vector3 &p_max) {
     }
 }
 
-inline void Debug::Cube(const Vector3 &p = Unit3D::Zero(), scalar size = scalar(1.f)) {
+void Debug::Cube(const Vector3 &p = Unit3D::Zero(), scalar size = scalar(1.f)) {
     Vector3 p_min(p - Vector3(size) * scalar(0.5));
     Vector3 p_max(p + Vector3(size) * scalar(0.5));
     Debug::Cube(p_min, p_max);
@@ -181,7 +181,7 @@ DebugUI::~DebugUI() {
 }
 
 
-inline void DebugUI::Begin(const std::string &name) {
+void DebugUI::Begin(const std::string &name) {
     DebugUI *ui_debug = Instance_ptr();
     if (ui_debug->ui_groups.find(name) == ui_debug->ui_groups.end()) {
         ui_debug->ui_groups[name] = new DebugUI_Group(name);
@@ -189,15 +189,15 @@ inline void DebugUI::Begin(const std::string &name) {
     Instance_ptr()->current_group = name;
 }
 
-inline void DebugUI::End() {
+void DebugUI::End() {
     Instance_ptr()->current_group = "";
 }
 
-inline void DebugUI::Plot(const std::string &name, const float &value, int buffer = 60) {
+void DebugUI::Plot(const std::string &name, const float &value, int buffer = 60) {
     Plot(name, value, 0, 0, buffer);
 }
 
-inline void DebugUI::Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer = 60) {
+void DebugUI::Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer = 60) {
     DebugUI_Group *ui_group = Instance_ptr()->get_group();
     DebugUI_Plot *d_plot;
     if (ui_group->ui_components.find(name) == ui_group->ui_components.end()) {
@@ -211,7 +211,7 @@ inline void DebugUI::Plot(const std::string &name, const float &value, float r_m
     d_plot->add_value(value);
 }
 
-inline void DebugUI::Value(const std::string &name, const float &value) {
+void DebugUI::Value(const std::string &name, const float &value) {
     DebugUI_Group *ui_group = Instance_ptr()->get_group();
     DebugUI_Value *d_value;
     if (ui_group->ui_components.find(name) == ui_group->ui_components.end()) {
@@ -223,7 +223,7 @@ inline void DebugUI::Value(const std::string &name, const float &value) {
     d_value->set_value(value);
 }
 
-inline void DebugUI::Range(const std::string &name, const float &value) {
+void DebugUI::Range(const std::string &name, const float &value) {
     DebugUI_Group *ui_group = Instance_ptr()->get_group();
     DebugUI_Range *d_range;
     if (ui_group->ui_components.find(name) == ui_group->ui_components.end()) {

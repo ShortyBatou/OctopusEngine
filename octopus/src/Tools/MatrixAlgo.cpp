@@ -1,5 +1,6 @@
 #include "Tools/MatrixAlgo.h"
-
+#include "Core/Base.h"
+#include <algorithm>
 //https://gist.github.com/alexsr/5065f0189a7af13b2f3bc43d22aff62f
 namespace MatrixAlgo {
     Vector2 approx_givens_quat(float s_pp, float s_pq, float s_qq) {
@@ -112,7 +113,6 @@ namespace MatrixAlgo {
         if (rho0 < rho1) {
             B[0] *= -1;
             V[0] *= -1;
-
             std::swap(B[0], B[1]);
             std::swap(V[0], V[1]);
             std::swap(rho0, rho1);
@@ -139,7 +139,7 @@ namespace MatrixAlgo {
 
 
     void SVD_To_Polar(
-        const Matrix3x3& U, const Matrix3x3& S, const Matrix3x3& V, 
+        const Matrix3x3& U, const Matrix3x3& S, const Matrix3x3& V,
         Matrix3x3& Up, Matrix3x3& P) {
         P = V * S * glm::transpose(V);
         Up = U * glm::transpose(V);

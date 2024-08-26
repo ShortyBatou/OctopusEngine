@@ -56,8 +56,8 @@ struct Matrix
 
 struct Unit3D
 {
-    static Vector3 Zero() { return Vector3(0., 0, 0.); }
-    static Vector3 right() { return Vector3(1., 0, 0.);}
-    static Vector3 up() { return Vector3(0., 1, 0.); }
-    static Vector3 forward() { return Vector3(0., 0, 1.); }
+    static Vector3 Zero() { return {0., 0, 0.}; }
+    static Vector3 right() { return {1., 0, 0.};}
+    static Vector3 up() { return {0., 1, 0.}; }
+    static Vector3 forward() { return {0., 0, 1.}; }
 };

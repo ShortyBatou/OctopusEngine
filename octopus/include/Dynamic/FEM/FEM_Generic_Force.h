@@ -7,7 +7,7 @@
 #include "Dynamic/FEM/FEM_Generic.h"
 #include <vector>
 
-class FEM_Generic_Force : public Constraint, public FEM_Generic {
+class FEM_Generic_Force final : public Constraint, public FEM_Generic {
 public:
     FEM_Generic_Force(const std::vector<int> &ids, FEM_ContinuousMaterial *material, FEM_Shape *shape)
         : Constraint(ids), FEM_Generic(material, shape), _fem_material(material) {
