@@ -53,7 +53,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 120.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -70,7 +70,7 @@ struct BaseScene final : Scene
         args.dir = Unit3D::up();
 
         const Vector3 size(1, 1, 1);
-        const Vector3I cells = Vector3I(5, 5, 5);
+        const Vector3I cells = Vector3I(1, 1, 1);
         build_obj(Vector3(0,0,0), cells,size, Color(0.9,0.4,0.4,1.), Tetra, args);
     }
 

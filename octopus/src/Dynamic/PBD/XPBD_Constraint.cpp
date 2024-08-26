@@ -4,25 +4,25 @@
 void XPBD_Constraint::apply(const std::vector<Particle*>& particles, const scalar dt) {
     if (_stiffness <= 0) return;
 
-    std::vector<Particle*> x(this->nb());
-    for (int i = 0; i < this->nb(); ++i) {
+    std::vector<Particle*> x(nb());
+    for (int i = 0; i < nb(); ++i) {
         x[i] = particles[ids[i]];
     }
 
-    scalar C = 0;
-    std::vector<Vector3> grads(this->nb(), Unit3D::Zero());
+    scalar C = 0.f;
+    std::vector grads(nb(), Unit3D::Zero());
     if (!project(x, grads, C)) return;
 
-    scalar sum_norm_grad = 0;
-    for (int i = 0; i < this->nb(); ++i) {
+    scalar sum_norm_grad = 0.f;
+    for (int i = 0; i < nb(); ++i) {
         sum_norm_grad += glm::dot(grads[i], grads[i]) * x[i]->inv_mass;
     }
 
-    scalar alpha = scalar(1.0) / (_stiffness * dt * dt);
-    scalar dt_lambda = -(C + alpha * _lambda) / (sum_norm_grad + alpha);
+    const scalar alpha = 1.f / (_stiffness * dt * dt);
+    const scalar dt_lambda = -(C + alpha * _lambda) / (sum_norm_grad + alpha);
     _lambda += dt_lambda;
 
-    for (int i = 0; i < this->nb(); ++i) {
+    for (int i = 0; i < nb(); ++i) {
         x[i]->force += (dt_lambda * x[i]->inv_mass * grads[i]); // we use force to store dt_x
     }
 }

@@ -4,7 +4,7 @@
 #include <iostream>
 
 void FEM_Shape::build() {
-    std::vector<scalar> coords = get_quadrature_coordinates();
+    const std::vector<scalar> coords = get_quadrature_coordinates();
     weights = get_weights();
     dN.resize(weights.size());
     for (int i = 0; i < weights.size(); ++i) {

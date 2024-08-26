@@ -46,3 +46,4 @@ __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3* pos, Vector3* 
 __global__ void kernel_constraint_solve(int n, int nb_quadrature, int nb_vert_elem, int offset, Vector3* p, int* topology, Vector3* dN, scalar* V, Matrix3x3* JX_inv);
 __global__ void kernel_velocity_update(int n, float dt, Vector3* p, Vector3* prev_p, Vector3* v);
 __global__ void kernel_step_solver(int n, float dt, Vector3 g, Vector3* p, Vector3* v, Vector3* f, float* w);
+__global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3* p, Vector3* v, Vector3* f);

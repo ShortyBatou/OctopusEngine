@@ -3,7 +3,7 @@
 #include <Dynamic/PBD/PBD_ContinuousMaterial.h>
 #include <Dynamic/PBD/XPBD_FEM_Generic.h>
 
-void XPBD_FEM_Dynamic::set_iterations(int it, int sub_it) {
+void XPBD_FEM_Dynamic::set_iterations(const int it, const int sub_it) {
     _iteration = it;
     _sub_iteration = sub_it;
     auto *pbd = dynamic_cast<PBD_System *>(this->_ps);

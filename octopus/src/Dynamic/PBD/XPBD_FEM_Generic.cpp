@@ -22,7 +22,7 @@ bool XPBD_FEM_Generic::project(const std::vector<Particle*>& x, std::vector<Vect
 
         // add forces
         P = P * glm::transpose(_JX_inv[i]) * _V[i];
-        for (int j = 0; j < this->nb(); ++j)
+        for (int j = 0; j < nb(); ++j)
             grads[j] += P * _shape->dN[i][j];
 
         // add energy

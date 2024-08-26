@@ -66,7 +66,6 @@ void FEM_Generic::build(const std::vector<Particle *> &p) {
     _V.resize(_shape->weights.size());
     _JX_inv.resize(_shape->weights.size());
     _init_volume = 0;
-    Matrix3x3 J;
     for (int i = 0; i < _shape->weights.size(); ++i) {
         Matrix3x3 J = get_jacobian(p, _shape->dN[i]);
         _V[i] = abs(glm::determinant(J)) * _shape->weights[i];

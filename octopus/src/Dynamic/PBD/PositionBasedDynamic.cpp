@@ -28,10 +28,10 @@ void PBD_System::step(const scalar dt) {
 }
 
 scalar PBD_System::get_residual(const scalar dt) const {
-    scalar sub_dt = dt / static_cast<scalar>(_nb_substep);
+    const scalar sub_dt = dt / static_cast<scalar>(_nb_substep);
     scalar residual = 0;
     for (XPBD_Constraint *xpbd: _xpbd_constraints) {
-        residual += xpbd->get_dual_residual(this->_particles, sub_dt);
+        residual += xpbd->get_dual_residual(_particles, sub_dt);
     }
     return residual / static_cast<scalar>(_xpbd_constraints.size());
 }
@@ -41,13 +41,13 @@ PBD_System::~PBD_System() {
 }
 
 void PBD_System::clear_xpbd_constraints() {
-    for (XPBD_Constraint *c: _xpbd_constraints) delete c;
+    for (const XPBD_Constraint *c: _xpbd_constraints) delete c;
     _xpbd_constraints.clear();
 }
 
 int PBD_System::add_xpbd_constraint(XPBD_Constraint *constraint) {
     _xpbd_constraints.push_back(constraint);
-    _xpbd_constraints.back()->init(this->_particles);
+    _xpbd_constraints.back()->init(_particles);
     _groups[_groups.size() - 1].push_back(constraint);
     return static_cast<int>(_xpbd_constraints.size());
 }
@@ -58,41 +58,41 @@ void PBD_System::new_group() {
 
 void PBD_System::draw_debug_xpbd() const {
     for (XPBD_Constraint *xpbd: _xpbd_constraints) {
-        xpbd->draw_debug(this->_particles);
+        xpbd->draw_debug(_particles);
     }
 }
 
 
-void PBD_System::reset_lambda() {
+void PBD_System::reset_lambda() const {
     for (XPBD_Constraint *xpbd: _xpbd_constraints) {
         xpbd->set_lambda(0);
     }
 }
 
-void PBD_System::update_velocity(const scalar dt) {
+void PBD_System::update_velocity(const scalar dt) const {
     for (Particle *p: this->_particles) {
         if (!p->active) continue;
         p->velocity = (p->position - p->last_position) / dt;
 
         scalar norm_v = glm::length(p->velocity);
         if (norm_v > 1e-12) {
-            scalar damping = -norm_v * std::min(scalar(1), _global_damping * dt * p->inv_mass);
+            const scalar damping = -norm_v * std::min(1.f, _global_damping * dt * p->inv_mass);
             p->velocity += glm::normalize(p->velocity) * damping;
         }
     }
 }
 
-void PBD_System::step_constraint_gauss_seidel(const scalar dt) {
+void PBD_System::step_constraint_gauss_seidel(const scalar dt) const {
     for (XPBD_Constraint *xpbd: _xpbd_constraints) {
         if (!xpbd->active()) continue;
 
         // compute corrections
-        xpbd->apply(this->_particles, dt);
+        xpbd->apply(_particles, dt);
 
         // apply correction dt_p on particles' position
-        for (int id: xpbd->ids) {
-            this->_particles[id]->position += this->_particles[id]->force; // here: force = delta x
-            this->_particles[id]->force *= 0;
+        for (const int id: xpbd->ids) {
+            _particles[id]->position += _particles[id]->force; // here: force = delta x
+            _particles[id]->force *= 0;
         }
     }
 }
@@ -107,32 +107,32 @@ void PBD_System::step_constraint_gauss_seidel_rng(const scalar dt) {
             if (!xpbd->active()) continue;
 
             // compute corrections
-            xpbd->apply(this->_particles, dt);
+            xpbd->apply(_particles, dt);
 
             // apply correction dt_p on particles' position
-            for (int id: xpbd->ids) {
-                this->_particles[id]->position += this->_particles[id]->force;
-                this->_particles[id]->force *= 0;
+            for (const int id: xpbd->ids) {
+                _particles[id]->position += _particles[id]->force;
+                _particles[id]->force *= 0;
             }
         }
     }
 }
 
 void PBD_System::step_constraint_jacobi(const scalar dt) {
-    std::vector<int> counts(this->_particles.size(), 0);
+    std::vector<int> counts(_particles.size(), 0);
 
     for (XPBD_Constraint *xpbd: _xpbd_constraints) {
         if (!xpbd->active()) continue;
-        xpbd->apply(this->_particles, dt); // if xpbd
+        xpbd->apply(_particles, dt); // if xpbd
 
-        for (int id: xpbd->ids) {
+        for (const int id: xpbd->ids) {
             counts[id]++;
         }
     }
 
-    for (int i = 0; i < this->_particles.size(); ++i) {
-        Particle *&part = this->_particles[i];
-        part->position += part->force / scalar(counts[i]);
+    for (int i = 0; i < _particles.size(); ++i) {
+        Particle *&part = _particles[i];
+        part->position += part->force / static_cast<scalar>(counts[i]);
         part->force *= 0;
     }
 }

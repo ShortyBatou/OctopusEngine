@@ -11,18 +11,18 @@ struct Constraint : Effect {
     explicit Constraint(const std::vector<int>& _ids, scalar _stiffness = 1., bool _active = true) : Effect(_stiffness, _active), ids(_ids) {}
     void init(const std::vector<Particle*>& particles) override { };
     void apply(const std::vector<Particle*>& particles, scalar dt) override = 0;
-    int nb() const { return static_cast<int>(ids.size()); }
-    std::vector<Particle*> get_particles(const std::vector<Particle*>& particles) const;
+    [[nodiscard]] int nb() const { return static_cast<int>(ids.size()); }
+    [[nodiscard]] std::vector<Particle*> get_particles(const std::vector<Particle*>& particles) const;
 
     ~Constraint() override = default;
 };
 
-struct FixPoint : public Constraint {
+struct FixPoint final : Constraint {
     explicit FixPoint(int id, scalar stiffness = 1., bool active = true) : Constraint({ id }, stiffness, active) {}
     void apply(const std::vector<Particle*>& parts, scalar) override;
 };
 
-struct RB_Fixation : public Constraint {
+struct RB_Fixation final : Constraint {
     Matrix3x3 rot;
     Vector3 com, offset;
 
@@ -35,7 +35,7 @@ struct RB_Fixation : public Constraint {
 };
 
 
-struct ConstantForce : Constraint {
+struct ConstantForce final : Constraint {
     Vector3 f;
     explicit ConstantForce(const std::vector<int>& ids, Vector3 force, bool active = true) : Constraint(ids, 1., active), f(force) {}
     void apply(const std::vector<Particle*>& parts, scalar) override;

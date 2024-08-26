@@ -20,10 +20,10 @@ void FixPoint::apply(const std::vector<Particle *> &parts, const scalar) {
 void RB_Fixation::init(const std::vector<Particle *> &parts) {
     Vector3 sum_position(0.0f, 0.0f, 0.0f);
     for (int i = 0; i < this->nb(); i++) {
-        Particle *part = parts[ids[i]];
+        const Particle *part = parts[ids[i]];
         sum_position += part->position;
     }
-    com = sum_position / scalar(nb());
+    com = sum_position / static_cast<scalar>(nb());
 }
 
 void RB_Fixation::apply(const std::vector<Particle *> &parts, const scalar) {

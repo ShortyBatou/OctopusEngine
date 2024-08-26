@@ -194,7 +194,7 @@ void FEM_Dynamic::build_dynamic() {
     scalar total_mass = 0.f;
     const int n = _ps->nb_particles();
     for (Particle *p: _ps->particles()) {
-        p->mass = total_volume * _density / static_cast<scalar>(n);
+        //p->mass = total_volume * _density / static_cast<scalar>(n);
         p->inv_mass = 1.f / p->mass;
         total_mass += p->mass;
     }

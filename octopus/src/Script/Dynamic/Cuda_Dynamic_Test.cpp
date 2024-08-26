@@ -92,8 +92,8 @@ void Cuda_Dynamic::update() {
         }
 
     }
-    _gpu_pbd->step(Time::Fixed_DeltaTime());
 
+    _gpu_pbd->step(Time::Fixed_DeltaTime());
     _gpu_pbd->get_position(_mesh->geometry());
 }
 

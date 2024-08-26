@@ -1,6 +1,6 @@
 #include "GPU/GPU_PBD.h"
 
-GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, float density)
+GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, const float density)
 {
     FEM_Shape* shape = get_fem_shape(element);
     shape->build();
@@ -8,7 +8,7 @@ GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, 
     nb_verts = static_cast<int>(geometry.size());
     nb_elem = static_cast<int>(topology.size()) / elem_nb_vert;
     nb_quadrature = static_cast<int>(shape->weights.size());
-    nb_color = 0;
+    nb_color = static_cast<int>(offsets.size());
 
     std::vector<scalar> mass(geometry.size());
     std::vector<scalar> inv_mass(mass.size());

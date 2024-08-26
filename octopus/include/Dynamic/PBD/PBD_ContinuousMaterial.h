@@ -75,7 +75,7 @@ struct Stable_NeoHooke_Second final : PBD_ContinuousMaterial {
 
 struct NeoHooke_ln_First final : VolumePreservation {
     explicit NeoHooke_ln_First(const scalar _young, const scalar _poisson) : VolumePreservation(_young, _poisson) {
-        this->alpha = scalar(1) + this->mu / this->lambda;
+        alpha = 1 + mu / lambda;
     }
     void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
 };
@@ -143,7 +143,7 @@ struct C_Stable_NeoHooke_First final : PBD_ContinuousMaterial {
     scalar alpha;
 
     C_Stable_NeoHooke_First(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson) {
-        this->alpha = 1 + this->mu / this->lambda;
+        alpha = 1 + mu / lambda;
     }
 
     void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
