@@ -37,27 +37,26 @@ int create_graph_color(Mesh::Topology& topology, Element element, int nb_vert, s
         }
         std::fill(available.begin(), available.end(), true);
     }
-    std::cout << "NB color: " << nb_color << std::endl;
-    return nb_color;
+    std::cout << "NB color: " << nb_color + 1<< std::endl;
+    return nb_color+1;
 }
 
 void Cuda_Dynamic::init() {
     _mesh = _entity->get_component<Mesh>();
-    for(auto& it : _mesh->topologies()) {
-        Element e = it.first;
+    for(auto&[e, topo] : _mesh->topologies()) {
         const int elem_nb_vert = elem_nb_vertices(e);
-        const int nb_element = static_cast<int>(it.second.size())/elem_nb_vert;
-        _nb_color[e] = create_graph_color(it.second, e, static_cast<int>(_mesh->geometry().size()), _elem_colors[e]);
+        const int nb_element = static_cast<int>(topo.size())/elem_nb_vert;
+        _nb_color[e] = create_graph_color(topo, e, static_cast<int>(_mesh->geometry().size()), _elem_colors[e]);
         // sort element by color and get color group sizes
         int count = 0;
-        std::vector<int> offsets(_nb_color[e],0);
-        std::vector<int> sorted_topology(it.second.size());
+        std::vector<int> offsets(_nb_color[e]);
+        std::vector<int> sorted_topology;
         for(int c = 0; c < _nb_color[e]; ++c) {
             offsets[c] = count;
             for(int i = 0; i < nb_element; ++i) {
                 if(_elem_colors[e][i] != c) continue;
-                int id = i * elem_nb_vert;
-                sorted_topology.insert(sorted_topology.begin() + count, it.second.begin() + id, it.second.begin() + id + elem_nb_vert);
+                const int id = i * elem_nb_vert;
+                sorted_topology.insert(sorted_topology.end(), topo.begin() + id, topo.begin() + id + elem_nb_vert);
                 count += elem_nb_vert;
             }
         }
@@ -70,11 +69,10 @@ void Cuda_Dynamic::init() {
 void Cuda_Dynamic::update() {
     if(Time::Frame() == 1) {
         // coloration
-        for(auto& it : _mesh->topologies()) {
-            Element e = it.first;
-            std::vector<Color> color_map(_nb_color[e]+1);
-            for(int i = 0 ; i < color_map.size(); ++i) {
-                color_map[i] = ColorBase::HSL2RGB(Random::Range(0.f,360.f), Random::Range(42.f,98.f), Random::Range(40.f,90.f));
+        for(auto&[e, topo] : _mesh->topologies()) {
+            std::vector<Color> color_map(_nb_color[e]);
+            for(auto & c : color_map) {
+                c = ColorBase::HSL2RGB(Random::Range(0.f,360.f), Random::Range(42.f,98.f), Random::Range(40.f,90.f));
             }
             _display_colors[e].resize(_elem_colors[e].size());
             for(int i = 0; i < _elem_colors[e].size(); ++i) {

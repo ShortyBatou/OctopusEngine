@@ -193,11 +193,11 @@ void DebugUI::End() {
     Instance_ptr()->current_group = "";
 }
 
-void DebugUI::Plot(const std::string &name, const float &value, int buffer = 60) {
+void DebugUI::Plot(const std::string &name, const float &value, int buffer) {
     Plot(name, value, 0, 0, buffer);
 }
 
-void DebugUI::Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer = 60) {
+void DebugUI::Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer) {
     DebugUI_Group *ui_group = Instance_ptr()->get_group();
     DebugUI_Plot *d_plot;
     if (ui_group->ui_components.find(name) == ui_group->ui_components.end()) {

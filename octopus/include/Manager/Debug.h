@@ -158,9 +158,9 @@ public:
 
     static void Begin(const std::string &name);
 
-    static void Plot(const std::string &name, const float &value, int buffer);
+    static void Plot(const std::string &name, const float &value, int buffer = 60);
 
-    static void Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer);
+    static void Plot(const std::string &name, const float &value, float r_min, float r_max, int buffer = 60);
 
     static void Value(const std::string &name, const float &value);
 

@@ -13,11 +13,11 @@ std::string get_material_name(Material material) {
 
 
 Matrix3x3 ContinuousMaterial::get_strain_linear(const Matrix3x3 &F) {
-    return scalar(0.5) * (glm::transpose(F) + F) - Matrix::Identity3x3();
+    return 0.5f * (glm::transpose(F) + F) - Matrix::Identity3x3();
 }
 
 Matrix3x3 ContinuousMaterial::get_strain_tensor(const Matrix3x3 &F) {
-    return scalar(0.5) * (glm::transpose(F) * F - Matrix::Identity3x3());
+    return 0.5f * (glm::transpose(F) * F - Matrix::Identity3x3());
 }
 
 
@@ -30,7 +30,7 @@ Matrix3x3 ContinuousMaterial::chauchy_to_PK1_stress(Matrix3x3 &F, Matrix3x3 &C) 
 }
 
 Matrix3x3 ContinuousMaterial::chauchy_to_PK2_stress(Matrix3x3 &F, Matrix3x3 &C) {
-    Matrix3x3 F_inv = glm::inverse(F);
+    const Matrix3x3 F_inv = glm::inverse(F);
     return glm::determinant(F) * F_inv * C * glm::transpose(F_inv);
 }
 

@@ -8,13 +8,16 @@
 #include "device_launch_parameters.h"
 
 struct GPU_PBD_FEM {
-    int nb_elem;
-    int nb_color;
     int nb_quadrature;
     int nb_verts;
+    int elem_nb_vert;
+    std::vector<int> c_nb_elem;
+    std::vector<int> c_offsets;
+
     // Particles
     Cuda_Buffer<Vector3>* cb_position;
     Cuda_Buffer<Vector3>* cb_prev_position;
+    Cuda_Buffer<Vector3>* cb_init_position;
     Cuda_Buffer<Vector3>* cb_velocity;
     Cuda_Buffer<Vector3>* cb_forces;
     Cuda_Buffer<scalar>* cb_mass;
@@ -22,7 +25,6 @@ struct GPU_PBD_FEM {
 
     // Mesh
     Cuda_Buffer<int>* cb_topology;
-    Cuda_Buffer<int>* cb_offsets;
     Cuda_Buffer<Matrix3x3>* cb_JX_inv;
     Cuda_Buffer<Vector3>* cb_dN;
     Cuda_Buffer<scalar>* cb_weights;

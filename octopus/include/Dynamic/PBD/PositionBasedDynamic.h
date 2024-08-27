@@ -11,9 +11,9 @@ enum PBDSolverType {
 };
 
 struct PBD_System final : ParticleSystem {
-    PBD_System(Solver *solver, int nb_step, int nb_substep = 1, PBDSolverType solver_type = GaussSeidel,
-               scalar global_damping = scalar(0)) : ParticleSystem(solver), _nb_step(nb_step), _nb_substep(nb_substep),
-                                                    _type(solver_type), _global_damping(global_damping) {
+    PBD_System(Solver *solver, const int nb_step, const int nb_substep = 1, const PBDSolverType solver_type = GaussSeidel,
+               const scalar global_damping = 0.f) : ParticleSystem(solver), _global_damping(global_damping), _nb_step(nb_step),
+                                                    _nb_substep(nb_substep), _type(solver_type) {
         _groups.emplace_back();
     }
 

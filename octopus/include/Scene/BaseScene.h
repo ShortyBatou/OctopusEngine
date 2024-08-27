@@ -69,12 +69,12 @@ struct BaseScene final : Scene
         args.scenario_2 = -1;
         args.dir = Unit3D::up();
 
-        const Vector3 size(1, 1, 1);
-        const Vector3I cells = Vector3I(1, 1, 1);
+        const Vector3 size(4, 1, 1);
+        const Vector3I cells = Vector3I(80, 20, 20);
         build_obj(Vector3(0,0,0), cells,size, Color(0.9,0.4,0.4,1.), Tetra, args);
     }
 
-    Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
+    Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
         BeamMeshGenerator* generator = nullptr;
         switch (element)
         {
