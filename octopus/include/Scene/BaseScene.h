@@ -37,9 +37,6 @@ struct BaseScene final : Scene
 {
     char* name() override { return "Basic Scene"; }
 
-    void init() override {
-    }
-
     void build_editor(UI_Editor* editor) override {
         editor->add_manager_ui(new UI_Time());
         editor->add_manager_ui(new UI_Dynamic());
@@ -71,7 +68,7 @@ struct BaseScene final : Scene
 
         const Vector3 size(4, 1, 1);
         const Vector3I cells = Vector3I(80, 20, 20);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.9,0.4,0.4,1.), Tetra, args);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.9,0.4,0.4,1.), Hexa, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -105,9 +102,9 @@ struct BaseScene final : Scene
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
 
-        if (element == Tetra10 || element == Tetra20)
-            graphic = new GL_GraphicHighOrder(3, color);
-        else 
+        //if (element == Tetra10 || element == Tetra20)
+            //graphic = new GL_GraphicHighOrder(3, color);
+       // else
             graphic = new GL_GraphicSurface(color);
             //graphic = new GL_GraphicElement(color,0.2);
         return graphic;

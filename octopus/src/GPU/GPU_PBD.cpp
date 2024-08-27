@@ -19,15 +19,15 @@ GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, 
 
     std::vector<scalar> mass(geometry.size());
     std::vector<scalar> inv_mass(mass.size());
-    std::vector<Vector3> dN(nb_quadrature * elem_nb_vert);
+    std::vector<Vector3> dN;
     std::vector<Matrix3x3> JX_inv(nb_quadrature * nb_elem);
     std::vector<scalar> V(nb_quadrature * nb_elem);
     for (int i = 0; i < nb_quadrature; i++)
     {
-        dN.insert(dN.begin() + i * elem_nb_vert, shape->dN[i].begin(), shape->dN[i].end());
+        dN.insert(dN.end(), shape->dN[i].begin(), shape->dN[i].end());
     }
 
-
+    std::cout << "NB ELEMENT : " << nb_elem << std::endl;
     for (int i = 0; i < nb_elem; i++)
     {
         scalar V_sum = 0;
@@ -39,7 +39,6 @@ GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, 
             for (int k = 0; k < elem_nb_vert; ++k)
             {
                 J += glm::outerProduct(geometry[topology[id + k]], dN[j * elem_nb_vert + k]);
-                if(eid == 0) std::cout <<geometry[topology[id + k]].x << " " << geometry[topology[id + k]].y << " " << geometry[topology[id + k]].z << std::endl;
             }
             V[eid + j] = abs(glm::determinant(J)) * shape->weights[j];
             JX_inv[eid + j] = glm::inverse(J);

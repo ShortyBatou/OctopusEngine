@@ -26,9 +26,10 @@ struct GPU_PBD_FEM {
     // Mesh
     Cuda_Buffer<int>* cb_topology;
     Cuda_Buffer<Matrix3x3>* cb_JX_inv;
-    Cuda_Buffer<Vector3>* cb_dN;
     Cuda_Buffer<scalar>* cb_weights;
     Cuda_Buffer<scalar>* cb_V;
+    Cuda_Buffer<Vector3>* cb_dN;
+
 
     GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, float density);
 
@@ -41,7 +42,7 @@ struct GPU_PBD_FEM {
     void get_forces(std::vector<Vector3>& f) const {cb_forces->get_data(f);}
     void get_prev_position(std::vector<Vector3>& p) const {cb_prev_position->get_data(p);}
     void get_mass(std::vector<scalar>& m) const {cb_mass->get_data(m);}
-    void get_inv_mass(std::vector<scalar>& w) const {cb_inv_mass->get_data(w);};
+    void get_inv_mass(std::vector<scalar>& w) const {cb_inv_mass->get_data(w);}
 };
 
 __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3* pos, Vector3* dN);
