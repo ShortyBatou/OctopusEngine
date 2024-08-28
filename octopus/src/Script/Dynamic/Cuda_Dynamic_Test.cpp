@@ -4,6 +4,7 @@
 #include <Rendering/GL_Graphic.h>
 #include "Script/Dynamic/Cuda_Dynamic_Test.h"
 #include "Tools/Random.h"
+#include <Manager/Debug.h>
 #include "GPU/GPU_PBD.h"
 #include <random>
 #include <algorithm>
@@ -61,7 +62,7 @@ void Cuda_Dynamic::init() {
             }
         }
         // create CUDA PBD Gauss-Seidel
-        _gpu_pbd = new GPU_PBD_FEM(e, _mesh->geometry(), sorted_topology, offsets, _density);
+        _gpu_pbd = new GPU_PBD_FEM(e, _mesh->geometry(), sorted_topology, offsets, _density, _young, _poisson);
 
     }
 }
@@ -91,7 +92,17 @@ void Cuda_Dynamic::update() {
 
     }
 
-    _gpu_pbd->step(Time::Fixed_DeltaTime());
+    Time::Tic();
+    scalar dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_iteration);
+    for(int i = 0; i < _iteration; ++i)
+        _gpu_pbd->step(dt);
     _gpu_pbd->get_position(_mesh->geometry());
+
+    const scalar time = Time::Tac() * 1000.f;
+    DebugUI::Begin("XPBD");
+    DebugUI::Plot("Time GPU XPBD ", time, 600);
+    DebugUI::Value("Time", time);
+    DebugUI::Range("Range", time);
+    DebugUI::End();
 }
 

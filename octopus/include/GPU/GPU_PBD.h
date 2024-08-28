@@ -11,6 +11,8 @@ struct GPU_PBD_FEM {
     int nb_quadrature;
     int nb_verts;
     int elem_nb_vert;
+    scalar lambda;
+    scalar mu;
     std::vector<int> c_nb_elem;
     std::vector<int> c_offsets;
 
@@ -31,7 +33,7 @@ struct GPU_PBD_FEM {
     Cuda_Buffer<Vector3>* cb_dN;
 
 
-    GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, float density);
+    GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, float density, scalar young, scalar poisson);
 
     ~GPU_PBD_FEM() = default;
 

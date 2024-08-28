@@ -1,10 +1,14 @@
 #include "GPU/GPU_PBD.h"
 
-GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, const float density)
+GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, // mesh
+                         const std::vector<int>& offsets, // colors
+                         const scalar density, const scalar young, const scalar poisson) // materials
 {
     FEM_Shape* shape = get_fem_shape(element);
     shape->build();
 
+    lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));
+    mu = young / (2.f * (1.f + poisson));
     elem_nb_vert = elem_nb_vertices(element);
     nb_verts = static_cast<int>(geometry.size());
     nb_quadrature = static_cast<int>(shape->weights.size());
@@ -12,8 +16,9 @@ GPU_PBD_FEM::GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, 
 
     const int nb_elem = static_cast<int>(topology.size()) / elem_nb_vert;
 
-    for(int i = 0; i < offsets.size(); ++i) {
-        const int nb = (i < offsets.size()-1 ? offsets[i+1] : topology.size()) - offsets[i];
+    for (int i = 0; i < offsets.size(); ++i)
+    {
+        const int nb = (i < offsets.size() - 1 ? offsets[i + 1] : topology.size()) - offsets[i];
         c_nb_elem.push_back(nb / elem_nb_vert);
     }
 
