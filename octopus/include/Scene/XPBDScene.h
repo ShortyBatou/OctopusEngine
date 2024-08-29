@@ -67,18 +67,17 @@ struct XPBDScene final : Scene
         args.young = 1e7f;
         args.damping = 1.;
         args.iteration = 1;
-        args.sub_iteration = 150;
+        args.sub_iteration = 25;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
 
         Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(4, 1, 1);
-        //cells = Vector3I(12, 4, 4);
-        build_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
-        //cells = Vector3I(6, 2, 2);
-        args.sub_iteration = 50;
+        Vector3I cells = Vector3I(16, 4, 4);
+        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra, args);
         build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
+        cells = Vector3I(8, 2, 2);
+        build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
         //cells = Vector3I(4, 2, 2);
         //build_xpbd_fem_entity(Vector3(0, 0, 2.4), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra20, args);
         //build_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.0f, 0.0f, 0.0f, 1.f), Hexa, args);

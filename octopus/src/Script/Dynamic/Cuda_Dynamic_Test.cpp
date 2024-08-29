@@ -10,60 +10,56 @@
 #include <algorithm>
 #include <set>
 
-int create_graph_color(Mesh::Topology& topology, Element element, int nb_vert, std::vector<int>& colors) {
-    int nb_color = 1;
-    int elem_nb_vert = elem_nb_vertices(element);
-    std::vector<std::set<int>> owners(nb_vert);
-    // for each vertice get elements that own this vertice
-    for(int i = 0; i < topology.size(); i+=elem_nb_vert) {
-        for(int j = 0; j < elem_nb_vert; ++j) {
-            owners[topology[i+j]].insert(i/elem_nb_vert);
-        }
-    }
+std::vector<scalar> compute_fem_mass(const Element elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, const scalar density) {
+    const int nb_vert_elem = elem_nb_vertices(elem);
+    const scalar v_density = density / static_cast<scalar>(nb_vert_elem);
+    FEM_Shape* shape = get_fem_shape(elem); shape->build();
 
-    colors.resize(topology.size() / elem_nb_vert, -1);
-    std::vector<int> available(64, true);
-    for(int i = 0; i < topology.size(); i+=elem_nb_vert) {
-        // for all vertices, check the neighbor elements colors
-        for(int j = 0; j < elem_nb_vert; ++j) {
-            for(int n : owners[topology[i+j]]) {
-                if(colors[n] != -1) available[colors[n]] = false;
+    std::vector<scalar> mass(geometry.size());
+    for(int i = 0; i < topology.size(); i+= nb_vert_elem) {
+        scalar V = 0.f;
+        for(int q = 0; q < shape->weights.size(); ++q) {
+            Matrix3x3 J = Matrix::Zero3x3();
+            for(int j = 0; j < nb_vert_elem; j++) {
+                const int vid = topology[i + j];
+                J+= glm::outerProduct(geometry[vid], shape->dN[q][j]);
             }
+            V += abs(glm::determinant(J)) * shape->weights[q];
         }
-        for(int c = 0; c < available.size(); ++c) {
-            if(available[c]) {
-                nb_color = std::max(nb_color, c);
-                colors[i/elem_nb_vert] = c; break;
-            }
+
+        for(int j = 0; j < nb_vert_elem; j++) {
+            const int vid = topology[i + j];
+            mass[vid] += v_density * V;
         }
-        std::fill(available.begin(), available.end(), true);
     }
-    std::cout << "NB color: " << nb_color + 1<< std::endl;
-    return nb_color+1;
+    delete shape;
+    return mass;
 }
 
 void Cuda_Dynamic::init() {
     _mesh = _entity->get_component<Mesh>();
+    std::vector masses(_mesh->nb_vertices(),0.f);
     for(auto&[e, topo] : _mesh->topologies()) {
-        const int elem_nb_vert = elem_nb_vertices(e);
-        const int nb_element = static_cast<int>(topo.size())/elem_nb_vert;
-        _nb_color[e] = create_graph_color(topo, e, static_cast<int>(_mesh->geometry().size()), _elem_colors[e]);
-        // sort element by color and get color group sizes
-        int count = 0;
-        std::vector<int> offsets(_nb_color[e]);
-        std::vector<int> sorted_topology;
-        for(int c = 0; c < _nb_color[e]; ++c) {
-            offsets[c] = count;
-            for(int i = 0; i < nb_element; ++i) {
-                if(_elem_colors[e][i] != c) continue;
-                const int id = i * elem_nb_vert;
-                sorted_topology.insert(sorted_topology.end(), topo.begin() + id, topo.begin() + id + elem_nb_vert);
-                count += elem_nb_vert;
-            }
-        }
-        // create CUDA PBD Gauss-Seidel
-        _gpu_pbd = new GPU_PBD_FEM(e, _mesh->geometry(), sorted_topology, offsets, _density, _young, _poisson);
+        if(topo.empty()) continue;
+        // récupérer la masse
+        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
+        for(size_t i = 0; i < e_masses.size(); i++)
+            masses[i] += e_masses[i];
+    }
 
+    _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration);
+
+    for(auto&[e, topo] : _mesh->topologies()) {
+        if(topo.empty()) continue;
+        _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson);
+
+        // récupérer la masse
+        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
+        for(size_t i = 0; i < e_masses.size(); i++)
+            masses[i] += e_masses[i];
+
+        // create CUDA PBD Gauss-Seidel
+        _gpu_pbd->dynamic.push_back(_gpu_fems[e]);
     }
 }
 
@@ -71,21 +67,23 @@ void Cuda_Dynamic::update() {
     if(Time::Frame() == 1) {
         // coloration
         for(auto&[e, topo] : _mesh->topologies()) {
-            std::vector<Color> color_map(_nb_color[e]);
+            if(topo.empty()) continue;
+            const int nb_color = static_cast<int>(_gpu_fems[e]->colors.size());
+            std::vector<Color> color_map(nb_color);
             for(auto & c : color_map) {
                 c = ColorBase::HSL2RGB(Random::Range(0.f,360.f), Random::Range(42.f,98.f), Random::Range(40.f,90.f));
             }
-            _display_colors[e].resize(_elem_colors[e].size());
-            for(int i = 0; i < _elem_colors[e].size(); ++i) {
-                _display_colors[e][i] = color_map[_elem_colors[e][i]];
+            _display_colors[e].resize(nb_color);
+            for(int i = 0; i < nb_color; ++i) {
+                _display_colors[e][i] = color_map[_gpu_fems[e]->colors[i]];
             }
         }
     }
 
     if(Time::Frame() > 0) {
         GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
-        for(auto& it : _mesh->topologies()) {
-            graphic->set_ecolors(it.first, _display_colors[it.first]);
+        for(auto&[e, _] : _mesh->topologies()) {
+            graphic->set_ecolors(e, _display_colors[e]);
             graphic->set_multi_color(true);
             graphic->set_element_color(true);
         }
@@ -93,9 +91,7 @@ void Cuda_Dynamic::update() {
     }
 
     Time::Tic();
-    scalar dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_iteration);
-    for(int i = 0; i < _iteration; ++i)
-        _gpu_pbd->step(dt);
+    _gpu_pbd->step(Time::Fixed_DeltaTime());
     _gpu_pbd->get_position(_mesh->geometry());
 
     const scalar time = Time::Tac() * 1000.f;

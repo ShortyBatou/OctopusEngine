@@ -1,54 +1,75 @@
 #pragma once
 #include "Core/Base.h"
 #include "Mesh/Elements.h"
-#include <Dynamic/FEM/FEM_Shape.h>
 #include "GPU/Cuda_Buffer.h"
-#include <Manager/Dynamic.h>
 #include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-struct GPU_PBD_FEM {
-    int nb_quadrature;
-    int nb_verts;
-    int elem_nb_vert;
-    scalar lambda;
-    scalar mu;
-    std::vector<int> c_nb_elem;
-    std::vector<int> c_offsets;
-
-    // Particles
-    Cuda_Buffer<Vector3>* cb_position;
-    Cuda_Buffer<Vector3>* cb_prev_position;
-    Cuda_Buffer<Vector3>* cb_init_position;
-    Cuda_Buffer<Vector3>* cb_velocity;
-    Cuda_Buffer<Vector3>* cb_forces;
-    Cuda_Buffer<scalar>* cb_mass;
-    Cuda_Buffer<scalar>* cb_inv_mass;
-
-    // Mesh
-    Cuda_Buffer<int>* cb_topology;
-    Cuda_Buffer<Matrix3x3>* cb_JX_inv;
-    Cuda_Buffer<scalar>* cb_weights;
-    Cuda_Buffer<scalar>* cb_V;
-    Cuda_Buffer<Vector3>* cb_dN;
+#include "GPU_Integrator.h"
+#include "GPU/GPU_ParticleSystem.h"
+#include "GPU/GPU_Dynamic.h"
 
 
-    GPU_PBD_FEM(Element element, const std::vector<Vector3>& geometry, const std::vector<int>& topology, const std::vector<int>& offsets, float density, scalar young, scalar poisson);
 
-    ~GPU_PBD_FEM() = default;
+struct GPU_PBD : GPU_ParticleSystem {
+    GPU_PBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it)
+    : GPU_ParticleSystem(positions, masses), iteration(it), integrator(new GPU_SemiExplicit()) {}
 
     void step(scalar dt) const;
 
-    void get_position(std::vector<Vector3>& p) const {cb_position->get_data(p);}
-    void get_velocity(std::vector<Vector3>& v) const {cb_velocity->get_data(v);}
-    void get_forces(std::vector<Vector3>& f) const {cb_forces->get_data(f);}
-    void get_prev_position(std::vector<Vector3>& p) const {cb_prev_position->get_data(p);}
-    void get_mass(std::vector<scalar>& m) const {cb_mass->get_data(m);}
-    void get_inv_mass(std::vector<scalar>& w) const {cb_inv_mass->get_data(w);}
+    int iteration;
+    GPU_Integrator* integrator;
+    std::vector<GPU_Dynamic*> dynamic;
+    ~GPU_PBD() {
+        delete integrator;
+        for(auto* d : dynamic) delete d;
+    }
 };
 
-__device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3* pos, Vector3* dN);
-__global__ void kernel_constraint_solve(int n, int nb_quadrature, int nb_vert_elem, int offset, Vector3* p, int* topology, Vector3* dN, scalar* V, Matrix3x3* JX_inv);
-__global__ void kernel_velocity_update(int n, float dt, Vector3* p, Vector3* prev_p, Vector3* v);
-__global__ void kernel_step_solver(int n, float dt, Vector3 g, Vector3* p, Vector3* v, Vector3* f, float* w);
-__global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3* p, Vector3* v, Vector3* f);
+struct GPU_Plane_Fix final : GPU_Dynamic {
+    GPU_Plane_Fix(const std::vector<Vector3>& positions, const Vector3& o, const Vector3& n);
+    Vector3 com, offset, origin, normal;
+    Matrix3x3 rot;
+    void step(const GPU_ParticleSystem *ps, scalar dt) override;
+};
+
+struct GPU_PBD_FEM final : GPU_Dynamic {
+    FEM_Shape* shape;
+    int elem_nb_vert;  // nb vertice per element
+    int nb_quadrature; // nb quadrature for fem
+    int nb_color;      // color total
+    int nb_element;    // element total
+
+    scalar lambda;
+    scalar mu;
+
+    std::vector<int> c_nb_elem; // nb element for a color
+    std::vector<int> c_offsets; // topo index offset for each color (topology is sorted by color)
+
+    Cuda_Buffer<int> *cb_topology;
+    Cuda_Buffer<Matrix3x3> *cb_JX_inv;
+    Cuda_Buffer<scalar> *cb_weights;
+    Cuda_Buffer<scalar> *cb_V;
+    Cuda_Buffer<Vector3> *cb_dN;
+
+    std::vector<int> colors; // mesh coloration (used for debug)
+
+    GPU_PBD_FEM(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology,
+                scalar young, scalar poisson);
+
+    ~GPU_PBD_FEM() override = default;
+
+    void step(const GPU_ParticleSystem *ps, scalar dt) override;
+private:
+    int build_graph_color(const Mesh::Topology& topology, int nb_vert, std::vector<int>& colors);
+    std::vector<int> build_topology_by_color(const std::vector<int>& colors, const std::vector<int>& topology);
+    void build_fem_const(const Mesh::Geometry& geometry, const Mesh::Topology& topology);
+};
+
+__device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, Vector3 *dN);
+
+__global__ void kernel_constraint_solve(int n, int nb_quadrature, int nb_vert_elem, int offset, Vector3 *p,
+                                        int *topology, Vector3 *dN, scalar *V, Matrix3x3 *JX_inv);
+
+__global__ void kernel_velocity_update(int n, float dt, Vector3 *p, Vector3 *prev_p, Vector3 *v);
+
+__global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3 *p, Vector3 *v,
+                                        Vector3 *f);
