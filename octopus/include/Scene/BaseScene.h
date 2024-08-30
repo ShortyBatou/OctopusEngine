@@ -45,6 +45,7 @@ struct BaseScene final : Scene
         editor->add_manager_ui(new UI_DisplaySettings());
         editor->add_manager_ui(new UI_Camera());
         editor->add_component_ui(new UI_Mesh_Display());
+        editor->add_component_ui(new UI_Cuda_Constraint_Rigid_Controller());
         editor->add_component_ui(new UI_Data_Recorder());
         editor->add_component_ui(new UI_Graphic_Saver());
     }
@@ -64,19 +65,17 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e7;
-        args.poisson = 0.4;
+        args.young = 1e5;
+        args.poisson = 0.49;
+        args.damping = 0.1;
         args.iteration = 25;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
 
-        const Vector3 size(4, 1, 1);
-        const Vector3I cells(64, 16, 16);
-        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Hexa, args);
-        build_obj(Vector3(0,0,1.2), cells,size, ColorBase::Black(), Tetra, args);
-        const Vector3I cells2(32, 8, 8);
-        build_obj(Vector3(0,0,2.4), cells2, size, ColorBase::Black(), Tetra10, args);
+        const Vector3 size(2, 1, 1);
+        const Vector3I cells(64, 32, 32);
+        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Tetra10, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -107,15 +106,7 @@ struct BaseScene final : Scene
     }
 
     GL_Graphic* build_graphic(const Color& color, const Element element) {
-        // Mesh converter simulation to rendering (how it will be displayed)
-        GL_Graphic* graphic;
-        /*
-        if (element == Tetra10 || element == Tetra20)
-            graphic = new GL_GraphicHighOrder(2, color);
-        else*/
-            graphic = new GL_GraphicSurface(color);
-            //graphic = new GL_GraphicElement(color,0.2);
-        return graphic;
+        return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {
@@ -128,10 +119,10 @@ struct BaseScene final : Scene
 
     void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
-        e->add_component(new Cuda_Dynamic(args.density, args.young, args.poisson, args.iteration));
-        e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir ));
-        e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir ));
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        e->add_component(new Cuda_Dynamic(args.density, args.young, args.poisson, args.iteration, args.damping));
+        if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
+        if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

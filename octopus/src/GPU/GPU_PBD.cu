@@ -13,6 +13,15 @@ __device__ scalar squared_trace(const Matrix3x3 &m)
     return m[0][0] * m[0][0] + m[1][1] * m[1][1] + m[2][2] * m[2][2] + (m[0][1] * m[1][0] + m[1][2] * m[2][1] + m[2][0] * m[0][2]) * 2.f;
 }
 
+__device__ scalar squared_norm(const Matrix3x3& m)
+{
+    scalar st = 0.f;
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            st += m[i][j] * m[i][j];
+    return st;
+}
+
 __device__ void print_vec(const Vector3 &v) {
     printf("x:%f y:%f z:%f", v.x, v.y, v.z);
 }
@@ -32,10 +41,16 @@ __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, int *topo
     return Jx;
 }
 
-__global__ void kernel_velocity_update(const int n, const float dt, Vector3 *p, Vector3 *prev_p, Vector3 *v) {
+__global__ void kernel_velocity_update(const int n, const float dt, const scalar global_damping, Vector3 *p, Vector3 *prev_p, scalar* inv_mass, Vector3 *v) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
     v[i] = (p[i] - prev_p[i]) / dt;
+    scalar norm_v = glm::length(v[i]);
+    if (norm_v > 1e-12) {
+        const scalar coef = global_damping * dt * inv_mass[i];
+        const scalar damping = -norm_v * (coef > 1.f ? 1.f : coef);
+        v[i] += glm::normalize(v[i]) * damping;
+    }
 }
 
 
@@ -72,6 +87,28 @@ __device__ void stvk_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     C = squared_trace(E);
 }
 
+__device__ void dsnh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    scalar I_3 = glm::determinant(F);
+    scalar detF = I_3 - 1;
+    C = (detF) * (detF);
+    Matrix3x3 d_detF; // derivative of det(F) by F
+    d_detF[0] = glm::cross(F[1], F[2]);
+    d_detF[1] = glm::cross(F[2], F[0]);
+    d_detF[2] = glm::cross(F[0], F[1]);
+    P = 2.f * detF * d_detF;
+}
+
+__device__ void dsnh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    scalar I_3 = glm::determinant(F);
+    C = squared_norm(F) - 3.f - 2.f * (I_3 - 1.f);
+
+    Matrix3x3 d_detF; // derivative of det(F) by F
+    d_detF[0] = glm::cross(F[1], F[2]);
+    d_detF[1] = glm::cross(F[2], F[0]);
+    d_detF[2] = glm::cross(F[0], F[1]);
+    P = 2.f * F - 2.f * d_detF;
+}
+
 __device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p)
 {
     scalar sum_norm_grad = 0.f;
@@ -94,8 +131,8 @@ __device__ void xpbd_constraint_fem_eval(const int m, const int nb_vert_elem, co
 
     Matrix3x3 P;
     scalar energy;
-    if (m == 0) stvk_first(F, P, energy);
-    else stvk_second(F, P, energy);
+    if (m == 0) dsnh_first(F, P, energy);
+    else dsnh_second(F, P, energy);
 
     P = P * glm::transpose(Jx_inv) * V;
     C += energy * V;
@@ -165,11 +202,12 @@ void GPU_PBD::step(const scalar dt) const {
                                                                cb_velocity->buffer, cb_forces->buffer,
                                                                cb_inv_mass->buffer);
         for(auto* c : dynamic) {
-            c->step(this, sub_dt);
+            if(c->active)
+                c->step(this, sub_dt);
         }
 
-        kernel_velocity_update<<<(cb_position->nb + 255) / 256, 256>>>(cb_position->nb, sub_dt,
-                                                                   cb_position->buffer, cb_prev_position->buffer,cb_velocity->buffer);
+        kernel_velocity_update<<<(cb_position->nb + 255) / 256, 256>>>(cb_position->nb, sub_dt, global_damping,
+                                                                   cb_position->buffer, cb_prev_position->buffer, cb_inv_mass->buffer, cb_velocity->buffer);
     }
 
 }

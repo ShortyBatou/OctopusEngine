@@ -1,4 +1,5 @@
 #pragma once
+#include <Script/Dynamic/Cuda_Constraint_Rigid_Controller.h>
 #include <Script/VTK/VTK_FEM.h>
 
 #include "Core/Base.h"
@@ -216,6 +217,20 @@ public:
 
 	bool can_draw(Entity* entity) override {
 		return entity->get_component<Constraint_Rigid_Controller>() != nullptr;
+	}
+
+	void draw(Entity* entity) override;
+};
+
+class UI_Cuda_Constraint_Rigid_Controller final : public UI_Component {
+public:
+	UI_Cuda_Constraint_Rigid_Controller() : UI_Component() { }
+
+	[[nodiscard]] std::string name() const override { return "Constraint Rigid"; }
+
+
+	bool can_draw(Entity* entity) override {
+		return entity->get_component<Cuda_Constraint_Rigid_Controller>() != nullptr;
 	}
 
 	void draw(Entity* entity) override;

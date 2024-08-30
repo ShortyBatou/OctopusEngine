@@ -7,7 +7,6 @@
 #include <Manager/Debug.h>
 #include "GPU/GPU_PBD.h"
 #include <random>
-#include <algorithm>
 #include <set>
 
 std::vector<scalar> compute_fem_mass(const Element elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, const scalar density) {
@@ -47,8 +46,7 @@ void Cuda_Dynamic::init() {
             masses[i] += e_masses[i];
     }
 
-    _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration);
-
+    _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration, _damping);
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson);

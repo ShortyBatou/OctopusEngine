@@ -10,17 +10,18 @@
 
 
 struct GPU_PBD : GPU_ParticleSystem {
-    GPU_PBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it)
-    : GPU_ParticleSystem(positions, masses), iteration(it), integrator(new GPU_SemiExplicit()) {}
+    GPU_PBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it, const scalar damping = 0.f)
+    : GPU_ParticleSystem(positions, masses), iteration(it), global_damping(damping), integrator(new GPU_SemiExplicit()) {}
 
     void step(scalar dt) const;
 
     int iteration;
+    scalar global_damping;
     GPU_Integrator* integrator;
     std::vector<GPU_Dynamic*> dynamic;
     ~GPU_PBD() {
         delete integrator;
-        for(auto* d : dynamic) delete d;
+        for(const auto* d : dynamic) delete d;
     }
 };
 
@@ -69,7 +70,7 @@ __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, Vector3 *
 __global__ void kernel_constraint_solve(int n, int nb_quadrature, int nb_vert_elem, int offset, Vector3 *p,
                                         int *topology, Vector3 *dN, scalar *V, Matrix3x3 *JX_inv);
 
-__global__ void kernel_velocity_update(int n, float dt, Vector3 *p, Vector3 *prev_p, Vector3 *v);
+__global__ void kernel_velocity_update(int n, float dt, scalar global_damping, Vector3 *p, Vector3 *prev_p, scalar* inv_mass, Vector3 *v);
 
 __global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3 *p, Vector3 *v,
                                         Vector3 *f);
