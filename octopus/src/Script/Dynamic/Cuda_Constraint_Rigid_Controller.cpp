@@ -2,11 +2,11 @@
 #include <Core/Entity.h>
 #include <Manager/Debug.h>
 #include <Manager/TimeManager.h>
-#include <Script/Dynamic/Cuda_Dynamic_Test.h>
+#include <Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h>
 #include <Manager/Input.h>
 
 void Cuda_Constraint_Rigid_Controller::late_init() {
-    Cuda_Dynamic *cuda_dynamic = _entity->get_component<Cuda_Dynamic>();
+    Cuda_XPBD_FEM_Dynamic *cuda_dynamic = _entity->get_component<Cuda_XPBD_FEM_Dynamic>();
     Mesh* mesh = _entity->get_component<Mesh>();
     _fixation = new GPU_Plane_Fix(mesh->geometry(), _plane_pos, _plane_normal);
     cuda_dynamic->add_dynamic(_fixation);

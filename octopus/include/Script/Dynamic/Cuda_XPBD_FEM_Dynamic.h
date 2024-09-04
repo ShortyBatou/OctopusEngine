@@ -5,11 +5,9 @@
 #include "Core/Component.h"
 #include<vector> // for vector
 
-int create_graph_color(const Mesh::Topology& topology, Element element, int nb_vert, std::vector<int>& colors);
-
-struct Cuda_Dynamic final : Component
+struct Cuda_XPBD_FEM_Dynamic final : Component
 {
-    explicit Cuda_Dynamic(
+    explicit Cuda_XPBD_FEM_Dynamic(
         const scalar density,
         const scalar young, const scalar poisson,
         const int iteration = 30, const scalar damping = 0.f)
@@ -22,7 +20,7 @@ struct Cuda_Dynamic final : Component
 
     void update() override;
 
-    ~Cuda_Dynamic() override
+    ~Cuda_XPBD_FEM_Dynamic() override
     {
         delete _gpu_pbd;
     }

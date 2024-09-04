@@ -53,17 +53,6 @@ __global__ void kernel_velocity_update(const int n, const float dt, const scalar
     }
 }
 
-
-__global__ void kernel_step_solver(const int n, const float dt, const Vector3 g, Vector3 *p, Vector3 *prev_p,
-                                   Vector3 *v, Vector3 *f, float *w) {
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= n) return;
-    prev_p[i] = p[i];
-    v[i] += (g + f[i] * w[i]) * dt;
-    p[i] += v[i] * dt;
-    f[i] *= 0;
-}
-
 __global__ void kernel_constraint_plane(const int n, const Vector3 origin, const Vector3 normal, const Vector3 com, const Vector3 offset, const Matrix3x3 rot, Vector3 *p, Vector3 *p_init) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
@@ -197,10 +186,8 @@ void GPU_PBD::step(const scalar dt) const {
     const scalar sub_dt = dt / static_cast<scalar>(iteration);
 
     for(int i = 0; i < iteration; ++i) {
-        kernel_step_solver<<<(nb() + 255) / 256, 256>>>(nb(), sub_dt, Dynamic::gravity(),
-                                                               cb_position->buffer, cb_prev_position->buffer,
-                                                               cb_velocity->buffer, cb_forces->buffer,
-                                                               cb_inv_mass->buffer);
+
+        integrator->integrate(this, sub_dt);
         for(auto* c : dynamic) {
             if(c->active)
                 c->step(this, sub_dt);

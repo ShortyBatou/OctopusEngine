@@ -16,8 +16,8 @@ scalar M_Hooke::get_energy(const Matrix3x3 &F) {
 
 // get all H_kl of dF_i**T H_kl dF_j
 std::vector<Matrix3x3> M_Hooke::get_sub_hessian(const Matrix3x3 &) {
-    std::vector<Matrix3x3> H(9, Matrix::Zero3x3());
-    Matrix3x3 I_mu_lambda = (this->mu + this->lambda) * Matrix::Identity3x3();
+    std::vector H(9, Matrix::Zero3x3());
+    const Matrix3x3 I_mu_lambda = (this->mu + this->lambda) * Matrix::Identity3x3();
     for (unsigned int i = 0; i <= 2; ++i)
         H[i * 4] = I_mu_lambda; // 0, 4, 8
     return H;

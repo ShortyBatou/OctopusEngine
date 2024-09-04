@@ -18,7 +18,7 @@
 #include "Scene/BaseScene.h"
 #include "Scene/XPBDScene.h"
 #include "Scene/MeshScene.h"
-
+#include "Scene/CudaXPBDScene.h"
 Application::Application(const int width, const int height) : _editor(nullptr)
 {
     auto& info = AppInfo::Instance(); // init app info
@@ -28,6 +28,7 @@ Application::Application(const int width, const int height) : _editor(nullptr)
     SceneManager::Instance();
     SceneManager::Add(new BaseScene());
     SceneManager::Add(new XPBDScene());
+    SceneManager::Add(new Cuda_XPBD_Scene());
     SceneManager::Add(new MeshScene());
     SceneManager::SetScene(0);
 }

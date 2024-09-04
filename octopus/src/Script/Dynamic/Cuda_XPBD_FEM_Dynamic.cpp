@@ -2,40 +2,16 @@
 #include "Manager/TimeManager.h"
 #include "Tools/Color.h"
 #include <Rendering/GL_Graphic.h>
-#include "Script/Dynamic/Cuda_Dynamic_Test.h"
+#include "Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h"
 #include "Tools/Random.h"
 #include <Manager/Debug.h>
 #include "GPU/GPU_PBD.h"
 #include <random>
 #include <set>
 
-std::vector<scalar> compute_fem_mass(const Element elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, const scalar density) {
-    const int nb_vert_elem = elem_nb_vertices(elem);
-    const scalar v_density = density / static_cast<scalar>(nb_vert_elem);
-    FEM_Shape* shape = get_fem_shape(elem); shape->build();
 
-    std::vector<scalar> mass(geometry.size());
-    for(int i = 0; i < topology.size(); i+= nb_vert_elem) {
-        scalar V = 0.f;
-        for(int q = 0; q < shape->weights.size(); ++q) {
-            Matrix3x3 J = Matrix::Zero3x3();
-            for(int j = 0; j < nb_vert_elem; j++) {
-                const int vid = topology[i + j];
-                J+= glm::outerProduct(geometry[vid], shape->dN[q][j]);
-            }
-            V += abs(glm::determinant(J)) * shape->weights[q];
-        }
 
-        for(int j = 0; j < nb_vert_elem; j++) {
-            const int vid = topology[i + j];
-            mass[vid] += v_density * V;
-        }
-    }
-    delete shape;
-    return mass;
-}
-
-void Cuda_Dynamic::init() {
+void Cuda_XPBD_FEM_Dynamic::init() {
     _mesh = _entity->get_component<Mesh>();
     std::vector masses(_mesh->nb_vertices(),0.f);
     for(auto&[e, topo] : _mesh->topologies()) {
@@ -61,7 +37,7 @@ void Cuda_Dynamic::init() {
     }
 }
 
-void Cuda_Dynamic::update() {
+void Cuda_XPBD_FEM_Dynamic::update() {
     if(Time::Frame() == 1) {
         // coloration
         for(auto&[e, topo] : _mesh->topologies()) {
@@ -75,12 +51,15 @@ void Cuda_Dynamic::update() {
             for(int i = 0; i < nb_color; ++i) {
                 _display_colors[e][i] = color_map[_gpu_fems[e]->colors[i]];
             }
+
         }
     }
 
     if(Time::Frame() > 0) {
+
         GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
-        for(auto&[e, _] : _mesh->topologies()) {
+        for(auto&[e, topo] : _mesh->topologies()) {
+            if(topo.empty()) continue;
             graphic->set_ecolors(e, _display_colors[e]);
             graphic->set_multi_color(true);
             graphic->set_element_color(true);

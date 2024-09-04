@@ -11,9 +11,9 @@ __global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, con
 }
 
 
-void GPU_SemiExplicit::integrate(GPU_ParticleSystem *ps, scalar dt) {
-    int n = ps->nb();
-    kenerl_semi_exicit_integration<<<n / 256, 256>>>(n, dt, Dynamic::gravity(),
+void GPU_SemiExplicit::integrate(const GPU_ParticleSystem *ps, const scalar dt) {
+    const int n = ps->nb();
+    kenerl_semi_exicit_integration<<<(n+255) / 256, 256>>>(n, dt, Dynamic::gravity(),
                                                      ps->cb_position->buffer, ps->cb_prev_position->buffer,
                                                      ps->cb_velocity->buffer, ps->cb_forces->buffer,
                                                      ps->cb_inv_mass->buffer

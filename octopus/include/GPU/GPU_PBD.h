@@ -8,7 +8,6 @@
 #include "GPU/GPU_Dynamic.h"
 
 
-
 struct GPU_PBD : GPU_ParticleSystem {
     GPU_PBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it, const scalar damping = 0.f)
     : GPU_ParticleSystem(positions, masses), iteration(it), global_damping(damping), integrator(new GPU_SemiExplicit()) {}
@@ -47,7 +46,6 @@ struct GPU_PBD_FEM final : GPU_Dynamic {
 
     Cuda_Buffer<int> *cb_topology;
     Cuda_Buffer<Matrix3x3> *cb_JX_inv;
-    Cuda_Buffer<scalar> *cb_weights;
     Cuda_Buffer<scalar> *cb_V;
     Cuda_Buffer<Vector3> *cb_dN;
 

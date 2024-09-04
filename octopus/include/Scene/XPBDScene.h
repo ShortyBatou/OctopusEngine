@@ -72,12 +72,12 @@ struct XPBDScene final : Scene
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
 
-        Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(16, 4, 4);
-        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra, args);
-        build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
-        cells = Vector3I(8, 2, 2);
-        build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
+        Vector3 size(1, 1, 1);
+        Vector3I cells = Vector3I(1, 1, 1);
+        build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
+        //build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
+        //cells = Vector3I(8, 2, 2);
+        //build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
         //cells = Vector3I(4, 2, 2);
         //build_xpbd_fem_entity(Vector3(0, 0, 2.4), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra20, args);
         //build_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.0f, 0.0f, 0.0f, 1.f), Hexa, args);

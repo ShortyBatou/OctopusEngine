@@ -35,3 +35,29 @@ FEM_Shape *get_fem_shape(Element type) {
             return nullptr;
     }
 }
+std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, const scalar density)
+{
+    const int nb_vert_elem = elem_nb_vertices(elem);
+    const scalar v_density = density / static_cast<scalar>(nb_vert_elem);
+    FEM_Shape* shape = get_fem_shape(elem); shape->build();
+
+    std::vector<scalar> mass(geometry.size());
+    for(int i = 0; i < topology.size(); i+= nb_vert_elem) {
+        scalar V = 0.f;
+        for(int q = 0; q < shape->weights.size(); ++q) {
+            Matrix3x3 J = Matrix::Zero3x3();
+            for(int j = 0; j < nb_vert_elem; j++) {
+                const int vid = topology[i + j];
+                J+= glm::outerProduct(geometry[vid], shape->dN[q][j]);
+            }
+            V += abs(glm::determinant(J)) * shape->weights[q];
+        }
+
+        for(int j = 0; j < nb_vert_elem; j++) {
+            const int vid = topology[i + j];
+            mass[vid] += v_density * V;
+        }
+    }
+    delete shape;
+    return mass;
+}

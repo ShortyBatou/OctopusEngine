@@ -1,6 +1,5 @@
 #pragma once
 #include <Script/Dynamic/Cuda_Constraint_Rigid_Controller.h>
-#include <Script/Dynamic/Cuda_VBD_FEM_Dynamic.h>
 
 #include "Scene.h"
 #include "Manager/TimeManager.h"
@@ -18,27 +17,12 @@
 #include "Rendering/GL_GraphicSurface.h"
 #include "Rendering/GL_GraphicHighOrder.h"
 
-#include "Script/Dynamic/XPBD_FEM_Dynamic.h"
 #include "UI/UI_Component.h"
-
 #include "Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h"
 
-struct SimulationArgs {
-    scalar density;
-    scalar young;
-    scalar poisson;
-    scalar damping;
-    Material material;
-    int iteration;
-    int sub_iteration;
-    int scenario_1;
-    int scenario_2;
-    Vector3 dir;
-};
-
-struct BaseScene final : Scene
+struct Cuda_XPBD_Scene final : Scene
 {
-    char* name() override { return "Basic Scene"; }
+    char* name() override { return "Cuda XPBD Scene"; }
 
     void build_editor(UI_Editor* editor) override {
         editor->add_manager_ui(new UI_Time());
@@ -66,17 +50,17 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e5f;
-        args.poisson = 0.35f;
-        args.damping = 0.1f;
-        args.iteration = 50;
+        args.young = 1e5;
+        args.poisson = 0.49;
+        args.damping = 0.1;
+        args.iteration = 25;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
 
         const Vector3 size(1, 1, 1);
         const Vector3I cells(1, 1, 1);
-        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Tetra, args);
+        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Hexa, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -112,16 +96,18 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = false;
-        display->wireframe() = true;
-        display->point() = true;
+        display->surface() = true;
+        display->wireframe() = false;
+        display->point() = false;
         return display;
     }
 
     void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.damping));
+        e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.damping));
+        if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
+        if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

@@ -1,7 +1,6 @@
 #pragma once
 #include "Core/Base.h"
 #include "Core/Component.h"
-#include "Script/Dynamic/Cuda_Dynamic_Test.h"
 #include "GPU/GPU_PBD.h"
 
 class Cuda_Constraint_Rigid_Controller final : public Component {

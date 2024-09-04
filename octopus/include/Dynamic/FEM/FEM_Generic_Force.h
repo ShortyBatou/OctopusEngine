@@ -17,13 +17,13 @@ public:
 
     void apply(const std::vector<Particle *> &particles, scalar) override;
 
-    virtual void compute_df_ij(Vector3 dFi, const std::vector<Vector3> &Hkl_dFj, Matrix3x3 &df_ij);
+    void compute_df_ij(Vector3 dFi, const std::vector<Vector3> &Hkl_dFj, Matrix3x3 &df_ij);
 
-    virtual void pre_compute_hessian(const Vector3 &dF_j, const std::vector<Matrix3x3> &H_kl,
-                                     std::vector<Vector3> &Hkl_dFj);
+    void pre_compute_hessian(const Vector3 &dF_j, const std::vector<Matrix3x3> &H_kl,
+                             std::vector<Vector3> &Hkl_dFj);
 
     // assemble hessian for one integration point, just for testing
-    virtual bool solve_dforces(const Matrix3x3 &F, const std::vector<Vector3> &dF_w);
+    bool solve_dforces(const Matrix3x3 &F, const std::vector<Vector3> &dF_w);
 
 private:
     FEM_ContinuousMaterial *_fem_material;

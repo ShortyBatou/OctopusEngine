@@ -481,3 +481,5 @@ struct Tetra_20 final : FEM_Shape {
 };
 
 FEM_Shape *get_fem_shape(Element type);
+
+std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar density);
