@@ -51,16 +51,16 @@ struct Cuda_XPBD_Scene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.young = 1e5;
-        args.poisson = 0.49;
+        args.poisson = 0.45;
         args.damping = 0.1;
-        args.iteration = 25;
+        args.iteration = 50;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
 
-        const Vector3 size(1, 1, 1);
-        const Vector3I cells(1, 1, 1);
-        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Hexa, args);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells(64, 16, 16);
+        build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Tetra10, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
