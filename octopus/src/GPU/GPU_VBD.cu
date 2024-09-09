@@ -1,6 +1,7 @@
 #include "GPU/GPU_VBD.h"
 #include <glm/detail/func_matrix_simd.inl>
 #include <Manager/Debug.h>
+#include <Manager/TimeManager.h>
 
 __device__ Matrix3x3 vec_hat(const Vector3 &v) {
     return {
@@ -18,12 +19,12 @@ __device__ void print_mat3(const Matrix3x3 &m) {
            m[2][2]);
 }
 
-__global__ void kernel_plane_fix(const int nb, const Vector3 o, Vector3 n, Vector3 *p_init, Vector3 *p) {
+__global__ void kernel_plane_fix(const int nb, scalar t, const Vector3 o, Vector3 n, Vector3 *p_init, Vector3 *p) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= nb) return;
     Vector3 d = p_init[i] - o;
     if(glm::dot(d, n) > 0) {
-        p[i] = p_init[i];
+        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 2.f),0,0) * 0.f;
     }
 }
 
@@ -33,7 +34,7 @@ __global__ void kernel_integration(const int n, const scalar dt, const Vector3 g
     if (i >= n) return;
     prev_p[i] = p[i]; // x^t-1 = x^t
     v[i] += (g + f[i] * w[i]) * dt;
-    v[i] *= 0.999;
+    v[i] *= 1.f;
     p[i] += v[i] * dt;
     y[i] = p[i];
     //printf("[%d] (%f %f %f)\n", i, f[i].x, f[i].y, f[i].z);
@@ -86,67 +87,72 @@ __global__ void kernel_solve(
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
 
-
-    // Force Neohooke
-
-    //const scalar detF = glm::determinant(F);
-    //const scalar alpha = 1.f + mu / lambda;
-    //Matrix3x3 comF(0);
-    //comF[0] = glm::cross(F[1], F[2]);
-    //comF[1] = glm::cross(F[2], F[0]);
-    //comF[2] = glm::cross(F[0], F[1]);
-    //const Matrix3x3 P = mu * F + lambda * (detF - alpha) * comF;
-
-    // force Hooke
-    const Matrix3x3 e = 0.5f * (glm::transpose(F) + F ) - Matrix3x3(1.f);
-    const Matrix3x3 P = lambda * (e[0][0]+e[1][1]+e[2][2]) * Matrix3x3(1.f) + mu * e;
-
+    Matrix3x3 d2W_dF2[9];
+    for(int i = 0; i < 9; ++i) { d2W_dF2[i] = Matrix3x3(0); }
     const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
 
-    // f = -mi / h^2 (x_i - y_i) - sum dWj / dxi
+    // Force Neohooke
+    const scalar detF = glm::determinant(F);
+    const scalar alpha = 1.f + mu / lambda;
+    Matrix3x3 comF(0);
+    comF[0] = glm::cross(F[1], F[2]);
+    comF[1] = glm::cross(F[2], F[0]);
+    comF[2] = glm::cross(F[0], F[1]);
+    const Matrix3x3 P = mu * F + lambda * (detF - alpha) * comF;
+
+    // force Hooke
+    //const Matrix3x3 e = 0.5f * (glm::transpose(F) + F ) - Matrix3x3(1.f);
+    //const Matrix3x3 P = lambda * (e[0][0]+e[1][1]+e[2][2]) * Matrix3x3(1.f) + mu * e;
+
+    // fi = - sum dWj / dxi
     Vector3 fi = -P * dF_dx * V[qe_off];
 
     // Hessian Neohooke
     // H = sum mi / h^2 I + sum d^2W / dxi^2
-    Matrix3x3 d2W_dF2[9];
-    for(int i = 0; i < 9; ++i) { d2W_dF2[i] = Matrix3x3(0); }
-    for(int i = 0; i< 3; ++i) {
-        d2W_dF2[i * 4] = Matrix3x3(lambda + mu);
-    }
 
-    //scalar s = lambda * (detF - alpha);
-    // lambda * (I3 - alpha) * H3
-    //d2W_dF2[0] = Matrix3x3(0);
-    //d2W_dF2[1] = -vec_hat(F[2]) * s;
-    //d2W_dF2[2] = vec_hat(F[1]) * s;
-    //d2W_dF2[3] = -d2W_dF2[1];
-    //d2W_dF2[4] = Matrix3x3(0);
-    //d2W_dF2[5] = -vec_hat(F[0]) * s;
-    //d2W_dF2[6] = -d2W_dF2[2];
-    //d2W_dF2[7] = -d2W_dF2[5];
-    //d2W_dF2[8] = Matrix3x3(0);
-
-    // mu * H2 = mu * I_9x9x
-    //for (int i = 0; i < 3; ++i) {
-    //    d2W_dF2[0][i][i] += 2.f*mu;
-    //    d2W_dF2[4][i][i] += 2.f*mu;
-    //    d2W_dF2[8][i][i] += 2.f*mu;
+    //for(int i = 0; i< 3; ++i) {
+    //    d2W_dF2[i * 4] = Matrix3x3(lambda + mu);
     //}
 
+    scalar s = lambda * (detF - alpha);
+    // lambda * (I3 - alpha) * H3
+    d2W_dF2[0] = Matrix3x3(0);
+    d2W_dF2[1] = vec_hat(F[2]) * s;
+    d2W_dF2[2] = -vec_hat(F[1]) * s;
+    d2W_dF2[3] = -d2W_dF2[1];
+    d2W_dF2[4] = Matrix3x3(0);
+    d2W_dF2[5] = vec_hat(F[0]) * s;
+    d2W_dF2[6] = -d2W_dF2[2];
+    d2W_dF2[7] = -d2W_dF2[5];
+    d2W_dF2[8] = Matrix3x3(0);
+    // mu * H2 = mu * I_9x9x
+    for (int i = 0; i < 3; ++i) {
+        d2W_dF2[0][i][i] += mu;
+        d2W_dF2[4][i][i] += mu;
+        d2W_dF2[8][i][i] += mu;
+    }
+
     // lambda vec(com F) * vec(com F)^T
-    //for (int i = 0; i < 3; ++i)
-    //    for (int j = 0; j < 3; ++j)
-    //        d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 
     // assemble hessian
-    Matrix3x3 H;
-    for (int j = 0; j < 3; ++j)
-        for (int i = 0; i < 3; ++i)
-            H[i][j] = glm::dot(dF_dx, d2W_dF2[i + j * 3] * dF_dx) * V[qe_off];
-
+    Matrix3x3 H = Matrix3x3(0.f);
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            Matrix3x3 H_kl;
+            for(int l = 0; l < 3; ++l) {
+                for(int k = 0; k < 3; ++k) {
+                    H_kl[k][l] = d2W_dF2[k+l*3][i][j];
+                }
+            }
+            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V[qe_off];
+        }
+    }
 
     // shared variable : f, H
-    // we can do a much better reduction
+    // we can do a much better reduction (without atomic add with a shared buffer)
     __shared__ Matrix3x3 s_H;
     __shared__ Vector3 s_f;
     if (threadIdx.x == 0) {
@@ -166,11 +172,10 @@ __global__ void kernel_solve(
 
     if (threadIdx.x == 0) {
         scalar detH = glm::determinant(s_H);
-        Vector3 dx = detH > 1e-6 ? glm::inverse(s_H) * s_f : Vector3(0.f);
+        Vector3 dx = detH > 1e-6f ? glm::inverse(s_H) * s_f : Vector3(0.f);
         //printf("[%d] dx(%f %f %f) %f \n", vid, dx.x, dx.y, dx.z, V[qe_off]);
-        //printf("[%d] f(%f %f %f)\n",vid, s_f.x, s_f.y, s_f.z);
-        //print_mat3( glm::inverse(s_H));
-        //print_vec3(dx);printf("\n");
+        //printf("f(%f %f %f)\n",s_f.x, s_f.y, s_f.z);
+
         p[vid] += dx;
         //f[vid] = s_f;
     }
@@ -216,10 +221,10 @@ void GPU_VBD::step(const scalar dt) const {
             // for each dynamics
             if(iteration == 1) omega = 2.f / (2.f - r * r);
             else omega = 4.f / (4.f - r * r * omega);
+            kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), Unit3D::right()*0.01f, -Unit3D::right(), cb_init_position->buffer, cb_position->buffer);
         }
-        kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Unit3D::up()*0.01f, -Unit3D::up(), cb_init_position->buffer, cb_position->buffer);
-        //kernel_velocity_update<<<(n + 255)/256, 256>>>(n,sub_dt,
-        //    cb_prev_position->buffer, cb_position->buffer,cb_velocity->buffer);
+        kernel_velocity_update<<<(n + 255)/256, 256>>>(n,sub_dt,
+            cb_prev_position->buffer, cb_position->buffer,cb_velocity->buffer);
     }
 }
 
