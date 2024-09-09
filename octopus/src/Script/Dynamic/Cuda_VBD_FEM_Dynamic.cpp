@@ -20,7 +20,7 @@ void Cuda_VBD_FEM_Dynamic::init() {
             masses[i] += e_masses[i];
     }
 
-    vbd = new GPU_VBD(_mesh->geometry(), masses, _iteration, 1, 0.f);
+    vbd = new GPU_VBD(_mesh->geometry(), masses, _iteration, _sub_iteration, 0.f);
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         vbd->dynamic = new GPU_VBD_FEM(e, topo, _mesh->geometry(), _young, _poisson);

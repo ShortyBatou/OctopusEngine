@@ -12,9 +12,9 @@ struct GPU_VBD_FEM;
 struct GPU_VBD : GPU_ParticleSystem {
     GPU_VBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it, const int sub_it, const scalar damping)
     : GPU_ParticleSystem(positions, masses), iteration(it), sub_iteration(sub_it), global_damping(damping), integrator(new GPU_SemiExplicit()) {
-        y = new Cuda_Buffer<Vector3>(positions);
-        prev_it_p = new Cuda_Buffer<Vector3>(positions);
-        prev_it_p2 = new Cuda_Buffer<Vector3>(positions);
+        y = new Cuda_Buffer(positions);
+        prev_it_p = new Cuda_Buffer(positions);
+        prev_it_p2 = new Cuda_Buffer(positions);
     }
 
     void step(scalar dt) const;

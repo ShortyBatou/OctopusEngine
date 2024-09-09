@@ -23,32 +23,32 @@ Matrix3x3 FEM_Generic::get_jacobian(const std::vector<Vector3> &p, const std::ve
 }
 
 scalar FEM_Generic::compute_volume(const std::vector<Particle *> &p) const {
-    size_t nb_w = _shape->weights.size();
-    size_t nb_s = _shape->dN.size();
+    const size_t nb_w = _shape->weights.size();
+    const size_t nb_s = _shape->nb;
     assert(p.size() >= nb_s);
     scalar volume = 0.;
     for (size_t i = 0; i < nb_w; ++i) {
-        scalar d = glm::determinant(get_jacobian(p, _shape->dN[i]));
+        const scalar d = glm::determinant(get_jacobian(p, _shape->dN[i]));
         volume += abs(d) * _shape->weights[i];
     }
     return volume;
 }
 
 scalar FEM_Generic::compute_volume(const std::vector<Vector3> &p) const {
-    size_t nb_w = _shape->weights.size();
-    size_t nb_s = _shape->dN.size();
+    const size_t nb_w = _shape->weights.size();
+    const size_t nb_s = _shape->nb;
     assert(p.size() >= nb_s);
     scalar volume = 0.;
     for (size_t i = 0; i < nb_w; ++i) {
-        scalar d = glm::determinant(get_jacobian(p, _shape->dN[i]));
+        const scalar d = glm::determinant(get_jacobian(p, _shape->dN[i]));
         volume += abs(d) * _shape->weights[i];
     }
     return volume;
 }
 
 scalar FEM_Generic::compute_stress(const std::vector<Vector3> &p) const {
-    size_t nb_w = _shape->weights.size();
-    size_t nb_s = _shape->dN.size();
+    const size_t nb_w = _shape->weights.size();
+    const size_t nb_s = _shape->nb;
     assert(p.size() >= nb_s);
     scalar stress = 0.;
     for (size_t i = 0; i < nb_w; ++i) {

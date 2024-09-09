@@ -62,9 +62,9 @@ struct XPBDScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000;
-        args.material = Stable_NeoHooke;
+        args.material = StVK;
         args.poisson = 0.49f;
-        args.young = 1e7f;
+        args.young = 1e6f;
         args.damping = 1.;
         args.iteration = 1;
         args.sub_iteration = 25;
@@ -72,10 +72,10 @@ struct XPBDScene final : Scene
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
 
-        Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(1, 1, 1);
+        Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(4, 1, 1);
         build_xpbd_fem_entity(Vector3(0, 0, 0), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
-        //build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
+        build_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Hexa, args);
         //cells = Vector3I(8, 2, 2);
         //build_xpbd_fem_entity(Vector3(0, 0, 2), cells, size, Color(0.f, 0.f, 0.f, 1.f), Tetra10, args);
         //cells = Vector3I(4, 2, 2);

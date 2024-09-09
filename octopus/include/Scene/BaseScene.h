@@ -70,12 +70,13 @@ struct BaseScene final : Scene
         args.poisson = 0.35f;
         args.damping = 0.1f;
         args.iteration = 1;
+        args.sub_iteration = 1;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
         args.dir = Unit3D::right();
 
         const Vector3 size(1, 1, 1);
-        const Vector3I cells(3, 3, 3);
+        const Vector3I cells(1, 1, 1);
         build_obj(Vector3(0,0,0), cells,size, ColorBase::Black(), Tetra, args);
     }
 
@@ -121,7 +122,7 @@ struct BaseScene final : Scene
     void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.damping));
+        e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.sub_iteration, args.damping));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

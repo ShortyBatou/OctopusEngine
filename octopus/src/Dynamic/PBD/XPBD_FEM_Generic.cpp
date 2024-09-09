@@ -35,7 +35,7 @@ bool XPBD_FEM_Generic::project(const std::vector<Particle*>& x, std::vector<Vect
     C = std::sqrt(abs(C)) * s;
 
     // convert force to constraint gradient
-    const scalar C_inv = 0.5f * C;
+    const scalar C_inv = 0.5f / C;
     for (int j = 0; j < this->nb(); ++j) {
         grads[j] *= C_inv;
     }

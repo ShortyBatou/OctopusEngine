@@ -5,7 +5,7 @@
 
 
 void PBD_System::step(const scalar dt) {
-    scalar h = dt / static_cast<scalar>(_nb_substep);
+    const scalar h = dt / static_cast<scalar>(_nb_substep);
     for (int i = 0; i < _nb_substep; i++) {
         this->step_solver(h);
         this->reset_lambda();
@@ -18,9 +18,9 @@ void PBD_System::step(const scalar dt) {
                 step_constraint_gauss_seidel(h);
         }
 
-        this->step_constraint(dt); // optional
+        this->step_constraint(h); // optional
 
-        this->step_effects(dt); // optional
+        this->step_effects(h); // optional
 
         this->update_velocity(h);
     }
@@ -74,7 +74,7 @@ void PBD_System::update_velocity(const scalar dt) const {
         if (!p->active) continue;
         p->velocity = (p->position - p->last_position) / dt;
 
-        scalar norm_v = glm::length(p->velocity);
+        const scalar norm_v = glm::length(p->velocity);
         if (norm_v > 1e-12) {
             const scalar damping = -norm_v * std::min(1.f, _global_damping * dt * p->inv_mass);
             p->velocity += glm::normalize(p->velocity) * damping;

@@ -39,11 +39,12 @@ void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<std::vector<i
             neighbors.insert(neighbors.end(), e_neighbors[i].begin(), e_neighbors[i].end());
             ref_id.insert(ref_id.end(), e_ref_id[i].begin(), e_ref_id[i].end());
             nb_neighbors.push_back(static_cast<int>(e_neighbors[i].size()));
+
             n_max = std::max(n_max, nb_neighbors.back());
-            nb_thread += nb_neighbors.back();
+            nb_thread ++;
         }
         c_block_size.push_back(n_max * nb_quadrature);
-        c_nb_threads.push_back(nb_thread * nb_quadrature);
+        c_nb_threads.push_back(nb_thread * n_max * nb_quadrature);
         c_offsets.push_back(n);
     }
     cb_nb_neighbors = new Cuda_Buffer(nb_neighbors);

@@ -10,9 +10,10 @@ struct Cuda_VBD_FEM_Dynamic final : Component
     explicit Cuda_VBD_FEM_Dynamic(
         const scalar density,
         const scalar young, const scalar poisson,
-        const int iteration = 30, const scalar damping = 0.f)
-        : _density(density), _damping(damping), _young(young), _poisson(poisson), _iteration(iteration),
-        _mesh(nullptr)
+        const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
+        : _density(density), _damping(damping), _young(young), _poisson(poisson),
+          _iteration(iteration), _sub_iteration(sub_iteration),
+          _mesh(nullptr)
     {
     }
 
@@ -32,7 +33,7 @@ private:
     scalar _damping;
     scalar _young, _poisson;
     int _iteration;
-
+    int _sub_iteration;
     GPU_VBD* vbd;
     Mesh* _mesh;
 };

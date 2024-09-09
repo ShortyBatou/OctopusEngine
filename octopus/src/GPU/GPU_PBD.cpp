@@ -2,8 +2,7 @@
 #include <set>
 
 GPU_Plane_Fix::GPU_Plane_Fix(const Mesh::Geometry& positions, const Vector3& o, const Vector3& n)
-: offset(Unit3D::Zero()), origin(o), normal(n), rot(Matrix::Identity3x3()) {
-    com = Unit3D::Zero();
+: offset(Unit3D::Zero()), origin(o), normal(n), rot(Matrix::Identity3x3()), com(Unit3D::Zero()) {
     int count = 0;
     for(auto& p : positions) {
         const Vector3 dir = p - origin;
