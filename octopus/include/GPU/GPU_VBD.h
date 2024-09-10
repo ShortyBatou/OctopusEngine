@@ -15,6 +15,7 @@ struct GPU_VBD : GPU_ParticleSystem {
         y = new Cuda_Buffer(positions);
         prev_it_p = new Cuda_Buffer(positions);
         prev_it_p2 = new Cuda_Buffer(positions);
+        prev_v = new Cuda_Buffer(std::vector<Vector3>(n, Unit3D::Zero()));
     }
 
     void step(scalar dt) const;
@@ -25,6 +26,7 @@ struct GPU_VBD : GPU_ParticleSystem {
     Cuda_Buffer<Vector3>* y;
     Cuda_Buffer<Vector3>* prev_it_p;
     Cuda_Buffer<Vector3>* prev_it_p2;
+    Cuda_Buffer<Vector3>* prev_v;
 
     GPU_Integrator* integrator;
     GPU_VBD_FEM* dynamic;
