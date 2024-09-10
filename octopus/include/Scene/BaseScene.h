@@ -69,7 +69,7 @@ struct BaseScene final : Scene
         args.young = 1e6f;
         args.poisson = 0.45f;
         args.damping = 0.001;
-        args.iteration = 10;
+        args.iteration = 10 ;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
         args.scenario_2 = -1;

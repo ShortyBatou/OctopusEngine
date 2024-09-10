@@ -139,7 +139,7 @@ __global__ void kernel_solve(
     d2W_dF2[7] = -d2W_dF2[5];
     d2W_dF2[8] = Matrix3x3(0);
 
-    // mu * H2 = mu * I_9x9x
+    // mu/2 * H2 = mu * I_9x9x
     for (int i = 0; i < 3; ++i) {
         d2W_dF2[0][i][i] += mu;
         d2W_dF2[4][i][i] += mu;
