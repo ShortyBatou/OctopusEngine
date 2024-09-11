@@ -42,6 +42,7 @@ __global__ void kernel_integration(
     const Vector3 a_ext = g + f[i] * w[i];
     y[i] = p[i] + (v[i] + a_ext * dt) * dt;
 
+    // adaptative first guess (ignore a part of acceleration if not in free fall)
     const Vector3 a_t = (v[i] - prev_v[i]) / dt;
     const scalar d_a_ext = glm::length(a_ext);
     const Vector3 n_a_ext = a_ext / d_a_ext;
@@ -204,7 +205,7 @@ __global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector
 __global__ void kernel_chebychev_acceleration(int n, scalar omega, Vector3* prev_it1_p, Vector3* prev_it2_p, Vector3* p) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= n) return;
-    p[vid] = omega * (p[vid] - prev_it2_p[vid]) + prev_it2_p[vid];
+    p[vid] = prev_it2_p[vid] = omega * (p[vid] - prev_it2_p[vid]);
     prev_it2_p[vid] = prev_it1_p[vid];
     prev_it1_p[vid] = p[vid];
 }
