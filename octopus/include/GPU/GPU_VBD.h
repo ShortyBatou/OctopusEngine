@@ -14,7 +14,7 @@ struct GPU_VBD : GPU_ParticleSystem {
     : GPU_ParticleSystem(positions, masses), iteration(it), sub_iteration(sub_it), global_damping(damping), integrator(new GPU_SemiExplicit()) {
         y = new Cuda_Buffer(positions);
         prev_it_p = new Cuda_Buffer(positions);
-        prev_it_p2 = new Cuda_Buffer(positions);
+        prev_it2_p = new Cuda_Buffer(positions);
         prev_v = new Cuda_Buffer(std::vector<Vector3>(n, Unit3D::Zero()));
     }
 
@@ -24,9 +24,9 @@ struct GPU_VBD : GPU_ParticleSystem {
     int sub_iteration;
     scalar global_damping;
     Cuda_Buffer<Vector3>* y;
-    Cuda_Buffer<Vector3>* prev_it_p;
-    Cuda_Buffer<Vector3>* prev_it_p2;
     Cuda_Buffer<Vector3>* prev_v;
+    Cuda_Buffer<Vector3>* prev_it_p;
+    Cuda_Buffer<Vector3>* prev_it2_p;
 
     GPU_Integrator* integrator;
     GPU_VBD_FEM* dynamic;

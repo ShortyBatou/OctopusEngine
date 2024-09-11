@@ -68,18 +68,18 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.young = 1e6f;
         args.poisson = 0.45f;
-        args.damping = 0.001;
-        args.iteration = 10 ;
-        args.sub_iteration = 1;
+        args.damping = 0.005;
+        args.iteration = 1;
+        args.sub_iteration = 100;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
-        args.material = NeoHooke;
+        args.material = Stable_NeoHooke;
 
         const Vector3 size(1, 1, 1);
-        const Vector3I cells(4, 4, 4);
+        const Vector3I cells(32, 32, 32);
         build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Hexa, args);
-        //build_fem_entity(Vector3(0,0,2), cells,size, ColorBase::Red(), Hexa, args);
+        //build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -151,7 +151,7 @@ struct BaseScene final : Scene
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.sub_iteration));
+        e->add_component(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, std::max(args.iteration, args.sub_iteration)));
         add_constraint(e, pos, size, args);
         e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Velocity, ColorMap::Viridis));
         e->add_component(build_graphic(color, element));
