@@ -77,16 +77,6 @@ __global__ void kernel_chebychev_acceleration(int n, scalar omega, Vector3* prev
     prev_it_p[vid] = p[vid];
 }
 
-__device__ void warp_reduce(volatile scalar* s_data, int tid, int nb) {
-    for(int i =0 ; i < nb; ++i) {
-        s_data[tid*nb+i] += s_data[(tid + 32)*nb];
-        s_data[tid*nb+i] += s_data[(tid + 16)*nb];
-        s_data[tid*nb+i] += s_data[(tid + 8)*nb];
-        s_data[tid*nb+i] += s_data[(tid + 4)*nb];
-        s_data[tid*nb+i] += s_data[(tid + 1)*nb];
-    }
-
-}
 
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
@@ -205,25 +195,56 @@ __global__ void kernel_solve(
     // we can do a much better reduction (without atomic add with a shared buffer)
     extern __shared__ scalar s_f_H[]; // size = block_size * 12 * sizeof(float)
     for(int i = 0; i < 3; ++i) {
-        s_f_H[tid * 12 + i] = fi[i];
+        //s_f_H[tid * 12 + i] = fi[i];
+        s_f_H[tid * 12 + i] = 1;
         for(int j = 0; j < 3; ++j) {
-            s_f_H[tid * 12 + (i+1)*3 + j] = H[i][j];
+            //s_f_H[tid * 12 + (i+1)*3 + j] = H[i][j];
+            s_f_H[tid * 12 + (i+1)*3 + j] = 1;
         }
     }
     //printf("%d < %d\n", tid, size_of_block);
 
+
     __syncthreads();
-    for(int i = size_of_block/2; i > 0; i>>=1) {
+    int b = (size_of_block+1)/2;
+    for(int i = size_of_block/2; i > 0;i>>=1) {
+        if(vid == 0 && threadIdx.x == 0) printf("%d %d %d\n", size_of_block, i, b);
         if(tid < i) {
             for(int j = 0; j < 12; ++j) {
-                s_f_H[tid*12+j] += s_f_H[(tid+i)*12+j];
+                s_f_H[tid*12+j] += s_f_H[(tid+i)*12+b];
             }
             __syncthreads();
         }
+        b=(i+1)>>1;
+        i += (i>1) ? i&1 : 0;
     }
 
+    /*
+    const int off = 12;
+    const int nb_val = size_of_block * off;
+    const int t = size_of_block;
+    __syncthreads();
+    for(int i = nb_val/2; i >= off; i>>=1) {
+        int a = (i / off) * off;
+        int b = ((i+off-1) / off) * off;
+        for(int j = 0; j < a; j+= t)
+        {
+            if(tid < a-j) {
+                s_f_H[tid+j] += s_f_H[b+tid+j];
+            }
+        }
+        __syncthreads();
+        i = b;
+    }
+    */
+    if(vid == 0 && threadIdx.x == 0)
+    {
+        for(int i = 0; i < 12; ++i)
+            printf("%f ",s_f_H[i]);
+        printf(" = %d ",size_of_block * 12);
+        printf("\n");
+    }
     //if(tid < 32) warp_reduce(s_f_H, tid, 12);
-
 
     if (threadIdx.x == 0) {
         scalar mh2 = mass[vid] / (dt*dt);

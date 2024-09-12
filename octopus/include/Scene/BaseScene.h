@@ -70,7 +70,7 @@ struct BaseScene final : Scene
         args.poisson = 0.45f;
         args.damping = 0.005;
         args.iteration = 1;
-        args.sub_iteration = 100;
+        args.sub_iteration = 50;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
@@ -78,7 +78,7 @@ struct BaseScene final : Scene
 
         const Vector3 size(1, 1, 1);
         const Vector3I cells(32, 32, 32);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Hexa, args);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args);
         //build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
     }
 
