@@ -77,6 +77,10 @@ __global__ void kernel_chebychev_acceleration(int n, scalar omega, Vector3* prev
     prev_it_p[vid] = p[vid];
 }
 
+__device__ void warp_reduce(volatile scalar* data, int tid, int off, int max) {
+
+}
+
 
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
@@ -193,30 +197,29 @@ __global__ void kernel_solve(
 
     // shared variable : f, H
     // we can do a much better reduction (without atomic add with a shared buffer)
-    extern __shared__ scalar s_f_H[]; // size = block_size * 12 * sizeof(float)
+    __shared__ __builtin_align__(16) scalar s_f_H[1024]; // size = block_size * 12 * sizeof(float)
     for(int i = 0; i < 3; ++i) {
-        //s_f_H[tid * 12 + i] = fi[i];
-        s_f_H[tid * 12 + i] = 1;
+        s_f_H[tid * 12 + i] = fi[i];
+        //s_f_H[tid * 12 + i] = 1;
         for(int j = 0; j < 3; ++j) {
-            //s_f_H[tid * 12 + (i+1)*3 + j] = H[i][j];
-            s_f_H[tid * 12 + (i+1)*3 + j] = 1;
+            s_f_H[tid * 12 + (i+1)*3 + j] = H[i][j];
+            //s_f_H[tid * 12 + (i+1)*3 + j] = 1;
         }
     }
     //printf("%d < %d\n", tid, size_of_block);
 
 
     __syncthreads();
-    int b = (size_of_block+1)/2;
-    for(int i = size_of_block/2; i > 0;i>>=1) {
-        if(vid == 0 && threadIdx.x == 0) printf("%d %d %d\n", size_of_block, i, b);
+    int t = size_of_block;
+    int i,b;
+    for(i=t/2, b=(t+1)/2; i > 0; b=(b+1)/2, i/=2) {
         if(tid < i) {
             for(int j = 0; j < 12; ++j) {
-                s_f_H[tid*12+j] += s_f_H[(tid+i)*12+b];
+                s_f_H[tid*12+j] += s_f_H[(tid+b)*12+j];
             }
             __syncthreads();
         }
-        b=(i+1)>>1;
-        i += (i>1) ? i&1 : 0;
+        i = (b>i) ? b : i;
     }
 
     /*
@@ -235,66 +238,34 @@ __global__ void kernel_solve(
         }
         __syncthreads();
         i = b;
-    }
-    */
-    if(vid == 0 && threadIdx.x == 0)
-    {
-        for(int i = 0; i < 12; ++i)
-            printf("%f ",s_f_H[i]);
-        printf(" = %d ",size_of_block * 12);
-        printf("\n");
-    }
-    //if(tid < 32) warp_reduce(s_f_H, tid, 12);
+    }*/
 
     if (threadIdx.x == 0) {
         scalar mh2 = mass[vid] / (dt*dt);
-        Vector3 sum_f = -mh2 * (p[vid] - y[vid]);
-        sum_f.x += s_f_H[0]; sum_f.y += s_f_H[1]; sum_f.z += s_f_H[2];
+        fi = -mh2 * (p[vid] - y[vid]);
+        fi.x += s_f_H[0]; fi.y += s_f_H[1]; fi.z += s_f_H[2];
 
-        Matrix3x3 sum_H = Matrix3x3(mh2);
-        sum_H[0][0] += s_f_H[3]; sum_H[0][1] += s_f_H[6]; sum_H[0][2] += s_f_H[9];
-        sum_H[1][0] += s_f_H[4]; sum_H[1][1] += s_f_H[7]; sum_H[1][2] += s_f_H[10];
-        sum_H[2][0] += s_f_H[5]; sum_H[2][1] += s_f_H[8]; sum_H[2][2] += s_f_H[11];
+        H = Matrix3x3(mh2);
+        H[0][0] += s_f_H[3]; H[0][1] += s_f_H[6]; H[0][2] += s_f_H[9];
+        H[1][0] += s_f_H[4]; H[1][1] += s_f_H[7]; H[1][2] += s_f_H[10];
+        H[2][0] += s_f_H[5]; H[2][1] += s_f_H[8]; H[2][2] += s_f_H[11];
 
         //scalar detH = glm::determinant(s_H);
         //Vector3 dx = detH > 1e-6f ? glm::inverse(s_H) * s_f : Vector3(0.f);
 
-        scalar detH = glm::determinant(sum_H);
-        Vector3 dx = detH > 1e-6f ? glm::inverse(sum_H) * sum_f : Vector3(0.f);
+        scalar detH = glm::determinant(H);
+        Vector3 dx = detH > 1e-6f ? glm::inverse(H) * fi : Vector3(0.f);
         p[vid] += dx;
     }
-    /*
-    __shared__ Vector3 s_f;
-    __shared__ Matrix3x3 s_H;
-    if (threadIdx.x == 0) {
-        scalar mh2 = mass[vid] / (dt*dt);
-        s_H = Matrix3x3(mh2);
-        s_f = -mh2 * (p[vid] - y[vid]);
-    }
-
-    __syncthreads();
-    for(int i = 0; i < 3; ++i) {
-        atomicAdd(&s_f[i], fi[i]);
-        for(int j = 0; j < 3; ++j) {
-            atomicAdd(&s_H[i][j], H[i][j]);
-        }
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        scalar detH = glm::determinant(s_H);
-        Vector3 dx = detH > 1e-6f ? glm::inverse(s_H) * s_f : Vector3(0.f);
-        p[vid] += dx;
-    }
-    */
-
-
 }
 
 
 
 void GPU_VBD_FEM::step(const GPU_VBD* vbd, const scalar dt) {
     for(int c = 0; c < nb_color; ++c) {
-        kernel_solve<<<(c_nb_threads[c]+c_block_size[c]-1)/c_block_size[c], c_block_size[c], c_block_size[c] * sizeof(scalar) * 12>>>(
+        int grid_size = (c_nb_threads[c]+c_block_size[c]-1)/c_block_size[c];
+
+        kernel_solve<<<grid_size, c_block_size[c]>>>(
         c_nb_threads[c], nb_quadrature, elem_nb_vert, lambda, mu, dt, c_offsets[c],
         cb_nb_neighbors->buffer, cb_neighbors_offset->buffer, cb_neighbors->buffer, cb_ref_vid->buffer,
         cb_topology->buffer,
@@ -331,6 +302,7 @@ void GPU_VBD::step(const scalar dt) const {
         kernel_velocity_update<<<(n + 255)/256, 256>>>(n,sub_dt,
             cb_prev_position->buffer, cb_position->buffer, prev_v->buffer, cb_velocity->buffer);
     }
+    cudaDeviceSynchronize();
     scalar time = Time::Tac() *1000.f;
     DebugUI::Begin("VBD");
     DebugUI::Plot("Time vbd", time);

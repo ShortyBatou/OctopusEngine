@@ -77,8 +77,8 @@ struct BaseScene final : Scene
         args.material = Stable_NeoHooke;
 
         const Vector3 size(1, 1, 1);
-        const Vector3I cells(32, 32, 32);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args);
+        const Vector3I cells(64, 64, 64);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra, args);
         //build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
     }
 
