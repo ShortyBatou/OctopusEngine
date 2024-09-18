@@ -25,8 +25,9 @@ struct FEM_Shape {
 
     [[nodiscard]] virtual std::vector<Vector3> convert_dN_to_vector3(scalar *dN) const;
 
-    virtual void debug_draw(std::vector<Vector3> &pts)
-    {}
+    [[nodiscard]] int nb_quadratures() const {return static_cast<int>(weights.size());}
+
+    virtual void debug_draw(std::vector<Vector3> &pts){}
 
     virtual ~FEM_Shape() = default;
 };
