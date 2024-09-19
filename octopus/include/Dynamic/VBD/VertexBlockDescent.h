@@ -51,7 +51,7 @@ struct VBD_FEM
         const int nb_vertices = static_cast<int>(_owners.size());
         for(int i = 0; i < nb_vertices; ++i)
         {
-            solve_vertex(ps, dt, i);
+            solve_vertex(ps, y, dt, i);
         }
     }
 
@@ -70,8 +70,8 @@ struct VBD_FEM
             solve_element(ps, owner, ref_id, f_i, H_i);
         }
 
-        //f_i += -p->mass / (dt * dt) * (p->position - p->y);
-        //H_i += Matrix3x3(p->mass / (dt * dt));
+        f_i += -p->mass / (dt * dt) * (p->position - y[vid]);
+        H_i += Matrix3x3(p->mass / (dt * dt));
         const scalar detH = glm::determinant(H_i);
         const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
         p->position += dx;
@@ -119,7 +119,16 @@ struct VBD_FEM
         }
         return H;
     }
+    void compute_inertia(ParticleSystem* ps, const scalar dt)
+    {
+        for(int i = 0; i < ps->nb_particles(); ++i)
+        {
+            Particle* p = ps->get(i);
+            _y[i] = p->position + p->velocity * dt + ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
+        }
+    }
 protected:
+    std::vector<Vector3> _y; // inertia
     Mesh::Topology _topology;
     std::vector<std::vector<int>> _owners; // for each vertice
     std::vector<std::vector<int>> _ref_id; // for each vertice
@@ -133,7 +142,7 @@ protected:
 struct VertexBlockDescent final : ParticleSystem
 {
     explicit VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
-        : ParticleSystem(solver), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
+        : ParticleSystem(solver), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho), _fem(nullptr) {
     }
 
     void step(const scalar dt) override
@@ -142,24 +151,26 @@ struct VertexBlockDescent final : ParticleSystem
 
         for(int i = 0; i < _sub_iteration; ++i)
         {
+            _fem->compute_inertia(this, sub_dt);
+            // get the first guess
             step_solver(sub_dt);
+
             for(int j = 0; j < _iteration; ++j)
             {
-                step_vbd(sub_dt);
+                _fem->solve(this, dt);
             }
             step_effects(sub_dt);
             step_constraint(sub_dt);
-            reset_external_forces();
         }
+        reset_external_forces();
     }
 
-    void step_vbd(const scalar dt)
+    void setFEM(VBD_FEM* fem)
     {
-
+        _fem = fem;
     }
 
 protected:
-    std::vector<Vector3> _y;
     VBD_FEM* _fem;
     int _iteration;
     int _sub_iteration;

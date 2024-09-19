@@ -6,7 +6,9 @@ set(OCTOPUS ${PROJECT_NAME})
 file(GLOB_RECURSE cuda_files "*.cu")
 file(GLOB_RECURSE cpp_files "*.cpp")
 add_executable(${OCTOPUS} main.cu ${cuda_files} ${cpp_files}
-        include/Dynamic/VBD/VertexBlockDescent.h)
+        include/Dynamic/VBD/VertexBlockDescent.h
+        include/Script/Dynamic/VBD_FEM_Dynamic.h
+        src/Script/Dynamic/VBD_FEM_Dynamic.cpp)
 
 set_target_properties(${OCTOPUS} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_compile_options(${OCTOPUS} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: --extended-lambda --default-stream per-thread>)

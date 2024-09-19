@@ -1,27 +1,31 @@
 #pragma once
 #include "Core/Base.h"
-#include "GPU/GPU_VBD.h"
+#include "Dynamic/VBD/VertexBlockDescent.h"
 #include "Mesh/Mesh.h"
-#include "Core/Component.h"
 #include<vector> // for vector
 
-struct Cuda_VBD_FEM_Dynamic final : Component
+#include "ParticleSystemDynamic.h"
+
+struct VBD_FEM_Dynamic final : ParticleSystemDynamic
 {
-    explicit Cuda_VBD_FEM_Dynamic(
+    explicit VBD_FEM_Dynamic(
         const scalar density,
         const scalar young, const scalar poisson,
         const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
-        : _density(density), _damping(damping), _young(young), _poisson(poisson),
+        : ParticleSystemDynamic(density), _density(density), _damping(damping), _young(young), _poisson(poisson),
           _iteration(iteration), _sub_iteration(sub_iteration),
-          _mesh(nullptr), vbd(nullptr)
-    { }
+          vbd(nullptr)
+    {
+    }
 
     void init() override;
 
     void update() override;
 
-    ~Cuda_VBD_FEM_Dynamic() override = default;
+    ~VBD_FEM_Dynamic() override = default;
+    ParticleSystem *build_particle_system() override;
 
+    void build_dynamic() override;
 
 private:
     std::map<Element, std::vector<Color>> _display_colors;
@@ -30,6 +34,5 @@ private:
     scalar _young, _poisson;
     int _iteration;
     int _sub_iteration;
-    GPU_VBD* vbd;
-    Mesh* _mesh;
+    VertexBlockDescent* vbd;
 };
