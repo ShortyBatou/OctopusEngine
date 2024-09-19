@@ -42,10 +42,10 @@ public:
 
     virtual void draw_debug_particles(const Color &c);
 
-    virtual Particle *get(int i) { return _particles[i]; }
-    std::vector<Particle *> &particles() { return _particles; }
-    int nb_particles() const { return static_cast<int>(_particles.size()); }
-    Solver *solver() const { return _solver; }
+    [[nodiscard]] Particle *get(int i) { return _particles[i]; }
+    [[nodiscard]] std::vector<Particle *> &particles() { return _particles; }
+    [[nodiscard]] int nb_particles() const { return static_cast<int>(_particles.size()); }
+    [[nodiscard]] Solver *solver() const { return _solver; }
 
     virtual ~ParticleSystem();
 

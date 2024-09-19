@@ -197,8 +197,12 @@ __global__ void kernel_solve(
 
     // shared variable : f, H
     // we can do a much better reduction (without atomic add with a shared buffer)
+<<<<<<< HEAD
     __shared__ __builtin_align__(16) scalar s_f_H[24*12]; // size = block_size * 12 * sizeof(float)
     int m = 0;
+=======
+    __shared__ __builtin_align__(16) scalar s_f_H[512]; // size = block_size * 12 * sizeof(float)
+>>>>>>> ccef5917f41f60f600303a40d1a041b65ab8da0f
     for(int i = 0; i < 3; ++i) {
         s_f_H[tid * 12 + i] = fi[i];
         //s_f_H[tid * 12 + i] = 1;
