@@ -18,8 +18,6 @@ struct VBD_FEM_Dynamic final : ParticleSystemDynamic
     {
     }
 
-    void init() override;
-
     void update() override;
 
     ~VBD_FEM_Dynamic() override = default;

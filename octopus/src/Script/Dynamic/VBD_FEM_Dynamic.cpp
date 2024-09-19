@@ -7,7 +7,7 @@
 
 ParticleSystem * VBD_FEM_Dynamic::build_particle_system()
 {
-    vbd = new VertexBlockDescent(new EulerSemiExplicit(_damping), _iteration, _sub_iteration, 0.f);
+    vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, 0.f);
     return vbd;
 }
 
@@ -30,5 +30,5 @@ void VBD_FEM_Dynamic::build_dynamic()
 
 void VBD_FEM_Dynamic::update() {
     vbd->step(Time::Fixed_DeltaTime());
-
+    update_mesh();
 }
