@@ -38,10 +38,7 @@ scalar M_StVK::get_energy(const Matrix3x3 &F) {
 
 Matrix3x3 M_NeoHooke::get_pk1(const Matrix3x3 &F) {
     scalar I_3 = glm::determinant(F);
-    Matrix3x3 d_detF;
-    d_detF[0] = glm::cross(F[1], F[2]);
-    d_detF[1] = glm::cross(F[2], F[0]);
-    d_detF[2] = glm::cross(F[0], F[1]);
+    Matrix3x3 d_detF = Matrix::Com(F);
     return this->lambda * (I_3 - 1.f) * d_detF + this->mu * F;
 }
 
@@ -54,10 +51,7 @@ scalar M_NeoHooke::get_energy(const Matrix3x3 &F) {
 
 Matrix3x3 M_Stable_NeoHooke::get_pk1(const Matrix3x3 &F) {
     const scalar I_3 = glm::determinant(F);
-    Matrix3x3 d_detF;
-    d_detF[0] = glm::cross(F[1], F[2]);
-    d_detF[1] = glm::cross(F[2], F[0]);
-    d_detF[2] = glm::cross(F[0], F[1]);
+    Matrix3x3 d_detF = Matrix::Com(F);
     return this->lambda * (I_3 - alpha) * d_detF + this->mu * F;
 }
 
@@ -99,7 +93,7 @@ void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x
 }
 
 
-FEM_ContinuousMaterial *get_fem_material(Material material, scalar young, scalar poisson) {
+FEM_ContinuousMaterial *get_fem_material(const Material material, const scalar young, const scalar poisson) {
     switch (material) {
         case Hooke: return new M_Hooke(young, poisson);
         case StVK: return new M_StVK(young, poisson);

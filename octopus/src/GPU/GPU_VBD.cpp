@@ -78,7 +78,7 @@ void GPU_VBD_FEM::build_fem_const(const Mesh::Geometry &geometry, const Mesh::To
 }
 
 
-void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, int nb_vertices,
+void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vertices,
     std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id) {
     std::vector<std::set<int> > neighbors(nb_vertices);
     e_neighbors.resize(nb_vertices);

@@ -7,7 +7,7 @@
 
 ParticleSystem * VBD_FEM_Dynamic::build_particle_system()
 {
-    vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, 0.f);
+    vbd = new VertexBlockDescent(new AdaptiveEulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, 0.f);
     return vbd;
 }
 
@@ -22,8 +22,7 @@ void VBD_FEM_Dynamic::build_dynamic()
             _ps->get(i)->mass = masses[i];
             _ps->get(i)->inv_mass = 1.f / masses[i];
         }
-
-        vbd->setFEM(new VBD_FEM(topo, _mesh->geometry(), get_fem_shape(e), new M_Hooke(_young, _poisson)));
+        vbd->setFEM(new VBD_FEM(topo, _mesh->geometry(), get_fem_shape(e), get_fem_material(_material, _young, _poisson)));
         break;
     }
 }

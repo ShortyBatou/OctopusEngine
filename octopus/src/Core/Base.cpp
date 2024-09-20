@@ -63,7 +63,7 @@ Matrix3x3 Matrix::Hat(const Vector3& v)
     };
 }
 
-Matrix3x3 Com(const Matrix3x3& m)
+Matrix3x3 Matrix::Com(const Matrix3x3& m)
 {
     return {glm::cross(m[1], m[2]), glm::cross(m[2], m[0]), glm::cross(m[0], m[1])};
 }

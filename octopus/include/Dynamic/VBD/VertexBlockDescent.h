@@ -1,6 +1,7 @@
 #pragma once
 #include <Dynamic/FEM/FEM_Shape.h>
 #include <Manager/Debug.h>
+#include <Manager/Input.h>
 
 #include "Core/Base.h"
 #include "Dynamic/Base/ParticleSystem.h"
@@ -150,19 +151,56 @@ struct VertexBlockDescent final : ParticleSystem
         : ParticleSystem(solver), _fem(nullptr), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
     }
 
+    [[nodiscard]] scalar compute_omega(const scalar omega, const int it) const
+    {
+        if(it == 0) return 1.f;
+        if(it == 1) return 2.f / (2.f - _rho * _rho);
+        return 4.f / (4.f - _rho * _rho * omega);
+    }
+
+    void chebyshev_acceleration(const int it, scalar& omega)
+    {
+        if(static_cast<int>(prev_prev_x.size()) == 0)
+        {
+            prev_prev_x.resize(nb_particles());
+            prev_x.resize(nb_particles());
+        }
+
+        omega = compute_omega(omega, it);
+        for(int i = 0; i < nb_particles(); ++i)
+        {
+            Particle* p = get(i);
+            if(!p->active) continue;
+            if(it >= 2) p->position = omega * (p->position - prev_prev_x[i]) + prev_prev_x[i];
+            prev_prev_x[i] = prev_x[i];
+            prev_x[i] = p->position;
+        }
+    }
+
     void step(const scalar dt) override
     {
-        const scalar sub_dt = dt / static_cast<scalar>(_sub_iteration);
+        if(Input::Down(Key::W)) _iteration++;
+        if(Input::Down(Key::S)) _iteration--;
 
+        if(Input::Down(Key::Q)) _sub_iteration++;
+        if(Input::Down(Key::A)) _sub_iteration--;
+
+        if(Input::Down(Key::W) || Input::Down(Key::S) || Input::Down(Key::A) || Input::Down(Key::Q))
+        {
+            std::cout << "Iteration: " << _iteration << " SubIteration:" << _sub_iteration << std::endl;
+        }
+
+        const scalar sub_dt = dt / static_cast<scalar>(_sub_iteration);
         for(int i = 0; i < _sub_iteration; ++i)
         {
             _fem->compute_inertia(this, sub_dt);
             // get the first guess
             step_solver(sub_dt);
-
+            scalar omega = 0;
             for(int j = 0; j < _iteration; ++j)
             {
                 _fem->solve(this, sub_dt);
+                chebyshev_acceleration(j, omega);
             }
             step_effects(sub_dt);
             step_constraint(sub_dt);
@@ -175,6 +213,11 @@ struct VertexBlockDescent final : ParticleSystem
         for (Particle *p: this->_particles) {
             if (!p->active) continue;
             p->velocity = (p->position - p->last_position) / dt;
+            const scalar norm_v = glm::length(p->velocity);
+            if (norm_v > 1e-12) {
+                const scalar damping = -norm_v * std::min(1.f, 100.f * dt * p->inv_mass);
+                p->velocity += glm::normalize(p->velocity) * damping;
+            }
         }
     }
 
@@ -187,6 +230,9 @@ struct VertexBlockDescent final : ParticleSystem
 
 protected:
     VBD_FEM* _fem;
+    std::vector<Vector3> prev_x;
+    std::vector<Vector3> prev_prev_x;
+
     int _iteration;
     int _sub_iteration;
     scalar _rho;

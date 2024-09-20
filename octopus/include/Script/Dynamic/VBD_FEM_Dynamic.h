@@ -10,11 +10,12 @@ struct VBD_FEM_Dynamic final : ParticleSystemDynamic
 {
     explicit VBD_FEM_Dynamic(
         const scalar density,
-        const scalar young, const scalar poisson,
+        const scalar young, const scalar poisson, const Material material,
         const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
-        : ParticleSystemDynamic(density), _density(density), _damping(damping), _young(young), _poisson(poisson),
-          _iteration(iteration), _sub_iteration(sub_iteration),
-          vbd(nullptr)
+        : ParticleSystemDynamic(density),
+            _density(density), _damping(damping), _young(young), _poisson(poisson), _material(material),
+            _iteration(iteration), _sub_iteration(sub_iteration),
+            vbd(nullptr)
     {
     }
 
@@ -30,6 +31,7 @@ private:
     scalar _density;
     scalar _damping;
     scalar _young, _poisson;
+    Material _material;
     int _iteration;
     int _sub_iteration;
     VertexBlockDescent* vbd;
