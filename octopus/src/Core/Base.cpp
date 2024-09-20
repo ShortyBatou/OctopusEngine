@@ -53,3 +53,17 @@ scalar Matrix::SquaredNorm(const Matrix4x4 &m) {
             st += m[i][j] * m[i][j];
     return st;
 }
+
+Matrix3x3 Matrix::Hat(const Vector3& v)
+{
+    return {
+        0.f, -v.z, v.y,
+        v.z, 0.f, -v.x,
+        -v.y, v.x, 0.f
+    };
+}
+
+Matrix3x3 Com(const Matrix3x3& m)
+{
+    return {glm::cross(m[1], m[2]), glm::cross(m[2], m[0]), glm::cross(m[0], m[1])};
+}

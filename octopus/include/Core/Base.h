@@ -52,6 +52,8 @@ namespace Matrix
     scalar SquaredNorm(const Matrix3x3& m);
     scalar SquaredNorm(const Matrix4x4& m);
 
+    Matrix3x3 Hat(const Vector3& v);
+    Matrix3x3 Com(const Matrix3x3& m);
 };
 
 struct Unit3D
