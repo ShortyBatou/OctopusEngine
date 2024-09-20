@@ -1,5 +1,6 @@
 #pragma once
 #include <Dynamic/FEM/FEM_Shape.h>
+#include <Manager/Debug.h>
 
 #include "Core/Base.h"
 #include "Dynamic/Base/ParticleSystem.h"
@@ -9,8 +10,11 @@ struct VBD_FEM
     VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape* shape, FEM_ContinuousMaterial* material) :
         _shape(shape), _material(material), _topology(topology)
     {
+        _owners.resize(geometry.size());
+        _ref_id.resize(geometry.size());
         build_fem_const(topology, geometry);
         build_neighboors(topology);
+        _y = geometry;
     }
 
     void build_neighboors(const Mesh::Topology &topology)
@@ -51,7 +55,7 @@ struct VBD_FEM
         const int nb_vertices = static_cast<int>(_owners.size());
         for(int i = 0; i < nb_vertices; ++i)
         {
-            solve_vertex(ps, y, dt, i);
+            solve_vertex(ps, dt, i);
         }
     }
 
@@ -70,14 +74,15 @@ struct VBD_FEM
             solve_element(ps, owner, ref_id, f_i, H_i);
         }
 
-        f_i += -p->mass / (dt * dt) * (p->position - y[vid]);
+        f_i += -p->mass / (dt * dt) * (p->position - _y[vid]);
         H_i += Matrix3x3(p->mass / (dt * dt));
         const scalar detH = glm::determinant(H_i);
         const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
         p->position += dx;
+        //Debug::Line(p->position, p->position + glm::normalize(p->force) * 0.1f);
     }
 
-    void solve_element(const ParticleSystem* ps, const int eid, const int ref_id, Vector3& f_i, Matrix3x3& H_i)
+    void solve_element(ParticleSystem* ps, const int eid, const int ref_id, Vector3& f_i, Matrix3x3& H_i)
     {
         const int nb_quadrature = _shape->nb_quadratures();
         const int nb_vert_elem = _shape->nb;
@@ -87,7 +92,7 @@ struct VBD_FEM
             Matrix3x3 Jx = Matrix::Zero3x3();
             for(int j = 0; j < nb_vert_elem; ++j)
             {
-                const int vid = _topology[eid * nb_vert_elem + i];
+                const int vid = _topology[eid * nb_vert_elem + j];
                 Jx += glm::outerProduct(ps->get(vid)->position, _shape->dN[i][j]);
             }
 
@@ -96,7 +101,7 @@ struct VBD_FEM
 
             // compute force
             Matrix3x3 P = _material->get_pk1(F);
-            f_i += P * dF_dx * V[eid][i];
+            f_i -= P * dF_dx * V[eid][i];
 
             _material->get_sub_hessian(F, d2Psi_dF2);
             H_i += assemble_hessian(d2Psi_dF2, dF_dx) * V[eid][i];
@@ -142,7 +147,7 @@ protected:
 struct VertexBlockDescent final : ParticleSystem
 {
     explicit VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
-        : ParticleSystem(solver), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho), _fem(nullptr) {
+        : ParticleSystem(solver), _fem(nullptr), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
     }
 
     void step(const scalar dt) override
@@ -157,18 +162,28 @@ struct VertexBlockDescent final : ParticleSystem
 
             for(int j = 0; j < _iteration; ++j)
             {
-                _fem->solve(this, dt);
+                _fem->solve(this, sub_dt);
             }
             step_effects(sub_dt);
             step_constraint(sub_dt);
+            update_velocity(sub_dt);
         }
         reset_external_forces();
+    }
+
+    void update_velocity(const scalar dt) const {
+        for (Particle *p: this->_particles) {
+            if (!p->active) continue;
+            p->velocity = (p->position - p->last_position) / dt;
+        }
     }
 
     void setFEM(VBD_FEM* fem)
     {
         _fem = fem;
     }
+
+    ~VertexBlockDescent() override = default;
 
 protected:
     VBD_FEM* _fem;

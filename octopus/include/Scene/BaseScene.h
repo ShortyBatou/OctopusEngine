@@ -22,6 +22,7 @@
 #include "UI/UI_Component.h"
 
 #include "Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h"
+#include "Script/Dynamic/VBD_FEM_Dynamic.h"
 
 struct SimulationArgs {
     scalar density;
@@ -67,19 +68,19 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.young = 1e6f;
-        args.poisson = 0.45f;
-        args.damping = 0.005;
+        args.poisson = 0.4f;
+        args.damping = 0.0001;
         args.iteration = 1;
-        args.sub_iteration = 50;
+        args.sub_iteration = 20;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
-        args.material = Stable_NeoHooke;
+        args.material = Hooke;
 
-        const Vector3 size(1, 1, 1);
-        const Vector3I cells(64, 64, 64);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra, args);
-        //build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
+        const Vector3 size(4, 1, 1);
+        const Vector3I cells(4, 1, 1);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Hexa, args);
+        build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -124,7 +125,9 @@ struct BaseScene final : Scene
     void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.sub_iteration, args.damping));
+        //e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.sub_iteration, args.damping));
+        e->add_component(new VBD_FEM_Dynamic(args.density, args.young, args.poisson, args.iteration, args.sub_iteration, args.damping));
+        add_constraint(e, pos, size, args);
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

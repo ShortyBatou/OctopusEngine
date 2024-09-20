@@ -1,4 +1,4 @@
-#include "Dynamic/FEM/FEM_ContinuousMaterial.h"
+ #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 #include <vector>
 #include <iostream>
 
@@ -46,14 +46,14 @@ Matrix3x3 M_NeoHooke::get_pk1(const Matrix3x3 &F) {
 }
 
 scalar M_NeoHooke::get_energy(const Matrix3x3 &F) {
-    scalar I_3 = glm::determinant(F);
-    scalar I_2 = Matrix::SquaredNorm(F);
+    const scalar I_3 = glm::determinant(F);
+    const scalar I_2 = Matrix::SquaredNorm(F);
     return 0.5f * this->mu * (I_2 - 3.f) + 0.5f * this->lambda * (I_3 - 1.f) * (I_3 - 1.f);
 }
 
 
 Matrix3x3 M_Stable_NeoHooke::get_pk1(const Matrix3x3 &F) {
-    scalar I_3 = glm::determinant(F);
+    const scalar I_3 = glm::determinant(F);
     Matrix3x3 d_detF;
     d_detF[0] = glm::cross(F[1], F[2]);
     d_detF[1] = glm::cross(F[2], F[0]);
@@ -62,8 +62,8 @@ Matrix3x3 M_Stable_NeoHooke::get_pk1(const Matrix3x3 &F) {
 }
 
 scalar M_Stable_NeoHooke::get_energy(const Matrix3x3 &F) {
-    scalar I_3 = glm::determinant(F);
-    scalar I_2 = Matrix::SquaredNorm(F);
+    const scalar I_3 = glm::determinant(F);
+    const scalar I_2 = Matrix::SquaredNorm(F);
     return 0.5f * this->mu * (I_2 - 3.f) + 0.5f * this->lambda * (I_3 - alpha) * (I_3 - alpha);
 }
 
