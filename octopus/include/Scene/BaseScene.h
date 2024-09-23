@@ -70,18 +70,17 @@ struct BaseScene final : Scene
         args.young = 1e6f;
         args.poisson = 0.4f;
         args.damping = 0.001;
-        args.iteration = 20;
-        args.sub_iteration = 1;
+        args.iteration = 2;
+        args.sub_iteration = 10;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
         const Vector3 size(4, 1, 1);
         const Vector3I cells(8, 2, 2);
-        build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
-        args.iteration = 1;
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Hexa, args);
+        //build_fem_entity(Vector3(0,0,0), cells,size, ColorBase::Red(), Tetra, args);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -144,10 +143,8 @@ struct BaseScene final : Scene
 
         if (args.scenario_2 != -1) {
             auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, args.dir, args.scenario_2);
-            rd_constraint_2->_rot_speed = -90;
+            rd_constraint_2->_rot_speed = 90;
             rd_constraint_2->_move_speed = 1.;
-            rd_constraint_2->_event_rate = 1.5;
-            rd_constraint_2->_smooth_iterations = 10;
             e->add_component(rd_constraint_2);
         }
     }

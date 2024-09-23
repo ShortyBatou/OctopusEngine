@@ -1,4 +1,5 @@
 #pragma once
+#include <random>
 #include <Dynamic/FEM/FEM_Shape.h>
 #include <Manager/Debug.h>
 #include <Manager/Input.h>
@@ -77,7 +78,7 @@ struct VBD_FEM
 
         f_i += -p->mass / (dt * dt) * (p->position - _y[vid]);
         H_i += Matrix3x3(p->mass / (dt * dt));
-        const scalar detH = glm::determinant(H_i);
+        const scalar detH = abs(glm::determinant(H_i));
         const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
         p->position += dx;
         //Debug::Line(p->position, p->position + glm::normalize(p->force) * 0.1f);
@@ -98,7 +99,7 @@ struct VBD_FEM
             }
 
             Matrix3x3 F = Jx * JX_inv[eid][i];
-            Vector3 dF_dx = JX_inv[eid][i] * _shape->dN[i][ref_id];
+            Vector3 dF_dx = glm::transpose(JX_inv[eid][i]) * _shape->dN[i][ref_id];
 
             // compute force
             Matrix3x3 P = _material->get_pk1(F);
