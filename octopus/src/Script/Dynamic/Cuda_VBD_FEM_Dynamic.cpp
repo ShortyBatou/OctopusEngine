@@ -27,8 +27,6 @@ void Cuda_VBD_FEM_Dynamic::init() {
         break;
     }
 
-
-
 }
 
 void Cuda_VBD_FEM_Dynamic::update() {

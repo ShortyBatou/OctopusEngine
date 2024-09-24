@@ -59,6 +59,35 @@ struct VBD_FEM
         {
             solve_vertex(ps, dt, i);
         }
+        scalar e = compute_energy(ps, dt);
+        DebugUI::Begin("Energy");
+        DebugUI::Plot("energy", e, 200);
+        DebugUI::Range("range", e);
+        DebugUI::End();
+    }
+
+    scalar compute_energy(ParticleSystem* ps, scalar dt) const
+    {
+        scalar energy = 0;
+        const int& nb_vert_elem = _shape->nb;
+        const int nb_quadrature = _shape->nb_quadratures();
+        for(int e = 0; e < _topology.size(); e+= _shape->nb)
+        {
+            const int eid = e / _shape->nb;
+            for(int i = 0; i < nb_quadrature; ++i)
+            {
+                Matrix3x3 Jx = Matrix::Zero3x3();
+                for(int j = 0; j < nb_vert_elem; ++j)
+                {
+                    const int vid = _topology[eid * nb_vert_elem + j];
+                    Jx += glm::outerProduct(ps->get(vid)->position, _shape->dN[i][j]);
+                }
+
+                Matrix3x3 F = Jx * JX_inv[eid][i];
+                energy += _material->get_energy(F) * V[eid][i];
+            }
+        }
+        return energy;
     }
 
     void solve_vertex(ParticleSystem* ps, const scalar dt, const int vid)

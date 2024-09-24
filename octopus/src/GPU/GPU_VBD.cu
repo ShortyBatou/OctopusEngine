@@ -25,7 +25,7 @@ __global__ void kernel_plane_fix(const int nb, scalar t, const Vector3 o, Vector
 
     Vector3 d = p_init[i] - o;
     if(glm::dot(d, n) > 0) {
-        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 2.f),0,0) * 1.f;
+        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 2.f),0,0) * 2.f;
         y[i] = p[i];
     }
 }
@@ -55,7 +55,7 @@ __global__ void kernel_integration(
     f[i] *= 0;
 }
 
-__global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector3* p, Vector3* prev_v, Vector3* v) {
+__global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector3* p, Vector3* prev_v, Vector3* v, scalar* _inv_mass) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= n) return;
     prev_v[vid] = v[vid];
@@ -63,15 +63,11 @@ __global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector
     //if(vid == 10) printf("v(%f %f %f)\n", v[vid].x, v[vid].y, v[vid].z);
 }
 
-__global__ void kernel_chebychev_acceleration(int n, scalar omega, Vector3* prev_it_p, Vector3* prev_it2_p, Vector3* p) {
+__global__ void kernel_chebychev_acceleration(int n, int it, scalar omega, Vector3* prev_it_p, Vector3* prev_it2_p, Vector3* p) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= n) return;
-    if(omega > 1.f) {
-        Vector3 newP = prev_it2_p[vid] + omega * (p[vid] - prev_it2_p[vid]);
-        if(vid == 10) {
-            //printf("p(%f %f %f) => p_new(%f %f %f)\n", p[vid].x, p[vid].y, p[vid].z, newP.x, newP.y, newP.z);
-        }
-        p[vid] = newP;
+    if(it >= 2) {
+        p[vid] = prev_it2_p[vid] + omega * (p[vid] - prev_it2_p[vid]);
     }
     prev_it2_p[vid] = prev_it_p[vid];
     prev_it_p[vid] = p[vid];
@@ -85,7 +81,7 @@ __device__ void warp_reduce(volatile scalar* data, int tid, int off, int max) {
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
     const int n, const int nb_quadrature, const int elem_nb_verts,
-    const scalar lambda, const scalar mu, const scalar dt,
+    const scalar lambda, const scalar mu, const scalar damping, const scalar dt,
     int offset,
     int *nb_owners, // nb_vertices
     int *owner_off, // nb_vertices
@@ -94,6 +90,7 @@ __global__ void kernel_solve(
     int *topology, // nb_element * elem_nb_vert
     Vector3 *y, // nb_vertices
     Vector3 *p, // nb_vertices
+    Vector3 *prev_p, // nb_vertices
     Vector3 *f,
     scalar *mass, // nb_vertices
     Vector3 *dN, // elem_nb_verts * nb_quadrature
@@ -198,7 +195,7 @@ __global__ void kernel_solve(
     // shared variable : f, H
     // we can do a much better reduction (without atomic add with a shared buffer)
 
-    __shared__ __builtin_align__(16) scalar s_f_H[512]; // size = block_size * 12 * sizeof(float)
+    __shared__ __builtin_align__(16) scalar s_f_H[1024]; // size = block_size * 12 * sizeof(float)
     for(int i = 0; i < 3; ++i) {
         s_f_H[tid * 12 + i] = fi[i];
         //s_f_H[tid * 12 + i] = 1;
@@ -208,7 +205,6 @@ __global__ void kernel_solve(
         }
     }
     //printf("%d < %d\n", tid, size_of_block);
-
 
     __syncthreads();
     int t = size_of_block;
@@ -242,14 +238,19 @@ __global__ void kernel_solve(
     }*/
 
     if (threadIdx.x == 0) {
-        scalar mh2 = mass[vid] / (dt*dt);
-        fi = -mh2 * (p[vid] - y[vid]);
-        fi.x += s_f_H[0]; fi.y += s_f_H[1]; fi.z += s_f_H[2];
-
-        H = Matrix3x3(mh2);
+        H = Matrix3x3(0.f);
         H[0][0] += s_f_H[3]; H[0][1] += s_f_H[6]; H[0][2] += s_f_H[9];
         H[1][0] += s_f_H[4]; H[1][1] += s_f_H[7]; H[1][2] += s_f_H[10];
         H[2][0] += s_f_H[5]; H[2][1] += s_f_H[8]; H[2][2] += s_f_H[11];
+
+        scalar mh2 = mass[vid] / (dt*dt);
+        fi = -mh2 * (p[vid] - y[vid]);
+        fi -= (damping / dt) * H * (p[vid] - prev_p[vid]);
+        fi.x += s_f_H[0]; fi.y += s_f_H[1]; fi.z += s_f_H[2];
+
+        H[0][0] += mh2;
+        H[1][1] += mh2;
+        H[2][2] += mh2;
 
         //scalar detH = glm::determinant(s_H);
         //Vector3 dx = detH > 1e-6f ? glm::inverse(s_H) * s_f : Vector3(0.f);
@@ -267,10 +268,10 @@ void GPU_VBD_FEM::step(const GPU_VBD* vbd, const scalar dt) {
         int grid_size = (c_nb_threads[c]+c_block_size[c]-1)/c_block_size[c];
 
         kernel_solve<<<grid_size, c_block_size[c]>>>(
-        c_nb_threads[c], nb_quadrature, elem_nb_vert, lambda, mu, dt, c_offsets[c],
+        c_nb_threads[c], nb_quadrature, elem_nb_vert, lambda, mu, 1e-6, dt, c_offsets[c],
         cb_nb_neighbors->buffer, cb_neighbors_offset->buffer, cb_neighbors->buffer, cb_ref_vid->buffer,
         cb_topology->buffer,
-        vbd->y->buffer, vbd->cb_position->buffer, vbd->cb_forces->buffer, vbd->cb_mass->buffer,
+        vbd->y->buffer, vbd->cb_position->buffer,vbd->cb_prev_position->buffer, vbd->cb_forces->buffer, vbd->cb_mass->buffer,
         cb_dN->buffer, cb_JX_inv->buffer, cb_V->buffer
         );
     }
@@ -296,12 +297,11 @@ void GPU_VBD::step(const scalar dt) const {
             // Acceleration (Chebychev)
             if(j == 1) omega = 2.f / (2.f - r * r);
             else if(j > 1) omega = 4.f / (4.f - r * r * omega);
-
-            kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(n, omega, prev_it_p->buffer, prev_it2_p->buffer, cb_position->buffer);
+            //kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(n, j, omega, prev_it_p->buffer, prev_it2_p->buffer, cb_position->buffer);
         }
         // velocity update
         kernel_velocity_update<<<(n + 255)/256, 256>>>(n,sub_dt,
-            cb_prev_position->buffer, cb_position->buffer, prev_v->buffer, cb_velocity->buffer);
+            cb_prev_position->buffer, cb_position->buffer, prev_v->buffer, cb_velocity->buffer, cb_inv_mass->buffer);
     }
     cudaDeviceSynchronize();
     scalar time = Time::Tac() *1000.f;
