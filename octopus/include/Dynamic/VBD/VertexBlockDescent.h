@@ -59,14 +59,24 @@ struct VBD_FEM
         {
             solve_vertex(ps, dt, i);
         }
-        scalar e = compute_energy(ps, dt);
+        const scalar e = compute_energy(ps);
+        const std::vector<Vector3> forces = compute_forces(ps);
+        scalar sum = 0;
+        for(int i = 0; i < nb_vertices; ++i)
+        {
+            sum += glm::length2(forces[i]);
+        }
+        sum /= static_cast<scalar>(nb_vertices);
+
         DebugUI::Begin("Energy");
         DebugUI::Plot("energy", e, 200);
         DebugUI::Range("range", e);
+        DebugUI::Plot("Forces norm", sum, 200);
+        DebugUI::Range("Forces range", sum);
         DebugUI::End();
     }
 
-    scalar compute_energy(ParticleSystem* ps, scalar dt) const
+    scalar compute_energy(ParticleSystem* ps) const
     {
         scalar energy = 0;
         const int& nb_vert_elem = _shape->nb;
@@ -88,6 +98,35 @@ struct VBD_FEM
             }
         }
         return energy;
+    }
+
+    std::vector<Vector3> compute_forces(ParticleSystem* ps) const
+    {
+        std::vector<Vector3> forces(ps->nb_particles(), Unit3D::Zero());
+        const int& nb_vert_elem = _shape->nb;
+        const int nb_quadrature = _shape->nb_quadratures();
+        for(int e = 0; e < _topology.size(); e+= _shape->nb)
+        {
+            const int eid = e / _shape->nb;
+            for(int i = 0; i < nb_quadrature; ++i)
+            {
+                Matrix3x3 Jx = Matrix::Zero3x3();
+                for(int j = 0; j < nb_vert_elem; ++j)
+                {
+                    const int vid = _topology[eid * nb_vert_elem + j];
+                    Jx += glm::outerProduct(ps->get(vid)->position, _shape->dN[i][j]);
+                }
+
+                Matrix3x3 F = Jx * JX_inv[eid][i];
+                Matrix3x3 P = _material->get_pk1(F) * glm::transpose(JX_inv[eid][i]) * V[eid][i];
+                for(int j = 0; j < nb_vert_elem; ++j)
+                {
+                    const int vid = _topology[eid * nb_vert_elem + j];
+                    forces[vid] += P * _shape->dN[i][j];
+                }
+            }
+        }
+        return forces;
     }
 
     void solve_vertex(ParticleSystem* ps, const scalar dt, const int vid)
