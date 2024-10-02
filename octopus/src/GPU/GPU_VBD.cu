@@ -25,7 +25,7 @@ __global__ void kernel_plane_fix(const int nb, scalar t, const Vector3 o, Vector
 
     Vector3 d = p_init[i] - o;
     if(glm::dot(d, n) > 0) {
-        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 2.f),0,0) * 2.f;
+        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 8.f),0,0) * 1.f;
         y[i] = p[i];
     }
 }
