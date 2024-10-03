@@ -55,7 +55,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -68,23 +68,23 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.young = 1e6f;
-        args.poisson = 0.49f;
+        args.poisson = 0.495f;
         args.damping = 0.001;
         args.iteration = 1;
-        args.sub_iteration = 1;
+        args.sub_iteration = 300;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(4, 1, 1);
+        const Vector3 size(2, 1, 1);
         Vector3I cells(4, 4, 4);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra, args, false);
-        cells = Vector3I(8, 2, 2);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa, args, false);
-        args.sub_iteration = 100;
-        build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa, args);
+        cells = Vector3I(8, 4, 4);
+        build_fem_entity(Vector3(0,0,0), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
+        //args.sub_iteration = 100;
+        //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
         //cells = Vector3I(10, 20, 10);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra20, args, true);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args, false);

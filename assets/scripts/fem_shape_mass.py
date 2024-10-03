@@ -120,32 +120,39 @@ def get_projection(n,m, f_shape1, f_shape2, q, w, V):
 def get_prolongation(mass, projection):
     return np.matmul(inv(mass), projection)
 
-def get_lumped_mass(mass):
-    n = len(mass[0])
-    lumped_mass = np.zeros((n,n))
+def get_lumped(mat):
+    n = len(mat[0])
+    lumped = np.zeros((n,n))
     for i in range(n):
         for j in range(n):
-            lumped_mass[i,i] += mass[i,j] 
-    return lumped_mass
+            lumped[i,i] += mat[i,j] 
+    return lumped
 
 rho = 1
 V = 1 * 6
-
+np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 mass_p1 = get_mass(4, shape_p1, quadrature, weight, V, rho)
 mass_p2 = get_mass(10, shape_p2, quadrature, weight, V, rho)
 
 proj_p1_p2 = get_projection(4,10,shape_p1, shape_p2, quadrature, weight, V)
 proj_p2_p1 = get_projection(10,4,shape_p2, shape_p1, quadrature, weight, V)
 
-
-I12 = get_prolongation(mass_p1, proj_p1_p2)
-I21 = get_prolongation(mass_p2, proj_p2_p1)
-
-I = np.matmul(np.transpose(I12), np.transpose(I21))
-print(I)
-
-print(np.trace(get_lumped_mass(mass_p1)))
-print(np.trace(get_lumped_mass(mass_p2)))
+I12 = get_prolongation(mass_p1, proj_p1_p2) #restriction
+I21 = get_prolongation(mass_p2, proj_p2_p1) #prolongation
+#I = np.matmul(np.transpose(I21), np.transpose(I12))
+I = np.matmul(I21, I12)
+print(proj_p1_p2)
+print(mass_p1)
+print(I12)
+v = np.random.randn(4)
+print("v = ", v)
+print("I = \n", I)
+v = np.matmul(I21, v)
+print("I21 v = \n", v)
+v = np.matmul(I12, v)
+print("I_12 (I21 v) = ", v)
+print(np.trace(get_lumped(mass_p1)))
+print(np.trace(get_lumped(mass_p2)))
 #print(d_shape_r0)
 #print(d_shape_r1)
 #print(d_shape_r2)
