@@ -133,17 +133,25 @@ V = 1 * 6
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 mass_p1 = get_mass(4, shape_p1, quadrature, weight, V, rho)
 mass_p2 = get_mass(10, shape_p2, quadrature, weight, V, rho)
+mass_p3 = get_mass(20, shape_p3, quadrature, weight, V, rho)
 
 proj_p1_p2 = get_projection(4,10,shape_p1, shape_p2, quadrature, weight, V)
 proj_p2_p1 = get_projection(10,4,shape_p2, shape_p1, quadrature, weight, V)
 
+proj_p2_p3 = get_projection(10,20,shape_p2, shape_p3, quadrature, weight, V)
+proj_p3_p2 = get_projection(20,10,shape_p3, shape_p2, quadrature, weight, V)
+
 I12 = get_prolongation(mass_p1, proj_p1_p2) #restriction
 I21 = get_prolongation(mass_p2, proj_p2_p1) #prolongation
+
+I23 = get_prolongation(mass_p2, proj_p2_p3) #restriction
+I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
+
 #I = np.matmul(np.transpose(I21), np.transpose(I12))
 I = np.matmul(I21, I12)
-print(proj_p1_p2)
-print(mass_p1)
-print(I12)
+print(I)
+print(get_lumped(I))
+'''
 v = np.random.randn(4)
 print("v = ", v)
 print("I = \n", I)
@@ -151,10 +159,13 @@ v = np.matmul(I21, v)
 print("I21 v = \n", v)
 v = np.matmul(I12, v)
 print("I_12 (I21 v) = ", v)
+
+print("\n\n Masses sum : \n")
 print(np.trace(get_lumped(mass_p1)))
 print(np.trace(get_lumped(mass_p2)))
+print(np.trace(get_lumped(mass_p3)))
 #print(d_shape_r0)
 #print(d_shape_r1)
-#print(d_shape_r2)
+#print(d_shape_r2)'''
 exit()
 

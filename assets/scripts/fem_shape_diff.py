@@ -5,7 +5,7 @@ x, y, z = symbols('x y z')
 #shape = [1 - x - y - z, x, y, z] # P1
 shape = [(x+y+z-1)*(2*x+2*y+2*z-1), x*(2*x-1), y*(2*y-1), z*(2*z-1), -4*x*(x+y+z-1), 4*x*y, -4*y*(x+y+z-1),-4*z*(x+y+z-1),4*x*z, 4*y*z] # P2
 
-''' # P3
+# P3
 a = 0.5
 b = 9. / 2.
 c = 27.
@@ -36,8 +36,13 @@ shape = [
     c * (1 - x - y - z) * y * z, 
     c * (1 - x - y - z) * x * y  
 ]
-'''
-print(len(shape));
+
+d_diff = zeros(3, len(shape))
+for i in range(len(shape)):
+    d_diff[0,i] = diff(shape[i], x)
+    d_diff[1,i] = diff(shape[i], y)
+    d_diff[2,i] = diff(shape[i], z)
+
 print(d_diff)
 
 #print(d_shape_r0)
