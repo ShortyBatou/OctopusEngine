@@ -216,8 +216,8 @@ void tetra4_to_tetra20(Mesh::Geometry &geometry, std::map<Element, Mesh::Topolog
                     std::reverse(v_edge_ids.begin(), v_edge_ids.end());
             } else {
                 for (int w = 0; w < 2; w++) {
-                    scalar weight = scalar(w + 1) / scalar(3);
-                    Vector3 p = geometry[e_a] * (scalar(1.) - weight) + geometry[e_b] * weight;
+                    scalar weight = static_cast<scalar>(w + 1) / 3.f;
+                    Vector3 p = geometry[e_a] * (1.f - weight) + geometry[e_b] * weight;
                     v_edge_ids[w] = static_cast<int>(geometry.size());
                     geometry.push_back(p);
                 }

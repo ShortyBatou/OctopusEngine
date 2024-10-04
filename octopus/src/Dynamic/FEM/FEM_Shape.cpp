@@ -59,6 +59,7 @@ std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& 
     const FEM_Shape* shape = get_fem_shape(elem);
 
     std::vector<scalar> mass(geometry.size());
+    scalar total_mass = 0;
     for (int i = 0; i < topology.size(); i += nb_vert_elem)
     {
         scalar V = 0.f;
@@ -76,9 +77,22 @@ std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& 
         for (int j = 0; j < nb_vert_elem; j++)
         {
             const int vid = topology[i + j];
-            mass[vid] += v_density * V;
+            if(elem == Tetra10) {
+                if(j < 4) {
+                    mass[vid] += V / 40.f * density;
+                    total_mass += V / 40.f * density;
+                }
+                else {
+                    mass[vid] += V * 6.f / 40.f * density;
+                    total_mass += V * 6.f / 40.f * density;
+                }
+            }
+            else {
+                mass[vid] += v_density * V;
+            }
         }
     }
+    std::cout <<  total_mass << " " << *std::min_element(mass.begin(), mass.end()) << " " << *std::max_element(mass.begin(), mass.end()) << std::endl;
     delete shape;
     return mass;
 }

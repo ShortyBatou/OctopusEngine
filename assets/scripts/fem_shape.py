@@ -2,7 +2,7 @@ from sympy import *
 import numpy as np
 from numpy.linalg import inv
 
-order = 3
+order = 1
 
 #generate the base functions
 x, y, z = symbols('x y z')
@@ -33,11 +33,13 @@ print("Bases = ", basef)
 #generate ref element's vertices
 div = 1 / (order)
 vertices = []
+vertices = [[0,0,0], [1,0,0],[0.5, sqrt(3) / 2, 0], [0.5, sqrt(3) / 6, sqrt(2)/sqrt(3)]]
+'''
 for i in range(order + 1):
     for j in range(order + 1):
         for k in range(order + 1):
             if(i+j+k < order+1):
-                vertices.append([div * k, div*j, div*i])
+                vertices.append([div * k, div*j, div*i])'''
 print("N = ", len(vertices))        
 print("Vertices = ", vertices)
 N = len(vertices)
@@ -59,7 +61,7 @@ for i in range(N):
     shape = 0
     for j in range(N):
         shape += basef[j] * mat_shape[j][i]
-    shape = nsimplify(shape) # eval trivial number opperation
+    #shape = nsimplify(shape) # eval trivial number opperation
     shape = factor(shape) # factorize
     shapes.append(shape) 
 print("Shapes = ", shapes)

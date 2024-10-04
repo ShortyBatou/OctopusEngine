@@ -25,7 +25,7 @@ __global__ void kernel_plane_fix(const int nb, scalar t, const Vector3 o, Vector
 
     Vector3 d = p_init[i] - o;
     if(glm::dot(d, n) > 0) {
-        p[i] = p_init[i] + Vector3(cos(3.14f * 0.5f + t * 8.f),0,0) * 1.f;
+        p[i] = p_init[i] + n * abs(cos(t+3.14f*0.5f));
         y[i] = p[i];
     }
 }
@@ -281,7 +281,7 @@ void GPU_VBD::step(const scalar dt) const {
     Time::Tic();
     const scalar r = 0.8;
     const scalar sub_dt = dt / static_cast<scalar>(sub_iteration);
-    Vector3 v = Unit3D::up();
+    Vector3 v = Unit3D::right();
     for(int i = 0; i < sub_iteration; ++i) {
         scalar omega = 1;
         // integration / first guess
@@ -293,7 +293,7 @@ void GPU_VBD::step(const scalar dt) const {
             // solve
             dynamic->step(this, sub_dt);
             kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), v*0.01f, -v, cb_init_position->buffer, y->buffer, cb_position->buffer);
-
+            kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), v*1.99f, v, cb_init_position->buffer, y->buffer, cb_position->buffer);
             // Acceleration (Chebychev)
             if(j == 1) omega = 2.f / (2.f - r * r);
             else if(j > 1) omega = 4.f / (4.f - r * r * omega);

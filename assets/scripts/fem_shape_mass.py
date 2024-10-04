@@ -60,6 +60,9 @@ weight = np.array([
     0.193410812049634450726642853624070994555950164794921875 / 6.
 ])
 
+def shape_p1_sym(x,y,z):
+    return np.array([-1.0*(1.0*x + 0.577350269189626*y + 0.408248290463863*z - 1.0), 1.0*(1.0*x - 0.577350269189626*y - 0.408248290463863*z), 1.15470053837925*(1.0*y - 0.353553390593274*z), 1.22474487139159*z])
+
 def shape_p1(x,y,z):
     return np.array([1 - x - y - z, x, y, z])
 
@@ -131,6 +134,7 @@ def get_lumped(mat):
 rho = 1
 V = 1 * 6
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+mass_p1_sym = get_mass(4, shape_p1_sym, quadrature, weight, V, rho)
 mass_p1 = get_mass(4, shape_p1, quadrature, weight, V, rho)
 mass_p2 = get_mass(10, shape_p2, quadrature, weight, V, rho)
 mass_p3 = get_mass(20, shape_p3, quadrature, weight, V, rho)
@@ -151,6 +155,9 @@ I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
 I = np.matmul(I21, I12)
 print(I)
 print(get_lumped(I))
+print(mass_p2)
+print(get_lumped(mass_p2))
+print(np.trace(get_lumped(mass_p2)))
 '''
 v = np.random.randn(4)
 print("v = ", v)
