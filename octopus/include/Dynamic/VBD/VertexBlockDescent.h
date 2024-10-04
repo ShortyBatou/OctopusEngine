@@ -55,9 +55,12 @@ struct VBD_FEM
     void solve(ParticleSystem* ps, const scalar dt)
     {
         const int nb_vertices = static_cast<int>(_owners.size());
+        std::vector<int> ids(nb_vertices);
+        std::iota(ids.begin(), ids.end(), 0);
+        std::shuffle(ids.begin(), ids.end(), std::mt19937());
         for(int i = 0; i < nb_vertices; ++i)
         {
-            solve_vertex(ps, dt, i);
+            solve_vertex(ps, dt, ids[i]);
         }
         const scalar e = compute_energy(ps);
         const std::vector<Vector3> forces = compute_forces(ps);
@@ -269,7 +272,8 @@ struct VertexBlockDescent final : ParticleSystem
             for(int j = 0; j < _iteration; ++j)
             {
                 _fem->solve(this, sub_dt);
-                chebyshev_acceleration(j, omega);
+                //chebyshev_acceleration(j, omega);
+                step_constraint(sub_dt);
             }
             step_effects(sub_dt);
             step_constraint(sub_dt);

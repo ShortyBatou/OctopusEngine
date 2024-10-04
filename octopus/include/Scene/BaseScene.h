@@ -67,22 +67,23 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e6f;
-        args.poisson = 0.495f;
+        args.young = 1e7f;
+        args.poisson = 0.45f;
         args.damping = 0.001;
         args.iteration = 1;
-        args.sub_iteration = 300;
+        args.sub_iteration = 15;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
         const Vector3 size(2, 1, 1);
-        Vector3I cells(4, 4, 4);
+        Vector3I cells(8, 4, 4);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
-        //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra, args, false);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra10, args, false);
         cells = Vector3I(8, 4, 4);
-        build_fem_entity(Vector3(0,0,0), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
+        args.iteration = 150;
+        build_fem_entity(Vector3(0,0,2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
         //args.sub_iteration = 100;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
         //cells = Vector3I(10, 20, 10);
