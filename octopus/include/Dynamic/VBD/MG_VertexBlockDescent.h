@@ -5,9 +5,16 @@
 #include "Dynamic/Base/ParticleSystem.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 
-struct VBD_FEM {
-    VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape,
-            FEM_ContinuousMaterial *material, scalar k_damp = 0.f);
+struct Grid_Level {
+    Mesh::Geometry positions;
+    std::vector<scalar> masses;
+    std::vector<std::vector<Matrix3x3> > JX_inv;
+    std::vector<std::vector<scalar> > V;
+    FEM_Shape *_shape;
+};
+
+struct MG_VBD_FEM {
+    MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape, FEM_ContinuousMaterial *material);
 
     void build_neighboors(const Mesh::Topology &topology);
 
@@ -30,7 +37,6 @@ struct VBD_FEM {
     void compute_inertia(ParticleSystem *ps, scalar dt);
 
 protected:
-    scalar _k_damp;
     std::vector<Vector3> _y; // inertia
     Mesh::Topology _topology;
     std::vector<std::vector<int> > _owners; // for each vertice
@@ -40,35 +46,6 @@ protected:
     FEM_Shape *_shape;
     std::vector<std::vector<Matrix3x3> > JX_inv; // per element
     std::vector<std::vector<scalar> > V; // per element
-};
 
-struct VertexBlockDescent final : ParticleSystem {
-    explicit VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
-        : ParticleSystem(solver), _fem(nullptr), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
-    }
-
-    [[nodiscard]] scalar compute_omega(const scalar omega, const int it) const {
-        if (it == 0) return 1.f;
-        if (it == 1) return 2.f / (2.f - _rho * _rho);
-        return 4.f / (4.f - _rho * _rho * omega);
-    }
-
-    void chebyshev_acceleration(int it, scalar &omega);
-
-    void step(scalar dt) override;
-
-    void update_velocity(scalar dt) const;
-
-    void setFEM(VBD_FEM *fem) { _fem = fem; }
-
-    ~VertexBlockDescent() override = default;
-
-protected:
-    VBD_FEM *_fem;
-    std::vector<Vector3> prev_x;
-    std::vector<Vector3> prev_prev_x;
-
-    int _iteration;
-    int _sub_iteration;
-    scalar _rho;
+    Grid_Level p1;
 };

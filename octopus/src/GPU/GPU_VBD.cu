@@ -25,40 +25,28 @@ __global__ void kernel_plane_fix(const int nb, scalar t, const Vector3 o, Vector
 
     Vector3 d = p_init[i] - o;
     if(glm::dot(d, n) > 0) {
-        p[i] = p_init[i] + n * abs(cos(t+3.14f*0.5f));
+        p[i] = p_init[i] + n * abs(cos(t+3.14f*0.5f)) * 0.f;
         y[i] = p[i];
     }
 }
 
 __global__ void kernel_integration(
         const int n, const scalar dt, const Vector3 g,
-        Vector3 *p, Vector3 *prev_p, Vector3* y, Vector3* prev_it_p,
-        Vector3 *prev_v, Vector3 *v, Vector3 *f, scalar *w) {
+        Vector3 *p, Vector3 *prev_p, Vector3* y, Vector3* prev_it_p, Vector3 *v, Vector3 *f, scalar *w) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
     prev_p[i] = p[i]; // x^t-1 = x^t
     prev_it_p[i] = p[i];
     const Vector3 a_ext = g + f[i] * w[i];
     y[i] = p[i] + (v[i] + a_ext * dt) * dt;
+    p[i] = y[i];
 
-    // adaptative first guess (ignore a part of acceleration if not in free fall)
-    const Vector3 a_t = (v[i] - prev_v[i]) / dt;
-    const scalar d_a_ext = glm::length(a_ext);
-    const Vector3 n_a_ext = a_ext / d_a_ext;
-    const scalar a_t_ext = glm::dot(a_t,n_a_ext);
-    scalar a_tilde = 0.f;
-    if(a_t_ext > d_a_ext) a_tilde = 1.f;
-    else if(a_t_ext >= 0.f) a_tilde = a_t_ext / d_a_ext;
-    p[i] += v[i] * dt + a_ext * a_tilde * dt * dt;
-
-    //printf("[%d] (%f %f %f)\n", i, f[i].x, f[i].y, f[i].z);
     f[i] *= 0;
 }
 
-__global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector3* p, Vector3* prev_v, Vector3* v, scalar* _inv_mass) {
+__global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector3* p, Vector3* v, scalar* _inv_mass) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= n) return;
-    prev_v[vid] = v[vid];
     v[vid] = (p[vid] - prev_p[vid]) / dt;
     //if(vid == 10) printf("v(%f %f %f)\n", v[vid].x, v[vid].y, v[vid].z);
 }
@@ -72,11 +60,6 @@ __global__ void kernel_chebychev_acceleration(int n, int it, scalar omega, Vecto
     prev_it2_p[vid] = prev_it_p[vid];
     prev_it_p[vid] = p[vid];
 }
-
-__device__ void warp_reduce(volatile scalar* data, int tid, int off, int max) {
-
-}
-
 
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
@@ -126,7 +109,6 @@ __global__ void kernel_solve(
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
 
-    const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
 
     /*
     //Hooke
@@ -175,6 +157,7 @@ __global__ void kernel_solve(
         for (int j = 0; j < 3; ++j)
             d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 
+    const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
     // Compute force at vertex i
     Vector3 fi = -P * dF_dx * V[qe_off];
 
@@ -219,35 +202,19 @@ __global__ void kernel_solve(
         i = (b>i) ? b : i;
     }
 
-    /*
-    const int off = 12;
-    const int nb_val = size_of_block * off;
-    const int t = size_of_block;
-    __syncthreads();
-    for(int i = nb_val/2; i >= off; i>>=1) {
-        int a = (i / off) * off;
-        int b = ((i+off-1) / off) * off;
-        for(int j = 0; j < a; j+= t)
-        {
-            if(tid < a-j) {
-                s_f_H[tid+j] += s_f_H[b+tid+j];
-            }
-        }
-        __syncthreads();
-        i = b;
-    }*/
-
     if (threadIdx.x == 0) {
-        H = Matrix3x3(0.f);
-        H[0][0] += s_f_H[3]; H[0][1] += s_f_H[6]; H[0][2] += s_f_H[9];
-        H[1][0] += s_f_H[4]; H[1][1] += s_f_H[7]; H[1][2] += s_f_H[10];
-        H[2][0] += s_f_H[5]; H[2][1] += s_f_H[8]; H[2][2] += s_f_H[11];
+        H[0][0] = s_f_H[3]; H[0][1] = s_f_H[6]; H[0][2] = s_f_H[9];
+        H[1][0] = s_f_H[4]; H[1][1] = s_f_H[7]; H[1][2] = s_f_H[10];
+        H[2][0] = s_f_H[5]; H[2][1] = s_f_H[8]; H[2][2] = s_f_H[11];
+        fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
 
+        // damping
+        fi += -(damping / dt) * H * (p[vid] - prev_p[vid]);
+        H += damping / dt * H;
+
+        // intertia
         scalar mh2 = mass[vid] / (dt*dt);
-        fi = -mh2 * (p[vid] - y[vid]);
-        fi -= (damping / dt) * H * (p[vid] - prev_p[vid]);
-        fi.x += s_f_H[0]; fi.y += s_f_H[1]; fi.z += s_f_H[2];
-
+        fi += -mh2 * (p[vid] - y[vid]);
         H[0][0] += mh2;
         H[1][1] += mh2;
         H[2][2] += mh2;
@@ -263,12 +230,12 @@ __global__ void kernel_solve(
 
 
 
-void GPU_VBD_FEM::step(const GPU_VBD* vbd, const scalar dt) {
+void GPU_VBD_FEM::step(const GPU_VBD* vbd, const scalar dt, const scalar damping) {
     for(int c = 0; c < nb_color; ++c) {
         int grid_size = (c_nb_threads[c]+c_block_size[c]-1)/c_block_size[c];
 
         kernel_solve<<<grid_size, c_block_size[c]>>>(
-        c_nb_threads[c], nb_quadrature, elem_nb_vert, lambda, mu, 1e-6, dt, c_offsets[c],
+        c_nb_threads[c], nb_quadrature, elem_nb_vert, lambda, mu, damping, dt, c_offsets[c],
         cb_nb_neighbors->buffer, cb_neighbors_offset->buffer, cb_neighbors->buffer, cb_ref_vid->buffer,
         cb_topology->buffer,
         vbd->y->buffer, vbd->cb_position->buffer,vbd->cb_prev_position->buffer, vbd->cb_forces->buffer, vbd->cb_mass->buffer,
@@ -287,13 +254,13 @@ void GPU_VBD::step(const scalar dt) const {
         // integration / first guess
         kernel_integration<<<(n + 255)/256, 256>>>(n,sub_dt,Dynamic::gravity(),
             cb_position->buffer,cb_prev_position->buffer,y->buffer, prev_it_p->buffer,
-            prev_v->buffer, cb_velocity->buffer,cb_forces->buffer, cb_inv_mass->buffer);
+            cb_velocity->buffer,cb_forces->buffer, cb_inv_mass->buffer);
 
         for(int j = 0; j < iteration; ++j) {
             // solve
-            dynamic->step(this, sub_dt);
+            dynamic->step(this, sub_dt, _damping);
             kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), v*0.01f, -v, cb_init_position->buffer, y->buffer, cb_position->buffer);
-            kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), v*1.99f, v, cb_init_position->buffer, y->buffer, cb_position->buffer);
+            //kernel_plane_fix<<<(n + 255)/256, 256>>>(n, Time::Fixed_Timer(), v*1.99f, v, cb_init_position->buffer, y->buffer, cb_position->buffer);
             // Acceleration (Chebychev)
             if(j == 1) omega = 2.f / (2.f - r * r);
             else if(j > 1) omega = 4.f / (4.f - r * r * omega);
@@ -301,7 +268,7 @@ void GPU_VBD::step(const scalar dt) const {
         }
         // velocity update
         kernel_velocity_update<<<(n + 255)/256, 256>>>(n,sub_dt,
-            cb_prev_position->buffer, cb_position->buffer, prev_v->buffer, cb_velocity->buffer, cb_inv_mass->buffer);
+            cb_prev_position->buffer, cb_position->buffer, cb_velocity->buffer, cb_inv_mass->buffer);
     }
     cudaDeviceSynchronize();
     scalar time = Time::Tac() *1000.f;

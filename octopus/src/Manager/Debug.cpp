@@ -142,7 +142,7 @@ void DebugUI_Range::draw(int w, int h) {
     ImGui::Text("Min = %s   Max = %s   Mean = %s", s_min.c_str(), s_max.c_str(), s_mean.c_str());
 }
 
-void DebugUI_Range::add_value(float value) {
+void DebugUI_Range::add_value(const float value) {
     ++_nb_values;
     _vsum += value;
     _vmean = _vsum / static_cast<scalar>(_nb_values);

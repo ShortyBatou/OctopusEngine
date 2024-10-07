@@ -21,7 +21,7 @@ void VBD_FEM_Dynamic::build_dynamic()
             _ps->get(i)->mass = masses[i];
             _ps->get(i)->inv_mass = 1.f / masses[i];
         }
-        vbd->setFEM(new VBD_FEM(topo, _mesh->geometry(), get_fem_shape(e), get_fem_material(_material, _young, _poisson)));
+        vbd->setFEM(new VBD_FEM(topo, _mesh->geometry(), get_fem_shape(e), get_fem_material(_material, _young, _poisson), _damping));
         break;
     }
 }

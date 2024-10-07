@@ -11,20 +11,18 @@ struct GPU_VBD_FEM;
 
 struct GPU_VBD : GPU_ParticleSystem {
     GPU_VBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it, const int sub_it, const scalar damping)
-    : GPU_ParticleSystem(positions, masses), iteration(it), sub_iteration(sub_it), global_damping(damping), integrator(new GPU_SemiExplicit()) {
+    : GPU_ParticleSystem(positions, masses), iteration(it), sub_iteration(sub_it), _damping(damping), integrator(new GPU_SemiExplicit()) {
         y = new Cuda_Buffer(positions);
         prev_it_p = new Cuda_Buffer(positions);
         prev_it2_p = new Cuda_Buffer(positions);
-        prev_v = new Cuda_Buffer(std::vector<Vector3>(n, Unit3D::Zero()));
     }
 
     void step(scalar dt) const;
 
     int iteration;
     int sub_iteration;
-    scalar global_damping;
+    scalar _damping;
     Cuda_Buffer<Vector3>* y;
-    Cuda_Buffer<Vector3>* prev_v;
     Cuda_Buffer<Vector3>* prev_it_p;
     Cuda_Buffer<Vector3>* prev_it2_p;
 
@@ -37,7 +35,7 @@ struct GPU_VBD : GPU_ParticleSystem {
 struct GPU_VBD_FEM {
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
         const scalar& young, const scalar& poisson);
-    void step(const GPU_VBD* vbd, scalar dt);
+    void step(const GPU_VBD* vbd, scalar dt, scalar damping);
     void build_graph_color(const Mesh::Topology &topology, int nb_vertices,
         std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& ref_id);
     void build_fem_const(const Mesh::Geometry &geometry, const Mesh::Topology& topology);

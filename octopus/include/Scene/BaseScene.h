@@ -55,7 +55,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -67,24 +67,25 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e6f;
-        args.poisson = 0.45f;
-        args.damping = 0.000;
-        args.iteration = 1;
-        args.sub_iteration = 100;
+        args.young = 1e7f;
+        args.poisson = 0.49f;
+        args.damping = 1e-6;
+        args.iteration = 10;
+        args.sub_iteration = 16;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(2, 1, 1);
-        Vector3I cells(32, 16, 16);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra10, args, true);
-        cells = Vector3I(8, 4, 4);
-        args.iteration = 150;
+        cells = Vector3I(128, 32, 32);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Hexa, args, true);
+        cells = Vector3I(16, 4, 4);
+        args.iteration = 300;
         args.damping = 0.001;
-        build_fem_entity(Vector3(0,0,2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra, args);
+        //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
         //args.sub_iteration = 100;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
         //cells = Vector3I(10, 20, 10);

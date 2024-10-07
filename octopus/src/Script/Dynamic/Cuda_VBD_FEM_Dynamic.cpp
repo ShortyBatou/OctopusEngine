@@ -7,6 +7,7 @@
 #include <Manager/Debug.h>
 #include "GPU/GPU_PBD.h"
 #include <set>
+#include <Manager/Input.h>
 
 
 void Cuda_VBD_FEM_Dynamic::init() {
@@ -20,7 +21,7 @@ void Cuda_VBD_FEM_Dynamic::init() {
             masses[i] += e_masses[i];
     }
 
-    vbd = new GPU_VBD(_mesh->geometry(), masses, _iteration, _sub_iteration, 0.f);
+    vbd = new GPU_VBD(_mesh->geometry(), masses, _iteration, _sub_iteration, _damping);
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         vbd->dynamic = new GPU_VBD_FEM(e, topo, _mesh->geometry(), _young, _poisson);
@@ -30,45 +31,15 @@ void Cuda_VBD_FEM_Dynamic::init() {
 }
 
 void Cuda_VBD_FEM_Dynamic::update() {
-    /*if(Time::Frame() == 1) {
-        // coloration
-        for(auto&[e, topo] : _mesh->topologies()) {
-            if(topo.empty()) continue;
-            std::vector<int> colors;
-            const int nb_color = get_vertex_coloration(e, _mesh->nb_vertices(), topo, colors);
-            std::vector<Color> color_map(nb_color);
-            for(auto & c : color_map) {
-                c = ColorBase::HSL2RGB(Random::Range(0.f,360.f), Random::Range(42.f,98.f), Random::Range(40.f,90.f));
-            }
-            _display_colors[e].resize(colors.size());
-            for(int i = 0; i < colors.size(); ++i) {
-                _display_colors[e][i] = color_map[colors[i]];
-            }
-            break;
-        }
+    if(Input::Down(Key::Q)) vbd->sub_iteration++;
+    if(Input::Down(Key::A)) vbd->sub_iteration--;
+    if(Input::Down(Key::W)) vbd->iteration++;
+    if(Input::Down(Key::S)) vbd->iteration--;
+
+    if(Input::Down(Key::Q) || Input::Down(Key::A) || Input::Down(Key::W) || Input::Down(Key::S)) {
+        std::cout << vbd->sub_iteration << " " << vbd->iteration << std::endl;
     }
 
-    if(Time::Frame() > 0) {
-
-        GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
-        for(auto&[e, topo] : _mesh->topologies()) {
-            if(topo.empty()) continue;
-            graphic->set_vcolors(_display_colors[e]);
-            graphic->set_multi_color(true);
-            break;
-        }
-
-    }
-
-    Time::Tic();
-
-
-    const scalar time = Time::Tac() * 1000.f;
-    DebugUI::Begin("VBD");
-    DebugUI::Plot("Time GPU VBD ", time, 600);
-    DebugUI::Value("Time", time);
-    DebugUI::Range("Range", time);
-    DebugUI::End();*/
 
     vbd->step(Time::Fixed_DeltaTime());
     vbd->get_position(_mesh->geometry());
