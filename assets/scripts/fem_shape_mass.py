@@ -153,11 +153,8 @@ I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
 
 #I = np.matmul(np.transpose(I21), np.transpose(I12))
 I = np.matmul(I21, I12)
-print(I)
-print(get_lumped(I))
-print(mass_p2)
-print(get_lumped(mass_p2))
-print(np.trace(get_lumped(mass_p2)))
+print(I21)
+print(I12)
 '''
 v = np.random.randn(4)
 print("v = ", v)
