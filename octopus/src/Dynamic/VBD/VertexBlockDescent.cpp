@@ -227,12 +227,12 @@ void VertexBlockDescent::chebyshev_acceleration(const int it, scalar &omega) {
 void VertexBlockDescent::step(const scalar dt) {
     const scalar sub_dt = dt / static_cast<scalar>(_sub_iteration);
     for (int i = 0; i < _sub_iteration; ++i) {
-        _fem->compute_inertia(this, sub_dt);
+        for(VBD_FEM* fem : _fems) fem->compute_inertia(this, sub_dt);
         // get the first guess
         step_solver(sub_dt);
         scalar omega = 0;
         for (int j = 0; j < _iteration; ++j) {
-            _fem->solve(this, sub_dt);
+            for(VBD_FEM* fem : _fems) fem->solve(this, sub_dt);
             chebyshev_acceleration(j, omega);
         }
         step_effects(sub_dt);

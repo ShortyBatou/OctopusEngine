@@ -44,7 +44,7 @@ protected:
 
 struct VertexBlockDescent final : ParticleSystem {
     explicit VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
-        : ParticleSystem(solver), _fem(nullptr), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
+        : ParticleSystem(solver), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
     }
 
     [[nodiscard]] scalar compute_omega(const scalar omega, const int it) const {
@@ -59,12 +59,14 @@ struct VertexBlockDescent final : ParticleSystem {
 
     void update_velocity(scalar dt) const;
 
-    void setFEM(VBD_FEM *fem) { _fem = fem; }
+    void addFEM(VBD_FEM *fem) { _fems.push_back(fem); }
 
-    ~VertexBlockDescent() override = default;
+    ~VertexBlockDescent() override {
+        for(const VBD_FEM* fem : _fems) delete fem;
+    }
 
 protected:
-    VBD_FEM *_fem;
+    std::vector<VBD_FEM *>_fems;
     std::vector<Vector3> prev_x;
     std::vector<Vector3> prev_prev_x;
 
