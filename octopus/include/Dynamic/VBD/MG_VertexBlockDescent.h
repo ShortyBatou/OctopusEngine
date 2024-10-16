@@ -45,10 +45,11 @@ struct Grid_Interpolation {
 /// 1 VBD_FEM par niveau
 /// 1 grid_interpolation entre chaque niveau
 /// L'interpolation doit faire passer la déformation d'un niveau à un autre
-/// Prec_position => position
-/// Au début de l'itération, il faut faire passer l'information de déformation à tous les niveau d'en dessous
-/// => comment faire ? on regarde la différence entre la position initiale de notre maillage le plus détaillé et on le fait passer de niveau en niveau
-/// => autrement dit on va utiliser u(X) pour partager l'information ! new_position = init_position + sum u(x_i) w_i
+/// Quand on décend de niveau, on change rien au niveau de la position.
+/// Le guess y et x sont valides dans tous les niveaux
+/// Donc on peut passer direct de P2 à P1 sans modificaiton du système de particule (il y a juste la masse qui va changer)
+/// A chaque niveau on va modifier directement p mais on va aussi retenir la correction dx
+/// à la fin de l'itération, on interpole dx vers le niveau au dessus
 struct MG_VBD_FEM {
     MG_VBD_FEM(const Mesh::Topology &topology, ParticleSystem *ps, FEM_Shape *shape, FEM_ContinuousMaterial *material) {
         // init global shape (P2)
