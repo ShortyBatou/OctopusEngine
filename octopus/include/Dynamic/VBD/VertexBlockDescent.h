@@ -4,8 +4,8 @@
 #include "Core/Base.h"
 #include "Dynamic/Base/ParticleSystem.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
-
-struct VBD_FEM {
+#include "Dynamic/VBD/VBD_Object.h"
+struct VBD_FEM final : VBD_Object{
     VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape,
             FEM_ContinuousMaterial *material, scalar k_damp = 0.f);
 
@@ -13,7 +13,7 @@ struct VBD_FEM {
 
     void build_fem_const(const Mesh::Topology &topology, const Mesh::Geometry &geometry);
 
-    void solve(ParticleSystem *ps, scalar dt);
+    void solve(ParticleSystem *ps, scalar dt) override;
 
     void plot_residual(ParticleSystem *ps, scalar dt);
 
@@ -27,7 +27,7 @@ struct VBD_FEM {
 
     Matrix3x3 assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, Vector3 dF_dx);
 
-    void compute_inertia(ParticleSystem *ps, scalar dt);
+    void compute_inertia(ParticleSystem *ps, scalar dt) override;
 
 protected:
     scalar _k_damp;
@@ -59,14 +59,14 @@ struct VertexBlockDescent final : ParticleSystem {
 
     void update_velocity(scalar dt) const;
 
-    void addFEM(VBD_FEM *fem) { _fems.push_back(fem); }
+    void add(VBD_Object *obj) { _objs.push_back(obj); }
 
     ~VertexBlockDescent() override {
-        for(const VBD_FEM* fem : _fems) delete fem;
+        for(const VBD_Object* obj : _objs) delete obj;
     }
 
 protected:
-    std::vector<VBD_FEM *>_fems;
+    std::vector<VBD_Object *> _objs;
     std::vector<Vector3> prev_x;
     std::vector<Vector3> prev_prev_x;
 
