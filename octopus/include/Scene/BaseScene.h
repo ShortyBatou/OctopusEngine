@@ -68,10 +68,10 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.young = 1e7f;
-        args.poisson = 0.40f;
+        args.poisson = 0.45f;
         args.damping = 1e-5;
-        args.iteration = 5;
-        args.sub_iteration = 1;
+        args.iteration = 2;
+        args.sub_iteration = 25;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
@@ -81,13 +81,18 @@ struct BaseScene final : Scene
         Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         cells = Vector3I(8, 2, 2);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra10, args, false);
+        build_obj(Vector3(0,0,0), cells,size, Color(0.65f,0.35f,0.85f,0.f), Tetra10, args, true);
+        cells = Vector3I(16, 4, 4);
+        build_obj(Vector3(0,0,1.2), cells,size, Color(0.65f,0.35f,0.85f,0.f), Tetra10, args, true);
+        cells = Vector3I(32, 8, 8);
+        build_obj(Vector3(0,0,2.4), cells,size, Color(0.65f,0.35f,0.85f,0.f), Tetra10, args, true);
+
         args.iteration = 25;
-        build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args, false);
+        //build_obj(Vector3(0,0,1.2), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args, false);
         cells = Vector3I(8, 2, 2);
         args.iteration = 150;
         args.damping = 0.001;
-        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
+        //build_fem_entity(Vector3(0,0,2.4), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
         //args.sub_iteration = 100;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
         //cells = Vector3I(10, 20, 10);
