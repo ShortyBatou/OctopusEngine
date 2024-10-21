@@ -28,6 +28,7 @@ void P1_to_P2::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
     for (int i = 0; i < ids.size(); i++) {
         const int a = edges[i].first, b = edges[i].second;
         ps->get(ids[i])->position += (dx[a] + dx[b]) * 0.5f;
+        Debug::Line(ps->get(a)->position, ps->get(b)->position);
     }
 }
 
