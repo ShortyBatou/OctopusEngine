@@ -81,7 +81,6 @@ void UI_Camera::draw(Entity* entity) {
 }
 
 
-
 void UI_Mesh_Display::draw(Entity* entity) {
 
 	GL_Graphic* gl_graphic = entity->get_component< GL_Graphic>();

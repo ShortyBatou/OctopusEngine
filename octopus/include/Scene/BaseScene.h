@@ -69,11 +69,11 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.young = 1e7f;
         args.poisson = 0.40f;
-        args.damping = 1e-5;
+        args.damping = 1e-4;
         args.iteration = 5;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
@@ -81,13 +81,13 @@ struct BaseScene final : Scene
         Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         cells = Vector3I(8, 2, 2);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra10, args, false);
-        args.iteration = 25;
-        build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args, false);
+        //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra10, args, false);
+        args.iteration = 100;
+        //build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args, false);
+        cells = Vector3I(16, 4, 4);
+        build_fem_entity(Vector3(0,0,1.1), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa, args);
         cells = Vector3I(8, 2, 2);
-        args.iteration = 150;
-        args.damping = 0.001;
-        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
+        build_fem_entity(Vector3(0,0,0), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa27, args);
         //args.sub_iteration = 100;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
         //cells = Vector3I(10, 20, 10);
@@ -99,12 +99,11 @@ struct BaseScene final : Scene
         BeamMeshGenerator* generator = nullptr;
         switch (element)
         {
-            case Tetra: generator = new TetraBeamGenerator(cells, size); break;
+            case Tetra: case Tetra10: case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
             case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
             case Prism: generator = new PrismBeamGenerator(cells, size); break;
-            case Hexa: generator = new HexaBeamGenerator(cells, size); break;
-            case Tetra10: generator = new TetraBeamGenerator(cells, size); break;
-            case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
+            case Hexa: case Hexa27: generator = new HexaBeamGenerator(cells, size); break;
+
             default: generator = new TetraBeamGenerator(cells, size); break;
         }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
@@ -118,19 +117,20 @@ struct BaseScene final : Scene
         Mesh* mesh = get_beam_mesh(pos, cells, size, element);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+        if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
         return mesh;
     }
 
     GL_Graphic* build_graphic(const Color& color, const Element element) {
-        return new GL_GraphicSurface(color);
+        return new GL_GraphicHighOrder(2, color);
     }
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->surface() = true;
         display->wireframe() = true;
-        display->point() = false;
+        display->point() = true;
         return display;
     }
 

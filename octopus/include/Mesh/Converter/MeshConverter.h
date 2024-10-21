@@ -122,7 +122,7 @@ struct PrysmConverter : MeshConverter {
     [[nodiscard]] FEM_Shape *get_shape() const override { return new Prism_6(); }
 };
 
-struct HexaConverter : public MeshConverter {
+struct HexaConverter : MeshConverter {
     [[nodiscard]] Element get_element_type() const override { return Hexa; }
 
 
@@ -131,7 +131,12 @@ struct HexaConverter : public MeshConverter {
     }
 
     [[nodiscard]] Mesh::Topology get_elem_topo_quad() const override {
-        return {4, 5, 1, 0, 0, 1, 2, 3, 5, 6, 2, 1, 7, 4, 0, 3, 7, 6, 5, 4, 3, 2, 6, 7};
+        return {0, 1, 2, 3,
+                  4, 5, 1, 0,
+                  5, 6, 2, 1,
+                  3, 2, 6, 7,
+                  7, 4, 0, 3,
+                  7, 6, 5, 4};
     }
 
     [[nodiscard]] Mesh::Topology get_elem_topo_triangle() const override { return {}; }
@@ -139,7 +144,7 @@ struct HexaConverter : public MeshConverter {
 };
 
 
-struct Tetra10Converter : public TetraConverter {
+struct Tetra10Converter : TetraConverter {
     [[nodiscard]] Element get_element_type() const override { return Tetra10; }
 
     [[nodiscard]] Mesh::Topology get_elem_topo_edges() const override {
@@ -189,4 +194,33 @@ struct Tetra20Converter : public TetraConverter {
 
 
     [[nodiscard]] FEM_Shape *get_shape() const override { return new Tetra_20(); }
+};
+
+struct Hexa27Converter : HexaConverter {
+    [[nodiscard]] Element get_element_type() const override { return Hexa27; }
+
+    [[nodiscard]] Mesh::Topology get_elem_topo_edges() const override {
+        return
+        {
+            0,8,8,1, 1,9,9,2, 2,10,10,3, 3,11,11,0, 0,12,12,4, 1,13,13,5, 2,14,14,6, 3,15,15,1, 4,16,16,5, 5,17,17,6, 6,18,18,7, 7,19,19,4
+        };
+    }
+
+    [[nodiscard]] Mesh::Topology get_elem_topo_triangle() const override {
+        return { };
+    }
+
+    [[nodiscard]] Mesh::Topology get_elem_topo_quad() const override {
+        return {
+            3,10,20,11, 10,2,9,20, 11,20,8,0, 20,9,1,8,
+            4,16,21,12, 16,5,13,21, 12,21,8,0, 21,13,1,8,
+            5,17,22,13, 17,6,14,22, 13,22,9,1, 22,14,2,9,
+            6,18,23,14, 18,7,15,23, 14,23,10,2, 23,15,3,10,
+            7,19,24,15, 19,4,12,24, 15,24,11,3, 24,12,0,11,
+            7,18,25,19, 18,6,17,25, 19,25,16,4, 25,17,5,16
+        };
+    }
+
+
+    [[nodiscard]] FEM_Shape *get_shape() const override { return new Hexa_27(); }
 };

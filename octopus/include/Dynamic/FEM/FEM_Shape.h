@@ -334,8 +334,8 @@ struct Tetra_20 final : FEM_Shape {
     }
 
     [[nodiscard]] Mesh::Geometry get_vertices() const override {
-        const scalar a = 1.f / 3.f;
-        const scalar b = 2.f / 3.f;
+        constexpr scalar a = 1.f / 3.f;
+        constexpr scalar b = 2.f / 3.f;
 
         return {
             Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1), // 0,1,2,3
@@ -438,9 +438,9 @@ struct Tetra_20 final : FEM_Shape {
 
     // compute N_i(X)
     [[nodiscard]] std::vector<scalar> build_shape(scalar x, scalar y, scalar z) const override {
-        const scalar a = 0.5;
-        const scalar b = 9. / 2.;
-        const scalar c = 27.;
+        constexpr scalar a = 0.5;
+        constexpr scalar b = 9. / 2.;
+        constexpr scalar c = 27.;
         return {
             //corner nodes
             a * (3 * (1 - x - y - z) - 1) * (3 * (1 - x - y - z) - 2) * (1 - x - y - z), // 0
@@ -480,6 +480,199 @@ struct Tetra_20 final : FEM_Shape {
     void debug_draw(std::vector<Vector3> &pts) override {
     }
 };
+
+struct Hexa_27 final : FEM_Shape {
+    Hexa_27() : FEM_Shape(27) { FEM_Shape::build(); }
+
+    [[nodiscard]] std::vector<scalar> get_quadrature_coordinates() const override {
+        const scalar v = sqrt(3.f/5.f);
+        return {
+            // corner
+            -v,-v,-v, v,-v,-v, v,v,-v, -v,v,-v,
+            -v,-v,v, v,-v,v, v,v,v, -v,v,v,
+
+            //edge
+            0,-v,-v, v,0,-v, 0,v,-v, -v,0,-v,
+            -v,-v,0, v,-v,0, v,v,0, -v,v,0,
+            0,-v,v, v,0,v, 0,v,v,-v,0,v,
+
+            //face
+            0,0,-v, 0,-v,0, v,0,0,
+            0,v,0, -v,0,0, 0,0,v,
+
+            //Volume
+            0,0,0
+        };
+    }
+
+    [[nodiscard]] std::vector<scalar> get_weights() const override {
+        constexpr scalar z = 8.f / 9.f;
+        constexpr scalar v = 5.f / 9.f;
+        constexpr scalar w1 = v*v*v, w2 = v*v*z, w3 = v*z*z, w4 = z*z*z;
+        return {
+            w1,w1,w1,w1,w1,w1,w1,w1, // corner
+            w2,w2,w2,w2,w2,w2,w2,w2,w2,w2,w2,w2, // edge
+            w3,w3,w3,w3,w3,w3, // face
+            w4 // volume
+        };
+    }
+
+    [[nodiscard]] Mesh::Geometry get_vertices() const override {
+        return {
+            // corner
+            Vector3(-1,-1,-1),Vector3(1,-1,-1),Vector3(1,1,-1),Vector3(-1,1,-1),
+            Vector3(-1,-1,1),Vector3(1,-1,1),Vector3(1,1,1),Vector3(-1,1,1),
+
+            //edge
+            Vector3(0,-1,-1),Vector3(1,0,-1),Vector3(0,1,-1),Vector3(-1,0,-1),
+            Vector3(-1,-1,0),Vector3(1,-1,0),Vector3(1,1,0),Vector3(-1,1,0),
+            Vector3(0,-1,1),Vector3(1,0,1),Vector3(0,1,1),Vector3(-1,0,1),
+
+            //face
+            Vector3(0,0,-1),Vector3(0,-1,0),Vector3(1,0,0),
+            Vector3(0,1,0),Vector3(-1,0,0),Vector3(0,0,1),
+
+            //Volume
+            Vector3(0,0,0)
+        };
+    }
+
+    [[nodiscard]] std::vector<Vector3> build_shape_derivatives(scalar x, scalar y, scalar z) const override {
+        scalar dN[27 * 3]{
+            x*y*z*(y - 1)*(z - 1)/8 + y*z*(x - 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(y - 1)*(z - 1)/8 + y*z*(x + 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(y + 1)*(z - 1)/8 + y*z*(x + 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(y + 1)*(z - 1)/8 + y*z*(x - 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(y - 1)*(z + 1)/8 + y*z*(x - 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(y - 1)*(z + 1)/8 + y*z*(x + 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(y + 1)*(z + 1)/8 + y*z*(x + 1)*(y + 1)*(z + 1)/8,
+            x*y*z*(y + 1)*(z + 1)/8 + y*z*(x - 1)*(y + 1)*(z + 1)/8,
+
+            -y*z*(x - 1)*(y - 1)*(z - 1)/4 - y*z*(x + 1)*(y - 1)*(z - 1)/4,
+            -x*z*(y - 1)*(y + 1)*(z - 1)/4 - z*(x + 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -y*z*(x - 1)*(y + 1)*(z - 1)/4 - y*z*(x + 1)*(y + 1)*(z - 1)/4,
+            -x*z*(y - 1)*(y + 1)*(z - 1)/4 - z*(x - 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -x*y*(y - 1)*(z - 1)*(z + 1)/4 - y*(x - 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(y - 1)*(z - 1)*(z + 1)/4 - y*(x + 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(y + 1)*(z - 1)*(z + 1)/4 - y*(x + 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -x*y*(y + 1)*(z - 1)*(z + 1)/4 - y*(x - 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -y*z*(x - 1)*(y - 1)*(z + 1)/4 - y*z*(x + 1)*(y - 1)*(z + 1)/4,
+            -x*z*(y - 1)*(y + 1)*(z + 1)/4 - z*(x + 1)*(y - 1)*(y + 1)*(z + 1)/4,
+            -y*z*(x - 1)*(y + 1)*(z + 1)/4 - y*z*(x + 1)*(y + 1)*(z + 1)/4,
+            -x*z*(y - 1)*(y + 1)*(z + 1)/4 - z*(x - 1)*(y - 1)*(y + 1)*(z + 1)/4,
+
+            z*(x - 1)*(y - 1)*(y + 1)*(z - 1)/2 + z*(x + 1)*(y - 1)*(y + 1)*(z - 1)/2,
+            y*(x - 1)*(y - 1)*(z - 1)*(z + 1)/2 + y*(x + 1)*(y - 1)*(z - 1)*(z + 1)/2,
+            x*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2 + (x + 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            y*(x - 1)*(y + 1)*(z - 1)*(z + 1)/2 + y*(x + 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            x*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2 + (x - 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            z*(x - 1)*(y - 1)*(y + 1)*(z + 1)/2 + z*(x + 1)*(y - 1)*(y + 1)*(z + 1)/2,
+
+            (1 - x)*(y - 1)*(y + 1)*(z - 1)*(z + 1) - (x + 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1),
+
+            x*y*z*(x - 1)*(z - 1)/8 + x*z*(x - 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(z - 1)/8 + x*z*(x + 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(z - 1)/8 + x*z*(x + 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(z - 1)/8 + x*z*(x - 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(z + 1)/8 + x*z*(x - 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(z + 1)/8 + x*z*(x + 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(z + 1)/8 + x*z*(x + 1)*(y + 1)*(z + 1)/8,
+            x*y*z*(x - 1)*(z + 1)/8 + x*z*(x - 1)*(y + 1)*(z + 1)/8,
+
+            -y*z*(x - 1)*(x + 1)*(z - 1)/4 - z*(x - 1)*(x + 1)*(y - 1)*(z - 1)/4,
+            -x*z*(x + 1)*(y - 1)*(z - 1)/4 - x*z*(x + 1)*(y + 1)*(z - 1)/4,
+            -y*z*(x - 1)*(x + 1)*(z - 1)/4 - z*(x - 1)*(x + 1)*(y + 1)*(z - 1)/4,
+            -x*z*(x - 1)*(y - 1)*(z - 1)/4 - x*z*(x - 1)*(y + 1)*(z - 1)/4,
+            -x*y*(x - 1)*(z - 1)*(z + 1)/4 - x*(x - 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(z - 1)*(z + 1)/4 - x*(x + 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(z - 1)*(z + 1)/4 - x*(x + 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x - 1)*(z - 1)*(z + 1)/4 - x*(x - 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(z + 1)/4 - z*(x - 1)*(x + 1)*(y - 1)*(z + 1)/4,
+            -x*z*(x + 1)*(y - 1)*(z + 1)/4 - x*z*(x + 1)*(y + 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(z + 1)/4 - z*(x - 1)*(x + 1)*(y + 1)*(z + 1)/4,
+            -x*z*(x - 1)*(y - 1)*(z + 1)/4 - x*z*(x - 1)*(y + 1)*(z + 1)/4,
+
+            z*(x - 1)*(x + 1)*(y - 1)*(z - 1)/2 + z*(x - 1)*(x + 1)*(y + 1)*(z - 1)/2,
+            y*(x - 1)*(x + 1)*(z - 1)*(z + 1)/2 + (x - 1)*(x + 1)*(y - 1)*(z - 1)*(z + 1)/2,
+            x*(x + 1)*(y - 1)*(z - 1)*(z + 1)/2 + x*(x + 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            y*(x - 1)*(x + 1)*(z - 1)*(z + 1)/2 + (x - 1)*(x + 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            x*(x - 1)*(y - 1)*(z - 1)*(z + 1)/2 + x*(x - 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            z*(x - 1)*(x + 1)*(y - 1)*(z + 1)/2 + z*(x - 1)*(x + 1)*(y + 1)*(z + 1)/2,
+
+            (1 - x)*(x + 1)*(y - 1)*(z - 1)*(z + 1) + (1 - x)*(x + 1)*(y + 1)*(z - 1)*(z + 1),
+
+
+            x*y*z*(x - 1)*(y - 1)/8 + x*y*(x - 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(y - 1)/8 + x*y*(x + 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(y + 1)/8 + x*y*(x + 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(y + 1)/8 + x*y*(x - 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(y - 1)/8 + x*y*(x - 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(y - 1)/8 + x*y*(x + 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(y + 1)/8 + x*y*(x + 1)*(y + 1)*(z + 1)/8,
+            x*y*z*(x - 1)*(y + 1)/8 + x*y*(x - 1)*(y + 1)*(z + 1)/8,
+
+            -y*z*(x - 1)*(x + 1)*(y - 1)/4 - y*(x - 1)*(x + 1)*(y - 1)*(z - 1)/4,
+            -x*z*(x + 1)*(y - 1)*(y + 1)/4 - x*(x + 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y + 1)/4 - y*(x - 1)*(x + 1)*(y + 1)*(z - 1)/4,
+            -x*z*(x - 1)*(y - 1)*(y + 1)/4 - x*(x - 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -x*y*(x - 1)*(y - 1)*(z - 1)/4 - x*y*(x - 1)*(y - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(y - 1)*(z - 1)/4 - x*y*(x + 1)*(y - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(y + 1)*(z - 1)/4 - x*y*(x + 1)*(y + 1)*(z + 1)/4,
+            -x*y*(x - 1)*(y + 1)*(z - 1)/4 - x*y*(x - 1)*(y + 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y - 1)/4 - y*(x - 1)*(x + 1)*(y - 1)*(z + 1)/4,
+            -x*z*(x + 1)*(y - 1)*(y + 1)/4 - x*(x + 1)*(y - 1)*(y + 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y + 1)/4 - y*(x - 1)*(x + 1)*(y + 1)*(z + 1)/4,
+            -x*z*(x - 1)*(y - 1)*(y + 1)/4 - x*(x - 1)*(y - 1)*(y + 1)*(z + 1)/4,
+
+            z*(x - 1)*(x + 1)*(y - 1)*(y + 1)/2 + (x - 1)*(x + 1)*(y - 1)*(y + 1)*(z - 1)/2,
+            y*(x - 1)*(x + 1)*(y - 1)*(z - 1)/2 + y*(x - 1)*(x + 1)*(y - 1)*(z + 1)/2,
+            x*(x + 1)*(y - 1)*(y + 1)*(z - 1)/2 + x*(x + 1)*(y - 1)*(y + 1)*(z + 1)/2,
+            y*(x - 1)*(x + 1)*(y + 1)*(z - 1)/2 + y*(x - 1)*(x + 1)*(y + 1)*(z + 1)/2,
+            x*(x - 1)*(y - 1)*(y + 1)*(z - 1)/2 + x*(x - 1)*(y - 1)*(y + 1)*(z + 1)/2,
+            z*(x - 1)*(x + 1)*(y - 1)*(y + 1)/2 + (x - 1)*(x + 1)*(y - 1)*(y + 1)*(z + 1)/2,
+
+            (1 - x)*(x + 1)*(y - 1)*(y + 1)*(z - 1) + (1 - x)*(x + 1)*(y - 1)*(y + 1)*(z + 1)
+        };
+
+        return this->convert_dN_to_vector3(dN);
+    }
+
+    [[nodiscard]] std::vector<scalar> build_shape(scalar x, scalar y, scalar z) const override {
+        return {
+            x*y*z*(x - 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(y - 1)*(z - 1)/8,
+            x*y*z*(x + 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(y + 1)*(z - 1)/8,
+            x*y*z*(x - 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(y - 1)*(z + 1)/8,
+            x*y*z*(x + 1)*(y + 1)*(z + 1)/8,
+            x*y*z*(x - 1)*(y + 1)*(z + 1)/8,
+
+            -y*z*(x - 1)*(x + 1)*(y - 1)*(z - 1)/4,
+            -x*z*(x + 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y + 1)*(z - 1)/4,
+            -x*z*(x - 1)*(y - 1)*(y + 1)*(z - 1)/4,
+            -x*y*(x - 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(y - 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x + 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -x*y*(x - 1)*(y + 1)*(z - 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y - 1)*(z + 1)/4,
+            -x*z*(x + 1)*(y - 1)*(y + 1)*(z + 1)/4,
+            -y*z*(x - 1)*(x + 1)*(y + 1)*(z + 1)/4,
+            -x*z*(x - 1)*(y - 1)*(y + 1)*(z + 1)/4,
+
+            z*(x - 1)*(x + 1)*(y - 1)*(y + 1)*(z - 1)/2,
+            y*(x - 1)*(x + 1)*(y - 1)*(z - 1)*(z + 1)/2,
+            x*(x + 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            y*(x - 1)*(x + 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            x*(x - 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)/2,
+            z*(x - 1)*(x + 1)*(y - 1)*(y + 1)*(z + 1)/2,
+
+            -(x - 1)*(x + 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)
+        };
+    }
+};
+
 
 FEM_Shape *get_fem_shape(Element type);
 

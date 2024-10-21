@@ -9,6 +9,7 @@ GL_GraphicSurface::GL_GraphicSurface(const Color &color) : GL_Graphic(color) {
     _converters[Hexa] = new HexaConverter();
     _converters[Tetra10] = new Tetra10Converter();
     _converters[Tetra20] = new Tetra20Converter();
+    _converters[Hexa27] = new Hexa27Converter();
     for (auto &elem: _converters) elem.second->init();
 }
 

@@ -7,7 +7,7 @@
 
 struct FEM_Generic {
     FEM_Generic(ContinuousMaterial *material, FEM_Shape *shape)
-        : _material(material), _shape(shape), _init_volume(0) {
+        : _shape(shape), _material(material), _init_volume(0) {
     }
 
     ~FEM_Generic();

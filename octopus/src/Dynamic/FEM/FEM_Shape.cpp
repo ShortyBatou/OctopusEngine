@@ -44,10 +44,11 @@ FEM_Shape* get_fem_shape(const Element type)
         break;
     case Tetra20: fem = new Tetra_20();
         break;
+    case Hexa27: fem = new Hexa_27();
+        break;
     default: std::cout << "build_element : element not found " << type << std::endl;
         fem = new Tetra_4(); break;
     }
-    fem->build();
     return fem;
 }
 
@@ -77,19 +78,7 @@ std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& 
         for (int j = 0; j < nb_vert_elem; j++)
         {
             const int vid = topology[i + j];
-            if(elem == Tetra10) {
-                if(j < 4) {
-                    mass[vid] += V / 40.f * density;
-                    total_mass += V / 40.f * density;
-                }
-                else {
-                    mass[vid] += V * 6.f / 40.f * density;
-                    total_mass += V * 6.f / 40.f * density;
-                }
-            }
-            else {
-                mass[vid] += v_density * V;
-            }
+            mass[vid] += v_density * V;
         }
     }
     std::cout <<  total_mass << " " << *std::min_element(mass.begin(), mass.end()) << " " << *std::max_element(mass.begin(), mass.end()) << std::endl;

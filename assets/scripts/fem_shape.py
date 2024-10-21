@@ -2,26 +2,51 @@ from sympy import *
 import numpy as np
 from numpy.linalg import inv
 
-order = 1
+order = 2
+
+def build_tetra_base(dim, order):
+    D = len(dim)
+    result = [[1],[dim[0]],[dim[1]],[dim[2]]]
+    base = [[dim[0]],[dim[1]],[dim[2]]]
+    for o in range(order-1):
+        print(base)
+        new_base = [[],[],[]]
+        for i in range(D):
+            for j in range(i, D):
+                for b in base[j]:
+                    new_base[i].append(b * dim[i])
+        base = new_base
+        result = result + new_base
+    return result
+
+def sym_pow(x, n):
+    r = 1
+    for i in range(n):
+        r = r * x
+    return r
+
+def build_hexa_base(dim, order):
+    D = len(dim)
+    x,y,z = dim[0], dim[1], dim[2]
+    result = []
+    for i in range(order+1):
+        for j in range(order+1):
+            for k in range(order+1):
+                b = sym_pow(x, i) * sym_pow(y, j) * sym_pow(z, k)
+                result.append([b])
+    return result
 
 #generate the base functions
 x, y, z = symbols('x y z')
 dim = [x,y,z]
-D = len(dim)
-fn_prv = 1
-fn = 3
-result = [[1],[x],[y],[z]]
-base = [[x],[y],[z]]
-for o in range(order-1):
-    print(base)
-    new_base = [[],[],[]]
-    for i in range(D):
-        for j in range(i, D):
-            for b in base[j]:
-                new_base[i].append(b * dim[i])
-    base = new_base
-    result = result + new_base
-    
+
+
+#tetra
+#result = build_tetra_base(dim, order)
+
+#hexa
+result = build_hexa_base(dim, order)
+print(result)
 basef = []
 for r in result:
     for b in r:
@@ -32,8 +57,15 @@ print("Bases = ", basef)
 
 #generate ref element's vertices
 div = 1 / (order)
-vertices = []
-vertices = [[0,0,0], [1,0,0],[0.5, sqrt(3) / 2, 0], [0.5, sqrt(3) / 6, sqrt(2)/sqrt(3)]]
+#vertices = [[0,0,0],[1,0,0],[0,1,0],[0,0,1]]
+
+#vertices = [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]]
+vertices = [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1],
+            [0,-1,-1],[1,0,-1],[0,1,-1],[-1,0,-1],[-1,-1,0],[1,-1,0],[1,1,0],[-1,1,0],[0,-1,1],[1,0,1],[0,1,1],[-1,0,1],
+            [0,0,-1],[0,-1,0],[1,0,0],[0,1,0],[-1,0,0],[0,0,1],
+            [0,0,0]]
+
+
 '''
 for i in range(order + 1):
     for j in range(order + 1):
@@ -61,7 +93,7 @@ for i in range(N):
     shape = 0
     for j in range(N):
         shape += basef[j] * mat_shape[j][i]
-    #shape = nsimplify(shape) # eval trivial number opperation
+    shape = nsimplify(shape) # eval trivial number opperation
     shape = factor(shape) # factorize
     shapes.append(shape) 
 print("Shapes = ", shapes)

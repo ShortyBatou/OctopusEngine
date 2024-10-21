@@ -10,7 +10,8 @@ enum Element {
     Prism,
     Hexa,
     Tetra10,
-    Tetra20
+    Tetra20,
+    Hexa27
 };
 
 bool is_high_order(Element element);

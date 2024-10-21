@@ -262,6 +262,89 @@ void tetra4_to_tetra20(Mesh::Geometry &geometry, std::map<Element, Mesh::Topolog
     topologies[Tetra].clear();
 }
 
+void hexa_to_hexa27(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies) {
+    Mesh::Topology &hexas = topologies[Hexa];
+    topologies[Hexa27].clear();
+
+    std::vector<int> ids(27);
+
+    HexaConverter hexa_converter;
+    const Mesh::Topology &hexa_edges = hexa_converter.get_elem_topo_edges();
+    const Mesh::Topology &hexa_faces = hexa_converter.get_elem_topo_quad();
+
+    std::map<Face<2>, int > existing_edges;
+    std::map<Face<4>, int > existing_faces;
+
+    ;
+
+
+    for (int i = 0; i < hexas.size(); i += 8) {
+        int j = 0;
+        //corner
+        for (; j < 8; ++j) ids[j] = hexas[i + j];
+
+        // edges
+        for (int k = 0; k < hexa_edges.size(); k += 2) {
+            int e_a = ids[hexa_edges[k]];
+            int e_b = ids[hexa_edges[k + 1]];
+            Face<2> edge({e_a, e_b});
+            auto it = existing_edges.find(edge);
+
+            int id;
+            // edge found in map
+            if (it != existing_edges.end()) {
+                id = existing_edges[edge];
+            } else {
+                id = static_cast<int>(geometry.size());
+                Vector3 p = 0.5f * (geometry[e_a] + geometry[e_b]);
+                geometry.push_back(p);
+                existing_edges[edge] = id;
+            }
+            ids[j] = id;
+            ++j;
+        }
+
+        //faces
+        for (int k = 0; k < hexa_faces.size(); k += 4) {
+            int f_a = ids[hexa_faces[k]];
+            int f_b = ids[hexa_faces[k + 1]];
+            int f_c = ids[hexa_faces[k + 2]];
+            int f_d = ids[hexa_faces[k + 3]];
+            Face<4> face({f_a, f_b, f_c, f_d});
+            // edge found in map
+            int fid;
+            if (existing_faces.find(face) != existing_faces.end()) {
+                fid = existing_faces[face];
+                // only works for P3 because there is only one point
+            } else {
+                scalar w = 1.f / 4.f;
+                Vector3 p = geometry[f_a] * w + geometry[f_b] * w + geometry[f_c] * w + geometry[f_d] * w;
+                fid = static_cast<int>(geometry.size());
+                geometry.push_back(p);
+
+                existing_faces[face] = fid;
+            }
+            ids[j] = fid;
+            ++j;
+        }
+
+        // volume
+        Vector3 center = Unit3D::Zero();
+        for (int k = 0; k < 8; k++) {
+            center += geometry[ids[k]];
+        }
+        center /= 8.f;
+        ids[j] = static_cast<int>(geometry.size());
+        geometry.push_back(center);
+
+        for (int k = 0; k < 27; ++k) {
+            topologies[Hexa27].push_back(ids[k]);
+        }
+    }
+    topologies[Hexa].clear();
+}
+
+
 
 template<typename T>
 std::vector<T> MeshMap::convert(Mesh *mesh, const std::vector<T> &vals) {
@@ -318,7 +401,7 @@ void tetra_refine(
 
             Vector3 pa = ref_tetra_geometry[i + ref_tetra_edges[j]];
             Vector3 pb = ref_tetra_geometry[i + ref_tetra_edges[j + 1]];
-            Vector3 p = scalar(0.5) * (pa + pb);
+            Vector3 p = 0.5f * (pa + pb);
 
 
             Face<2> e(e_topo);

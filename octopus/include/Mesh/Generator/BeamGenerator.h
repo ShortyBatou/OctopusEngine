@@ -78,6 +78,8 @@ void tetra4_to_tetra10(Mesh::Geometry &geometry, std::map<Element, Mesh::Topolog
 
 void tetra4_to_tetra20(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies);
 
+void hexa_to_hexa27(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies);
+
 // convert data in an intial mesh to a target mesh
 struct MeshMap {
     Element s_elem; // what is the initial element type
