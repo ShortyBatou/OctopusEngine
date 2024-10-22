@@ -23,21 +23,43 @@ struct Grid_Level {
     std::vector<std::vector<scalar> > _V; // per element
 };
 
+struct GridInterpolation {
+    virtual ~GridInterpolation() = default;
+    virtual void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) = 0;
+};
 
-struct P1_to_P2 {
+struct P1_to_P2 final : GridInterpolation {
     std::vector<int> ids;
     std::vector<std::pair<int, int> > edges;
     static std::pair<int, int> ref_edges[6];
 
     explicit P1_to_P2(const Mesh::Topology &topology);
 
-    virtual void prolongation(ParticleSystem *ps, std::vector<Vector3> dx);
+    void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) override;
 
-    virtual ~P1_to_P2() = default;
+    ~P1_to_P2() override = default;
 };
 
-struct MG_VBD_FEM : VBD_Object {
-    MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape,
+struct Q1_to_Q2 final : GridInterpolation {
+    std::vector<int> ids_edges;
+    std::vector<int> ids_faces;
+    std::vector<int> ids_volumes;
+    std::vector<std::array<int, 2>> edges;
+    std::vector<std::array<int, 4>> faces;
+    std::vector<std::array<int, 8>> volume;
+
+    static int ref_edges[12][2];
+    static int ref_faces[6][4];
+
+    explicit Q1_to_Q2(const Mesh::Topology &topology);
+
+    void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) override;
+
+    ~Q1_to_Q2() override = default;
+};
+
+struct MG_VBD_FEM final : VBD_Object {
+    MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, Element e,
                FEM_ContinuousMaterial *material, scalar damp, scalar density);
 
     void build_fem_const(const Mesh::Topology &topology, const Mesh::Geometry &geometry, scalar density, Element e);
@@ -58,8 +80,8 @@ struct MG_VBD_FEM : VBD_Object {
 
 protected:
     scalar _k_damp;
-    std::vector<Grid_Level *> grids;
-    P1_to_P2 *p1_to_p2;
+    std::vector<Grid_Level *> _grids;
+    GridInterpolation *_interpolation;
     FEM_ContinuousMaterial *_material;
     std::vector<Vector3> _y;
     std::vector<Vector3> _dx;

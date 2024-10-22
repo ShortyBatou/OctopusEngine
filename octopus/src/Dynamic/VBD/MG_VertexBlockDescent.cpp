@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <random>
 #include "Core/Base.h"
 #include "Dynamic/Base/ParticleSystem.h"
@@ -10,11 +11,14 @@ std::pair<int, int> P1_to_P2::ref_edges[6] = {{0, 1}, {1, 2}, {2, 0}, {0, 3}, {1
 
 P1_to_P2::P1_to_P2(const Mesh::Topology &topology) {
     std::set<int> visited;
-    for (int i = 0; i < topology.size(); i += 10) {
-        for (int j = 0; j < 6; ++j) {
-            int vid = topology[i + 4 + j];
+    const int nb_P1 = elem_nb_vertices(Tetra);
+    const int nb_P2 = elem_nb_vertices(Tetra10);
+    const int diff = nb_P2 - nb_P1;
+    for (int i = 0; i < topology.size(); i += nb_P2) {
+        for (int j = 0; j < diff; ++j) {
+            int vid = topology[i + nb_P1 + j];
             if(visited.find(vid) == visited.end()) {
-                ids.push_back(topology[i + 4 + j]);
+                ids.push_back(topology[i + nb_P1 + j]);
                 const int a = ref_edges[j].first, b = ref_edges[j].second;
                 edges.emplace_back(topology[i + a], topology[i + b]);
                 visited.insert(vid);
@@ -28,15 +32,86 @@ void P1_to_P2::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
     for (int i = 0; i < ids.size(); i++) {
         const int a = edges[i].first, b = edges[i].second;
         ps->get(ids[i])->position += (dx[a] + dx[b]) * 0.5f;
-        Debug::Line(ps->get(a)->position, ps->get(b)->position);
     }
 }
 
 
-MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape,
+
+int Q1_to_Q2::ref_edges[12][2] = {{0, 1},{1, 2},{2, 3},{3, 0},{0, 4},{1, 5},{2, 6},{3, 7},{4, 5},{5, 6},{6, 7},{7, 0}};
+int Q1_to_Q2::ref_faces[6][4] = {{0,1,2,3},{0,1,4,5},{1,2,5,6},{2,3,6,7},{3,0,7,4},{4,5,6,7}};
+
+void Q1_to_Q2::prolongation(ParticleSystem *ps, const std::vector<Vector3> dx) {
+    for (int i = 0; i < ids_edges.size(); i++) {
+        const int a = edges[i][0], b = edges[i][1];
+        ps->get(ids_edges[i])->position += (dx[a] + dx[b]) * 0.5f;
+        //ps->get(ids_edges[i])->position = (ps->get(b)->position + ps->get(a)->position) * 0.5f;
+    }
+
+    for (int i = 0; i < ids_faces.size(); i++) {
+        Vector3 dx_sum = Unit3D::Zero();
+        for(int j = 0; j < 4; j++) {
+            dx_sum += dx[faces[i][j]];
+            //dx_sum += ps->get(faces[i][j])->position;
+        }
+        ps->get(ids_faces[i])->position += dx_sum * 0.25f;
+    }
+
+    for (int i = 0; i < ids_volumes.size(); i++) {
+        Vector3 dx_sum = Unit3D::Zero();
+        for(int j = 0; j < 8; j++) {
+            dx_sum += dx[volume[i][j]];
+            //dx_sum += ps->get(volume[i][j])->position;
+        }
+        ps->get(ids_volumes[i])->position += dx_sum * 0.125f;
+    }
+}
+
+
+Q1_to_Q2::Q1_to_Q2(const Mesh::Topology &topology) {
+    std::set<int> visited;
+    const int nb_Q1 = elem_nb_vertices(Hexa);
+    const int nb_Q2 = elem_nb_vertices(Hexa27);
+    for (int i = 0; i < topology.size(); i += nb_Q2) {
+        int n = 0;
+        // edges
+        for (const auto & ref_edge : ref_edges) {
+            const int vid = topology[i + nb_Q1 + n];
+            if(visited.find(vid) == visited.end()) {
+                ids_edges.push_back(vid);
+                const int a = ref_edge[0], b = ref_edge[1];
+                edges.push_back({topology[i + a], topology[i + b]});
+                visited.insert(vid);
+            }
+            n++;
+        }
+
+        // faces
+        for (const auto & ref_face : ref_faces) {
+            const int vid = topology[i + nb_Q1 + n];
+            if(visited.find(vid) == visited.end()) {
+                ids_faces.push_back(vid);
+                const int a = ref_face[0], b = ref_face[1];
+                const int c = ref_face[2], d = ref_face[3];
+                faces.push_back({topology[i + a], topology[i + b],topology[i + c],topology[i + d]});
+                visited.insert(vid);
+            }
+            n++;
+        }
+
+        ids_volumes.push_back(topology[i + nb_Q1 + n]);
+        std::array<int,8> ids{};
+        for(int j = 0; j < 8; j++) {
+            ids[j] = topology[i + j];
+        }
+        volume.push_back(ids);
+    }
+}
+
+
+MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, Element e,
                FEM_ContinuousMaterial *material, scalar damp, scalar density) {
     // init global data and shape (P2)
-    _shape = shape;
+    _shape = get_fem_shape(e);
     _y = geometry;
     _k_damp = damp;
     _material = material;
@@ -46,13 +121,26 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _topology = topology;
     // init neighboors for each particles (same for each level)
     build_neighboors(topology);
-    // init constant for P2 => init grid[0]
-    build_fem_const(topology, geometry, density, Tetra10);
-    // init constant for P1 => init grid[1]
-    build_fem_const(topology, geometry, density, Tetra);
+    if(e == Tetra10) {
+        // init constant for P2 => init grid[0]
+        build_fem_const(topology, geometry, density, Tetra10);
+        // init constant for P1 => init grid[1]
+        build_fem_const(topology, geometry, density, Tetra);
 
-    // init prolongation
-    p1_to_p2 = new P1_to_P2(topology);
+        // init prolongation
+        _interpolation = new P1_to_P2(topology);
+    }
+    if(e == Hexa27) {
+        // init constant for P2 => init grid[0]
+        build_fem_const(topology, geometry, density, Hexa27);
+        // init constant for P1 => init grid[1]
+        build_fem_const(topology, geometry, density, Hexa);
+
+        // init prolongation
+        _interpolation = new Q1_to_Q2(topology);
+    }
+
+
 }
 
 void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geometry &geometry, scalar density, Element e) {
@@ -86,7 +174,7 @@ void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geo
         }
     }
     const std::vector ids(s_ids.begin(), s_ids.end());
-    grids.push_back(new Grid_Level(l_shape, masses, JX_inv, V, ids));
+    _grids.push_back(new Grid_Level(l_shape, masses, JX_inv, V, ids));
 }
 
 
@@ -102,10 +190,10 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     // coarse to refined (P1=>P2)
-    int it1 = 1, it2 = 4;
+    int it1 = 5, it2 = 0;
     Grid_Level *grid;
 
-    grid = grids[1];
+    grid = _grids[1];
     std::fill(_dx.begin(), _dx.end(), Unit3D::Zero());
     for(int i = 0; i < it1; ++i) {
         for (const int id: grid->_ids) {
@@ -114,19 +202,18 @@ void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     }
 
     // prolongatation
-    p1_to_p2->prolongation(ps, _dx);
-    grid = grids[0];
+    //_interpolation->prolongation(ps, _dx);
+    grid = _grids[0];
     for(int i = 0; i < it2; ++i) {
         for (const int id: grid->_ids) {
             if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
         }
     }
-    plot_residual(ps, grids[0], dt);
+    plot_residual(ps, _grids[0], dt);
 }
 
 void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt) {
     const int nb_vertices = static_cast<int>(_owners.size());
-    const scalar e = compute_energy(ps, grid);
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
     scalar total = 0;

@@ -70,8 +70,8 @@ struct BaseScene final : Scene
         args.young = 1e7f;
         args.poisson = 0.40f;
         args.damping = 1e-5;
-        args.iteration = 5;
-        args.sub_iteration = 1;
+        args.iteration = 1;
+        args.sub_iteration = 5;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
@@ -81,15 +81,14 @@ struct BaseScene final : Scene
         Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         cells = Vector3I(8, 2, 2);
-        build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Hexa27, args, false);
-        args.iteration = 25;
-        build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args, false);
-        cells = Vector3I(8, 2, 2);
+        args.iteration = 1;
+        build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
+        cells = Vector3I(16, 4, 4);
         args.iteration = 150;
         args.damping = 0.001;
         build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
-        //args.sub_iteration = 100;
-        //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Tetra10, args);
+        args.sub_iteration = 150;
+        //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa27, args);
         //cells = Vector3I(10, 20, 10);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra20, args, true);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args, false);
@@ -170,12 +169,28 @@ struct BaseScene final : Scene
         }
     }
 
+    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
+        Entity* e = Engine::CreateEnity();
+        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        if(gpu) {
+            e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson,std::max(args.iteration, args.sub_iteration), args.damping));
+            if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
+
+            if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
+        }
+        else {
+            e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping));
+
+        }
+        e->add_component(build_graphic(color, element));
+        e->add_component(build_display());
+    }
+
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         e->add_component(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, std::max(args.iteration, args.sub_iteration)));
         add_constraint(e, pos, size, args);
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Mass, ColorMap::Viridis));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

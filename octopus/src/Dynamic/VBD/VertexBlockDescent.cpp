@@ -234,7 +234,7 @@ void VertexBlockDescent::step(const scalar dt) {
         scalar omega = 0;
         for (int j = 0; j < _iteration; ++j) {
             for(VBD_Object* obj : _objs) obj->solve(this, sub_dt);
-            chebyshev_acceleration(j, omega);
+            //chebyshev_acceleration(j, omega);
         }
         step_effects(sub_dt);
         step_constraint(sub_dt);
