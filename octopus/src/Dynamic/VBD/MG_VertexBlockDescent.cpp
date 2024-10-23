@@ -190,7 +190,7 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     // coarse to refined (P1=>P2)
-    int it1 = 5, it2 = 0;
+    int it1 = 0, it2 = 5;
     Grid_Level *grid;
 
     grid = _grids[1];
@@ -202,7 +202,8 @@ void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     }
 
     // prolongatation
-    //_interpolation->prolongation(ps, _dx);
+    _interpolation->prolongation(ps, _dx);
+
     grid = _grids[0];
     for(int i = 0; i < it2; ++i) {
         for (const int id: grid->_ids) {

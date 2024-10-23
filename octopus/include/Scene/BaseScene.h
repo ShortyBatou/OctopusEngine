@@ -83,10 +83,9 @@ struct BaseScene final : Scene
         cells = Vector3I(8, 2, 2);
         args.iteration = 1;
         build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
-        cells = Vector3I(16, 4, 4);
         args.iteration = 150;
         args.damping = 0.001;
-        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
+        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa27, args);
         args.sub_iteration = 150;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa27, args);
         //cells = Vector3I(10, 20, 10);
