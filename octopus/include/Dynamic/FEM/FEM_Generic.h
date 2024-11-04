@@ -20,6 +20,9 @@ struct FEM_Generic {
 
     static Matrix3x3 get_jacobian(const std::vector<Vector3> &p, const std::vector<Vector3> &dN);
 
+    static scalar compute_volume(const FEM_Shape *shape, const std::vector<Particle *> &p, const Mesh::Topology &topology);
+    static scalar compute_volume(const FEM_Shape *shape, const Mesh::Geometry &geometry, const Mesh::Topology &topology);
+
     [[nodiscard]] scalar compute_volume(const std::vector<Particle *> &p) const;
 
     [[nodiscard]] scalar compute_volume(const std::vector<Vector3> &p) const;

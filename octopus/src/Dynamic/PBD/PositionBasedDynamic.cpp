@@ -10,12 +10,16 @@ void PBD_System::step(const scalar dt) {
         this->step_solver(h);
         this->reset_lambda();
         for (int j = 0; j < _nb_step; ++j) {
-            if (_type == Jacobi)
+            if (_type == Jacobi) {
                 step_constraint_jacobi(h);
-            if (_type == GaussSeidel_RNG)
-                step_constraint_gauss_seidel_rng(h);
-            else
+            }
+            if (_type == GaussSeidel_RNG) {
+                shuffle_groups();
                 step_constraint_gauss_seidel(h);
+            }
+            else {
+                step_constraint_gauss_seidel(h);
+            }
         }
 
         this->step_constraint(h); // optional
@@ -82,27 +86,13 @@ void PBD_System::update_velocity(const scalar dt) const {
     }
 }
 
-void PBD_System::step_constraint_gauss_seidel(const scalar dt) const {
-    for (XPBD_Constraint *xpbd: _xpbd_constraints) {
-        if (!xpbd->active()) continue;
-
-        // compute corrections
-        xpbd->apply(_particles, dt);
-
-        // apply correction dt_p on particles' position
-        for (const int id: xpbd->ids) {
-            _particles[id]->position += _particles[id]->force; // here: force = delta x
-            _particles[id]->force *= 0;
-        }
-    }
-}
-
-void PBD_System::step_constraint_gauss_seidel_rng(const scalar dt) {
+void PBD_System::shuffle_groups() {
     auto rng = std::default_random_engine{};
     std::shuffle(std::begin(_groups), std::end(_groups), rng);
+}
 
+void PBD_System::step_constraint_gauss_seidel(const scalar dt) {
     for (std::vector<XPBD_Constraint *> &group: _groups) {
-        std::reverse(group.begin(), group.end());
         for (XPBD_Constraint *xpbd: group) {
             if (!xpbd->active()) continue;
 

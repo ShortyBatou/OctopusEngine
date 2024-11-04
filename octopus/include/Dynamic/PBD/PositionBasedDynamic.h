@@ -23,6 +23,8 @@ struct PBD_System final : ParticleSystem {
 
     ~PBD_System() override;
 
+    void PBD_System::shuffle_groups();
+
     void clear_xpbd_constraints();
 
     int add_xpbd_constraint(XPBD_Constraint *constraint);
@@ -35,9 +37,7 @@ struct PBD_System final : ParticleSystem {
 
     void update_velocity(scalar dt) const;
 
-    void step_constraint_gauss_seidel(scalar dt) const;
-
-    void step_constraint_gauss_seidel_rng(scalar dt);
+    void step_constraint_gauss_seidel(scalar dt);
 
     void step_constraint_jacobi(scalar dt);
 

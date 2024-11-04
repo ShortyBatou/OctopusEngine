@@ -1,6 +1,7 @@
 #pragma once
 #include <Script/Dynamic/Cuda_Constraint_Rigid_Controller.h>
 #include <Script/Dynamic/Cuda_VBD_FEM_Dynamic.h>
+#include <Script/Dynamic/XPBD_ShapeMatching_Dynamic.h>
 
 #include "Scene.h"
 #include "Manager/TimeManager.h"
@@ -55,7 +56,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -67,25 +68,27 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e7f;
-        args.poisson = 0.40f;
-        args.damping = 1e-5;
+        args.young = 1e6f;
+        args.poisson = 0.39f;
+        args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 5;
+        args.sub_iteration = 50;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(4, 1, 1);
+        const Vector3 size(2, 1, 1);
         Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
-        cells = Vector3I(8, 2, 2);
-        args.iteration = 1;
-        build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
+        cells = Vector3I(4, 2, 2);
+        //build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
+        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Hexa, args, false);
+        build_xpbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,0.8,0.3,0.), Hexa, args, true);
+
         args.iteration = 150;
         args.damping = 0.001;
-        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa27, args);
+        //build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Hexa27, args);
         args.sub_iteration = 150;
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa27, args);
         //cells = Vector3I(10, 20, 10);
@@ -174,12 +177,11 @@ struct BaseScene final : Scene
         if(gpu) {
             e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson,std::max(args.iteration, args.sub_iteration), args.damping));
             if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-
             if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else {
-            e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping));
-
+            e->add_component(new XPBD_ShapeMatching_Dynamic(args.density, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping));
+            add_constraint(e, pos, size, args);
         }
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());

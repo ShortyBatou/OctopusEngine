@@ -9,7 +9,6 @@ class XPBD_Constraint : public Constraint {
 public:
     explicit XPBD_Constraint(const std::vector<int>& ids, scalar stiffness, const bool active = true) : Constraint(ids, stiffness, active), _lambda(0) {}
     void apply(const std::vector<Particle*>& particles, scalar dt) override;
-
     virtual scalar get_dual_residual(const std::vector<Particle*>& particles, scalar dt);
     virtual bool project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) { return false; }
 
