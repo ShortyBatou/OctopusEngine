@@ -6,6 +6,8 @@
 #include "Tools/Random.h"
 #include <Manager/Debug.h>
 #include "GPU/GPU_PBD.h"
+#include "GPU/GPU_PBD_FEM.h"
+#include "GPU/GPU_PBD_FEM_Coupled.h"
 #include <random>
 #include <set>
 
@@ -25,7 +27,8 @@ void Cuda_XPBD_FEM_Dynamic::init() {
     _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration, _damping);
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson);
+
+        _gpu_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson);
 
         // récupérer la masse
         const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
@@ -67,15 +70,7 @@ void Cuda_XPBD_FEM_Dynamic::update() {
 
     }
 
-    Time::Tic();
     _gpu_pbd->step(Time::Fixed_DeltaTime());
     _gpu_pbd->get_position(_mesh->geometry());
-
-    const scalar time = Time::Tac() * 1000.f;
-    DebugUI::Begin("XPBD");
-    DebugUI::Plot("Time GPU XPBD ", time, 600);
-    DebugUI::Value("Time", time);
-    DebugUI::Range("Range", time);
-    DebugUI::End();
 }
 

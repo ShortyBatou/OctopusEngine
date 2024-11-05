@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Base.h"
 #include "Core/Component.h"
-#include "GPU/GPU_PBD.h"
+#include "GPU/GPU_PBD_FEM.h"
 
 class Cuda_Constraint_Rigid_Controller final : public Component {
 public:

@@ -246,7 +246,7 @@ void GPU_VBD_FEM::step(const GPU_VBD* vbd, const scalar dt, const scalar damping
 
 void GPU_VBD::step(const scalar dt) const {
     Time::Tic();
-    const scalar r = 0.8;
+    const scalar r = 0.8f;
     const scalar sub_dt = dt / static_cast<scalar>(sub_iteration);
     Vector3 v = Unit3D::right();
     for(int i = 0; i < sub_iteration; ++i) {

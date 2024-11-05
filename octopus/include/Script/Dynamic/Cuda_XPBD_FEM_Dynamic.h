@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Base.h"
 #include "GPU/GPU_PBD.h"
+#include "GPU/GPU_PBD_FEM.h"
 #include "Mesh/Mesh.h"
 #include "Core/Component.h"
 #include<vector> // for vector
