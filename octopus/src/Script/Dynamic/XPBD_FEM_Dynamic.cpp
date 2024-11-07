@@ -22,13 +22,16 @@ std::vector<FEM_Generic *> XPBD_FEM_Dynamic::build_element(const std::vector<int
     std::vector<FEM_Generic *> fems;
     if(_coupled_fem) {
         fem = new XPBD_FEM_Generic_Coupled(ids, materials, get_fem_shape(type));
+        fems.push_back(fem);
+        pbd->add_xpbd_constraint(fem);
+
     } else {
         for (PBD_ContinuousMaterial *m: materials) {
             fem = new XPBD_FEM_Generic(ids, m, get_fem_shape(type));
+            fems.push_back(fem);
+            pbd->add_xpbd_constraint(fem);
         }
     }
-    fems.push_back(fem);
-    pbd->add_xpbd_constraint(fem);
 
     volume = fem->compute_volume(fem->get_particles(_ps->particles()));
     return fems;
