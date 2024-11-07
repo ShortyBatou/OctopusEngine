@@ -27,7 +27,7 @@ struct FEM_Generic {
 
     [[nodiscard]] scalar compute_volume(const std::vector<Vector3> &p) const;
 
-    [[nodiscard]] scalar compute_stress(const std::vector<Vector3> &p) const;
+    [[nodiscard]] virtual scalar compute_stress(const std::vector<Vector3> &p) const;
 
 
     // particles : element's particles only and in the right order

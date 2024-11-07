@@ -35,7 +35,7 @@ scalar XPBD_Constraint::get_dual_residual(const std::vector<Particle*>& particle
     scalar C = 0;
     std::vector<Vector3> grads(this->nb(), Unit3D::Zero());
     if (!project(x, grads, C)) return 0;
-    scalar alpha = scalar(1.0) / (_stiffness * dt * dt);
+    const scalar alpha = 1.0f / (_stiffness * dt * dt);
     return (C + alpha * _lambda);
 
 }
@@ -48,10 +48,8 @@ void XPBD_DistanceConstraint::init(const std::vector<Particle*>& particles) {
 }
 
 bool XPBD_DistanceConstraint::project(const std::vector<Particle*>& x, std::vector<Vector3>& grads, scalar& C) {
-    Vector3 pa = x[0]->position;
-    Vector3 pb = x[1]->position;
-    Vector3 n = pa - pb;
-    scalar d = glm::length(n);
+    Vector3 n = x[0]->position - x[1]->position;
+    const scalar d = glm::length(n);
     if (d < 1e-6) return false;
 
     n /= d;

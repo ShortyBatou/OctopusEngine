@@ -18,7 +18,6 @@ __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffnes
     Vector2 dt_lambda = -glm::inverse(A) * Vector2(C[0], C[1]);
     for (int i = 0; i < nb_vert_elem; ++i) {
         p[topology[i]] += (dt_lambda[0] * grad_C[i] + dt_lambda[1] * grad_C[i+nb_vert_elem]) * inv_mass[topology[i]];
-
     }
 }
 
@@ -63,7 +62,7 @@ __global__ void kernel_XPBD_Coupled_V0(
     const int vid = tid * nb_vert_elem + offset; // first vertice id in topology
     const int qid = eid * nb_quadrature;
     int* topology = cb_topology+vid;
-    Vector3 grad_C[32];
+    Vector3 grad_C[64];
     scalar C[2] = {0.f, 0.f};
 
     for (int j = 0; j < nb_vert_elem * 2; ++j)

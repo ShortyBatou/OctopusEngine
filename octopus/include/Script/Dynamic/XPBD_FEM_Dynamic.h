@@ -11,10 +11,10 @@ public:
                      const scalar young, const scalar poisson,
                      const Material material,
                      const int iteration = 1, const int sub_iteration = 30,
-                     const scalar global_damping = 0,
+                     const scalar global_damping = 0, const bool coupled = false,
                      const PBDSolverType type = GaussSeidel)
     : FEM_Dynamic(density, young, poisson, material, sub_iteration),
-    _global_damping(global_damping), _iteration(iteration), _type(type) {
+    _global_damping(global_damping), _iteration(iteration), _type(type), _coupled_fem(coupled) {
     }
 
     [[nodiscard]] int get_iteration() const { return _iteration; }
@@ -28,6 +28,7 @@ protected:
     std::vector<FEM_Generic *> build_element(const std::vector<int> &ids, Element type, scalar &volume) override;
 
 public:
+    bool _coupled_fem;
     scalar _global_damping;
     int _iteration;
     PBDSolverType _type;

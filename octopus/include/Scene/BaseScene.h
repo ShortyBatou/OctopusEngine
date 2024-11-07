@@ -68,13 +68,13 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.young = 1e7f;
-        args.poisson = 0.45f;
-        args.damping = 20;
+        args.young = 1e6f;
+        args.poisson = 0.49f;
+        args.damping = 10;
         args.iteration = 1;
-        args.sub_iteration = 20;
+        args.sub_iteration = 50;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
@@ -84,10 +84,12 @@ struct BaseScene final : Scene
         cells = Vector3I(1, 1, 1);
         //build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
-        cells = Vector3I(32, 8, 8);
-        build_xpbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true);
-        args.damping = 1e-5;
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true);
+        cells = Vector3I(8, 2, 2);
+        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false, false);
+        cells = Vector3I(8, 2, 2);
+        args.damping = 5e-6;
+
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true);
 
         args.iteration = 150;
         args.damping = 0.001;
@@ -174,16 +176,16 @@ struct BaseScene final : Scene
         }
     }
 
-    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
+    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu, bool coupled) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         if(gpu) {
-            e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson,std::max(args.iteration, args.sub_iteration), args.damping));
+            e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson,std::max(args.iteration, args.sub_iteration), args.damping, coupled));
             if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
             if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else {
-            e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping));
+            e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping, coupled));
             add_constraint(e, pos, size, args);
         }
         e->add_component(build_graphic(color, element));

@@ -11,9 +11,9 @@ struct Cuda_XPBD_FEM_Dynamic final : Component
     explicit Cuda_XPBD_FEM_Dynamic(
         const scalar density,
         const scalar young, const scalar poisson,
-        const int iteration = 30, const scalar damping = 0.f)
+        const int iteration = 30, const scalar damping = 0.f, bool coupled = false)
         : _density(density), _damping(damping), _young(young), _poisson(poisson), _iteration(iteration),
-        _mesh(nullptr), _gpu_pbd(nullptr)
+        _mesh(nullptr), _gpu_pbd(nullptr), _coupled_fem(coupled)
     {
     }
 
@@ -26,9 +26,22 @@ struct Cuda_XPBD_FEM_Dynamic final : Component
         delete _gpu_pbd;
     }
 
-    void add_dynamic(GPU_Dynamic* dynamic)
-    {
+    void add_dynamic(GPU_Dynamic* dynamic) const {
         _gpu_pbd->dynamic.push_back(dynamic);
+    }
+
+    void set_sub_iteration(const int it) {
+        _iteration = it;
+        _gpu_pbd->iteration = it;
+    }
+
+    [[nodiscard]] int get_sub_iteration() const {
+        return _iteration;
+    }
+
+    void set_damping(const scalar damping) {
+        _damping = damping;
+        _gpu_pbd->global_damping = damping;
     }
 
 private:
@@ -38,7 +51,7 @@ private:
     scalar _damping;
     scalar _young, _poisson;
     int _iteration;
-
+    bool _coupled_fem;
     Mesh* _mesh;
     GPU_PBD* _gpu_pbd;
 };
