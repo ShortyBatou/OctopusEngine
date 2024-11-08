@@ -133,6 +133,14 @@ def get_lumped(mat):
 
 rho = 1
 V = 1 * 6
+
+A = np.random.rand(3,3)
+B = np.random.rand(3,3)
+v = np.random.rand(3)
+
+print("T ",np.matmul(A, v) + np.matmul(B, v))
+print("T ",np.matmul(A+B,v))
+
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 mass_p1_sym = get_mass(4, shape_p1_sym, quadrature, weight, V, rho)
 mass_p1 = get_mass(4, shape_p1, quadrature, weight, V, rho)

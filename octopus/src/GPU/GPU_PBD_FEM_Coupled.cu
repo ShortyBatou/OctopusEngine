@@ -5,7 +5,7 @@ __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffnes
 {
     const scalar a1 = 1.f / (stiffness1 * dt * dt);
     const scalar a2 = 1.f / (stiffness2 * dt * dt);
-    Matrix2x2 A = Matrix2x2(a1,0,0,a2);
+    Matrix2x2 A(a1,0,0,a2);
     for (int i = 0; i < nb_vert_elem; ++i) {
         const scalar wi = inv_mass[topology[i]];
         A[0][0] += glm::dot(grad_C[i], grad_C[i]) * wi;
@@ -20,6 +20,7 @@ __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffnes
         p[topology[i]] += (dt_lambda[0] * grad_C[i] + dt_lambda[1] * grad_C[i+nb_vert_elem]) * inv_mass[topology[i]];
     }
 }
+
 
 __device__ void xpbd_constraint_fem_eval_coupled(
     const int nb_vert_elem, const scalar lambda, const scalar mu, const Material material, const Matrix3x3& Jx_inv, const scalar& V,
@@ -62,6 +63,8 @@ __global__ void kernel_XPBD_Coupled_V0(
     const int vid = tid * nb_vert_elem + offset; // first vertice id in topology
     const int qid = eid * nb_quadrature;
     int* topology = cb_topology+vid;
+
+
     Vector3 grad_C[64];
     scalar C[2] = {0.f, 0.f};
 
@@ -77,6 +80,50 @@ __global__ void kernel_XPBD_Coupled_V0(
     xpbd_convert_to_constraint(nb_vert_elem, C[1], grad_C + nb_vert_elem);
     xpbd_solve_coupled(nb_vert_elem, stiffness_1, stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p);
 }
+
+
+__device__ void xpbd_constraint_fem_eval_coupled_V2(const Material material, const scalar lambda, const scalar mu, const Matrix3x3& Jx_inv, const Matrix3x3& F, const scalar& V, scalar* C, Matrix3x3* P)
+{
+    for(int m = 0; m < 2; ++m) {
+        eval_material(material, m, lambda, mu, F, P[m], C[m]);
+        P[m] = P[m] * glm::transpose(Jx_inv) * V;
+        C[m] *= V;
+    }
+}
+
+__global__ void kernel_XPBD_Coupled_V2(
+    const int n, const int nb_quadrature, const int nb_vert_elem, const scalar dt, // some global data
+    const scalar stiffness_1, const scalar stiffness_2, const Material material, // material
+    const int offset, // coloration
+    Vector3* cb_dN,
+    Vector3 *cb_p, int *cb_topology, // mesh
+    scalar *inv_mass,
+    scalar *cb_V, Matrix3x3 *cb_JX_inv // element data (Volume * Weight, Inverse of initial jacobian)
+)
+{
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x; // thread it
+    if (tid >= n) return;
+    const int eid = tid/nb_quadrature + offset / nb_vert_elem;
+    const int vid = tid/nb_quadrature * nb_vert_elem + offset; // first vertice id in topology
+    const int qid = eid * nb_quadrature;
+    const int q = tid % nb_quadrature;
+    int* topology = cb_topology+vid;
+
+    __shared__ Matrix3x3 P[8];
+    scalar C[8];
+
+    for (int j = 0; j < nb_quadrature * 2; ++j) {
+        P[j] = Matrix3x3(0.f);
+        C[j] = 0.f;
+    }
+
+    Vector3* dN = cb_dN + q * nb_vert_elem;
+    const Matrix3x3 F = compute_transform(nb_vert_elem, cb_p, topology, dN) * cb_JX_inv[qid + q];
+    xpbd_constraint_fem_eval_coupled_V2(material, stiffness_1, stiffness_2, cb_JX_inv[qid + q], F, cb_V[qid + q], C+q*2, P+q*2);
+    
+
+}
+
 
 
 void GPU_PBD_FEM_Coupled::step(const GPU_ParticleSystem* ps, const scalar dt) {
