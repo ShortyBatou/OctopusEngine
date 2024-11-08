@@ -100,8 +100,9 @@ void GPU_PBD_FEM::build_fem_const(const Mesh::Geometry &geometry, const Mesh::To
 }
 
 GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
-                         const scalar young, const scalar poisson) // materials
+                         const scalar young, const scalar poisson, Material material) // materials
 {
+    _material = material;
     shape = get_fem_shape(element);
 
     lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));

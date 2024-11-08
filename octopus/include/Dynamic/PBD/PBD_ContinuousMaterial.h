@@ -28,7 +28,7 @@ struct Hooke_Second final : PBD_ContinuousMaterial {
 
     void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
 
-    [[nodiscard]] scalar get_stiffness() const override { return this->mu * 2.f; }
+    [[nodiscard]] scalar get_stiffness() const override { return this->mu; }
 };
 
 struct StVK_First final : PBD_ContinuousMaterial {

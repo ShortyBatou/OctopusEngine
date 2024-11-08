@@ -23,6 +23,7 @@ __global__ void kernel_constraint_plane(const int n, const Vector3 origin, const
 }
 
 
+
 __device__ void stvk_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     const scalar trace = mat3x3_trace(0.5f * (glm::transpose(F) * F - Matrix3x3(1.f)));
     C = trace * trace;
@@ -31,8 +32,39 @@ __device__ void stvk_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
 
 __device__ void stvk_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     const Matrix3x3 E = 0.5f * (glm::transpose(F) * F - Matrix3x3(1.f));
-    P = 2.f * F * E;
-    C = squared_trace(E);
+    P = 4.f * F * E;
+    C = 2.f * squared_trace(E);
+}
+
+__device__ void hooke_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    const float trace = mat3x3_trace(0.5f * (glm::transpose(F) + F) - Matrix3x3(1.f));
+    // P(F) = 2E   C(F) = tr(E)�
+    C = trace * trace;
+    P = 2.f * trace * Matrix3x3(1.f);
+}
+
+__device__ void hooke_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    const Matrix3x3 E = 0.5f * (glm::transpose(F) + F) - Matrix3x3(1.f);
+    // P(F) = 2E   C(F) = tr(E)�
+    C = 2.f * squared_trace(E);
+    P = 4.f * E;
+}
+
+
+__device__ void snh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C, scalar alpha) {
+    const scalar I_3 = glm::determinant(F);
+    const scalar detF = I_3 - alpha;
+    C = (detF) * (detF);
+    Matrix3x3 d_detF; // derivative of det(F) by F
+    d_detF[0] = glm::cross(F[1], F[2]);
+    d_detF[1] = glm::cross(F[2], F[0]);
+    d_detF[2] = glm::cross(F[0], F[1]);
+    P = 2.f * detF * d_detF;
+}
+
+__device__ void snh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    C = squared_norm(F) - 3.f;
+    P = 2.f * F;
 }
 
 __device__ void dsnh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
@@ -57,6 +89,23 @@ __device__ void dsnh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     P = 2.f * F - 2.f * d_detF;
 }
 
+__device__ void eval_material(const Material material, const int m, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
+    switch (material) {
+        case Hooke :
+            if (m == 0) hooke_first(F, P, energy);
+            else hooke_second(F, P, energy); break;
+        case StVK :
+            if (m == 0) stvk_first(F, P, energy);
+            else stvk_second(F, P, energy); break;
+        case NeoHooke :
+            if (m == 0) snh_first(F, P, energy, 1.f + mu / lambda);
+            else snh_second(F, P, energy); break;
+        case Stable_NeoHooke :
+            if (m == 0) dsnh_first(F, P, energy);
+            else dsnh_second(F, P, energy); break;
+    }
+}
+
 __device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p)
 {
     scalar sum_norm_grad = 0.f;
@@ -71,7 +120,7 @@ __device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const
     }
 }
 
-__device__ void xpbd_constraint_fem_eval(const int m, const int nb_vert_elem, const Matrix3x3& Jx_inv, const scalar& V, Vector3* dN, Vector3* p, int* topology, scalar& C, Vector3* grad_C)
+__device__ void xpbd_constraint_fem_eval(const Material material, const int m, const scalar lambda, const scalar mu, const int nb_vert_elem, const Matrix3x3& Jx_inv, const scalar& V, Vector3* dN, Vector3* p, int* topology, scalar& C, Vector3* grad_C)
 {
 
     const Matrix3x3 Jx = compute_transform(nb_vert_elem, p, topology, dN);
@@ -79,9 +128,8 @@ __device__ void xpbd_constraint_fem_eval(const int m, const int nb_vert_elem, co
 
     Matrix3x3 P;
     scalar energy;
-    if (m == 0) dsnh_first(F, P, energy);
-    else dsnh_second(F, P, energy);
 
+    eval_material(material, m, lambda, mu, F, P, energy);
     P = P * glm::transpose(Jx_inv) * V;
     C += energy * V;
 
@@ -103,7 +151,7 @@ __device__ void xpbd_convert_to_constraint(const int nb_vert_elem, scalar& C, Ve
 
 __global__ void kernel_XPBD_V0(
     const int n, const int nb_quadrature, const int nb_vert_elem, const scalar dt, // some global data
-    const scalar stiffness_1, const scalar stiffness_2, // material
+    const scalar stiffness_1, const scalar stiffness_2, const Material material, // material
     const int offset, // coloration
     Vector3* cb_dN,
     Vector3 *cb_p, int *cb_topology, // mesh
@@ -129,7 +177,7 @@ __global__ void kernel_XPBD_V0(
             Matrix3x3 JX_inv = cb_JX_inv[qid + q];
             scalar V = cb_V[qid + q];
             Vector3* dN = cb_dN + q * nb_vert_elem;
-            xpbd_constraint_fem_eval(m, nb_vert_elem, JX_inv, V, dN, cb_p, topology, C, grad_C);
+            xpbd_constraint_fem_eval(material, m, stiffness_1, stiffness_2, nb_vert_elem, JX_inv, V, dN, cb_p, topology, C, grad_C);
         }
 
         xpbd_convert_to_constraint(nb_vert_elem, C, grad_C);
@@ -148,7 +196,7 @@ void GPU_Plane_Fix::step(const GPU_ParticleSystem *ps, const scalar dt) {
 void GPU_PBD_FEM::step(const GPU_ParticleSystem* ps, const scalar dt) {
     for (int j = 0; j < c_offsets.size(); ++j) {
         kernel_XPBD_V0<<<c_nb_elem[j],nb_quadrature>>>(c_nb_elem[j], nb_quadrature, elem_nb_vert, dt,
-                                                       lambda, mu*2.f,
+                                                       lambda, mu, _material,
                                                       c_offsets[j],
                                                       cb_dN->buffer,
                                                       ps->cb_position->buffer, cb_topology->buffer,

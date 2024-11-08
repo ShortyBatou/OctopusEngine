@@ -1,4 +1,6 @@
 #pragma once
+#include <Dynamic/FEM/ContinuousMaterial.h>
+
 #include "Core/Base.h"
 #include "Mesh/Elements.h"
 #include "GPU/Cuda_Buffer.h"
@@ -30,10 +32,11 @@ struct GPU_PBD_FEM : GPU_Dynamic {
     Cuda_Buffer<scalar> *cb_V;
     Cuda_Buffer<Vector3> *cb_dN;
 
+    Material _material;
+
     std::vector<int> colors; // mesh coloration (used for debug)
 
-    GPU_PBD_FEM(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology,
-                scalar young, scalar poisson);
+    GPU_PBD_FEM(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology,scalar young, scalar poisson, Material material);
 
     ~GPU_PBD_FEM() override = default;
 
@@ -53,7 +56,15 @@ __global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3
 
 __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, int *topology, Vector3 *dN);
 
+__device__ void hooke_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
+__device__ void hooke_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
+
 __device__ void stvk_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
 __device__ void stvk_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
 __device__ void dsnh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
 __device__ void dsnh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
+
+__device__ void snh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C, scalar alpha);
+__device__ void snh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C);
+
+__device__ void eval_material(Material material, int m, scalar lambda, scalar mu, const Matrix3x3 &F, Matrix3x3 &P, scalar &energy);

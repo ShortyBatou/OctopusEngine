@@ -20,18 +20,18 @@ Matrix3x3 PBD_ContinuousMaterial::get_pk1(const Matrix3x3 &F) {
 
 // Hooke
 void Hooke_First::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    const auto trace = Matrix::Trace(get_strain_linear(F));
+    const scalar trace = Matrix::Trace(get_strain_linear(F));
     // P(F) = 2E   C(F) = tr(E)�
     energy = trace * trace;
     P = 2.f * trace * Matrix::Identity3x3();
 }
 
 void Hooke_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    const auto E = get_strain_linear(F);
+    const Matrix3x3 E = get_strain_linear(F);
     // P(F) = 2E
     // C(F) = tr(E�)
-    P = 2.f * E;
-    energy = Matrix::SquaredTrace(E);
+    P = 4.f * E;
+    energy = Matrix::SquaredTrace(E) * 2.f;
 }
 
 
@@ -58,8 +58,8 @@ void StVK_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &e
 void VolumePreservation::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
     // C(F) = (det(F) - alpha)�
     // P(F) = 2 det(F) det(F)/dx
-    scalar I_3 = glm::determinant(F);
-    scalar detF = I_3 - alpha;
+    const scalar I_3 = glm::determinant(F);
+    const scalar detF = I_3 - alpha;
     scalar shift = this->mu / this->lambda;
     energy = (detF) * (detF);
     Matrix3x3 d_detF; // derivative of det(F) by F

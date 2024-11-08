@@ -27,11 +27,10 @@ void Cuda_XPBD_FEM_Dynamic::init() {
     _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration, _damping);
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-
         if(_coupled_fem)
-            _gpu_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson);
+            _gpu_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson, _material);
         else
-            _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson);
+            _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
 
         // récupérer la masse
         const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
@@ -76,7 +75,7 @@ void Cuda_XPBD_FEM_Dynamic::update() {
     _gpu_pbd->step(Time::Fixed_DeltaTime());
     const scalar start = Time::Tac();
     DebugUI::Begin("Dynamic " + entity()->name());
-    DebugUI::Range("time", start);
+    DebugUI::Range("time ms", start*1000.f);
     DebugUI::End();
 
     _gpu_pbd->get_position(_mesh->geometry());
