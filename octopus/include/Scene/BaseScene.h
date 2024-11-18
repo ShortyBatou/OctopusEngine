@@ -69,10 +69,10 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.distribution = Uniform;
+        args.distribution = Shape;
         args.young = 1e7f;
         args.poisson = 0.499f;
-        args.damping = 1;
+        args.damping = 1e-6;
         args.iteration = 1;
         args.sub_iteration = 50;
         args.scenario_1 = 0;
@@ -87,10 +87,11 @@ struct BaseScene final : Scene
         //build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
         cells = Vector3I(16, 8, 8);
-        //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, true);
-        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, true);
+        //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
+        //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.7,0.4,0.8,0.), Tetra10, args, true, true);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, false);
         //cells = Vector3I(32, 16, 16);
-        build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, false);
+        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, false);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10_Lumped, args, true, true);
 
         cells = Vector3I(8, 2, 2);

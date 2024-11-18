@@ -10,7 +10,7 @@
 #include "GPU/GPU_PBD_FEM_Coupled.h"
 #include <random>
 #include <set>
-
+#include <Manager/Input.h>
 
 
 void Cuda_XPBD_FEM_Dynamic::init() {
@@ -60,8 +60,8 @@ void Cuda_XPBD_FEM_Dynamic::update() {
         }
     }
 
-    if(Time::Frame() > 0) {
 
+    if(Input::Loop(Key::D)) {
         GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
@@ -69,7 +69,11 @@ void Cuda_XPBD_FEM_Dynamic::update() {
             graphic->set_multi_color(true);
             graphic->set_element_color(true);
         }
-
+    }
+    else {
+        GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
+        graphic->set_multi_color(false);
+        graphic->set_element_color(false);
     }
     Time::Tic();
     _gpu_pbd->step(Time::Fixed_DeltaTime());

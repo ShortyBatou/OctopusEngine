@@ -161,6 +161,9 @@ I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
 
 #I = np.matmul(np.transpose(I21), np.transpose(I12))
 I = np.matmul(I21, I12)
+print(proj_p2_p1)
+print(np.trace(get_lumped(mass_p2)))
+print(mass_p2)
 print(I21)
 print(I12)
 '''
@@ -174,7 +177,6 @@ print("I_12 (I21 v) = ", v)
 
 print("\n\n Masses sum : \n")
 print(np.trace(get_lumped(mass_p1)))
-print(np.trace(get_lumped(mass_p2)))
 print(np.trace(get_lumped(mass_p3)))
 #print(d_shape_r0)
 #print(d_shape_r1)

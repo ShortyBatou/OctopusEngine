@@ -127,7 +127,6 @@ __device__ void xpbd_constraint_fem_eval(const Material material, const int m, c
 
     const Matrix3x3 Jx = compute_transform(nb_vert_elem, p, topology, dN);
     const Matrix3x3 F = Jx * Jx_inv;
-
     Matrix3x3 P;
     scalar energy;
 
@@ -145,7 +144,7 @@ __device__ void xpbd_convert_to_constraint(const int nb_vert_elem, scalar& C, Ve
     // convert force to constraint gradient
     C = (C < 0.f) ? -C : C; // abs
     C = std::sqrt(C);
-    const scalar C_inv = C < 1e-12 ? 0.f : 1.f / (2.f * C);
+    const scalar C_inv = C < 1e-5 ? 0.f : 1.f / (2.f * C);
     for (int i = 0; i < nb_vert_elem; ++i) {
         grad_C[i] *= C_inv;
     }

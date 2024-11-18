@@ -14,7 +14,6 @@ __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffnes
     }
 
     A[0][1] = A[1][0]; // 2x2 symmetric matrix
-    if(abs(glm::determinant(A)) < 1e-12) return;
     Vector2 dt_lambda = -glm::inverse(A) * Vector2(C[0], C[1]);
     for (int i = 0; i < nb_vert_elem; ++i) {
         const int vid = topology[i];
@@ -77,7 +76,6 @@ __global__ void kernel_XPBD_Coupled_V0(
         Vector3* dN = cb_dN + q * nb_vert_elem;
         xpbd_constraint_fem_eval_coupled(nb_vert_elem, stiffness_1, stiffness_2, material, cb_JX_inv[qid + q], cb_V[qid + q], dN, cb_p, topology, C, grad_C);
     }
-
     xpbd_convert_to_constraint(nb_vert_elem, C[0], grad_C);
     xpbd_convert_to_constraint(nb_vert_elem, C[1], grad_C + nb_vert_elem);
     xpbd_solve_coupled(nb_vert_elem, stiffness_1, stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p, mask);

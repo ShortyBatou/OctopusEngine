@@ -35,6 +35,60 @@ void P1_to_P2::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
     }
 }
 
+P1_to_P2_Mass::P1_to_P2_Mass(const Mesh::Topology &topology) {
+    int max_id = *std::max_element(topology.begin(), topology.end()) + 1;
+    ids.resize(max_id);
+    weights.resize(max_id);
+    const int nb_P1 = elem_nb_vertices(Tetra);
+    const int nb_P2 = elem_nb_vertices(Tetra10);
+    const int diff = nb_P2 - nb_P1;
+
+    std::vector<std::vector<int>> owners(max_id);
+    std::vector<std::vector<int>> ref_id(max_id);
+    for (int i = 0; i < topology.size(); i += nb_P2) {
+        int eid = i / nb_P2;
+        for(int j = 0; j < nb_P2; ++j) {
+            const int vid = topology[i+j];
+            owners[vid].push_back(eid);
+            ref_id[vid].push_back(j);
+        }
+    }
+
+    // for each point
+    for(int i = 0; i < owners.size(); ++i) {
+        // we get the weights
+        for(int j = 0; j < owners[i].size(); ++j) {
+            const int eid = owners[i][j];
+            const int rid = ref_id[i][j];
+            if(rid < 4) {
+                for(int k = 0; k < 4; ++k) {
+                    ids[i].push_back(topology[eid * nb_P2 + k]);
+                    if(k == rid) weights[i].push_back(0.2);
+                    else weights[i].push_back(-0.1333333);
+                }
+            }
+            else {
+                std::pair<int,int> edge = P1_to_P2::ref_edges[rid-4];
+                for(int k = 0; k < 4; ++k) {
+                    ids[i].push_back(topology[eid * nb_P2 + k]);
+                    if(rid == edge.first || rid == edge.second) weights[i].push_back(0.53333);
+                    else weights[i].push_back(-0.1333333);
+                }
+            }
+        }
+    }
+}
+
+void P1_to_P2_Mass::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
+    for (int i = 0; i < ps->nb_particles(); i++) {
+       ps->get(i)->position = ps->get(i)->last_position;
+    }
+    for (int i = 0; i < ids.size(); i++) {
+        for(int j = 0; j < ids[i].size(); ++j) {
+            ps->get(i)->position += dx[ids[i][j]] * weights[i][j];
+        }
+    }
+}
 
 
 int Q1_to_Q2::ref_edges[12][2] = {{0, 1},{1, 2},{2, 3},{3, 0},{0, 4},{1, 5},{2, 6},{3, 7},{4, 5},{5, 6},{6, 7},{7, 0}};
@@ -190,7 +244,7 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     // coarse to refined (P1=>P2)
-    int it1 = 0, it2 = 5;
+    int it1 = 1, it2 = 1;
     Grid_Level *grid;
 
     grid = _grids[1];
@@ -210,7 +264,7 @@ void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
             if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
         }
     }
-    plot_residual(ps, _grids[0], dt);
+    //plot_residual(ps, _grids[0], dt);
 }
 
 void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt) {
