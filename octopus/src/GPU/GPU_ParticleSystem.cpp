@@ -12,4 +12,5 @@ GPU_ParticleSystem::GPU_ParticleSystem(const std::vector<Vector3>& positions, co
     cb_forces = new Cuda_Buffer(std::vector(n, Unit3D::Zero()));
     cb_mass = new Cuda_Buffer(masses);
     cb_inv_mass = new Cuda_Buffer(inv_mass);
+    cb_mask = new Cuda_Buffer(std::vector(n, 1));
 }

@@ -62,6 +62,7 @@ struct XPBDScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000;
+        args.distribution = Uniform;
         args.material = StVK;
         args.poisson = 0.49f;
         args.young = 1e6f;
@@ -179,7 +180,7 @@ struct XPBDScene final : Scene
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.sub_iteration));
+        e->add_component(new FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.sub_iteration));
         add_constraint(e, pos, size, args);
         e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Velocity, ColorMap::Viridis));
         e->add_component(build_graphic(color, element));
@@ -191,7 +192,7 @@ struct XPBDScene final : Scene
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         //e->add_behaviour(build_vtk_mesh(pos, cells, size, color, "mesh/vtk/bunny_P3.vtk"));
-        e->add_component(new XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping));
+        e->add_component(new XPBD_FEM_Dynamic(args.density,args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping));
         add_constraint(e, pos, size, args);
         e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Velocity, ColorMap::Viridis));
         e->add_component(build_graphic(color, element));

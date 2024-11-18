@@ -12,13 +12,14 @@ __device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, int *topo
     return Jx;
 }
 
-__global__ void kernel_constraint_plane(const int n, const Vector3 origin, const Vector3 normal, const Vector3 com, const Vector3 offset, const Matrix3x3 rot, Vector3 *p, Vector3 *p_init) {
+__global__ void kernel_constraint_plane(const int n, const Vector3 origin, const Vector3 normal, const Vector3 com, const Vector3 offset, const Matrix3x3 rot, Vector3 *p, Vector3 *p_init, int* mask) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
     scalar s = dot(p_init[i] - origin, normal);
     if (s > 0) {
         const Vector3 target = offset + com + rot * (p_init[i] - com);
         p[i] += (target - p[i]);
+        mask[i] = 0;
     }
 }
 
@@ -106,7 +107,7 @@ __device__ void eval_material(const Material material, const int m, const scalar
     }
 }
 
-__device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p)
+__device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p, int* mask)
 {
     scalar sum_norm_grad = 0.f;
     for (int i = 0; i < nb_vert_elem; ++i) {
@@ -116,7 +117,8 @@ __device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const
     const scalar alpha = 1.f / (stiffness * dt * dt);
     const scalar dt_lambda = -C / (sum_norm_grad + alpha);
     for (int i = 0; i < nb_vert_elem; ++i) {
-        p[topology[i]] += dt_lambda * inv_mass[topology[i]] * grad_C[i];
+        int vid = topology[i];
+        if(mask[vid] == 1) p[vid] += dt_lambda * inv_mass[vid] * grad_C[i];
     }
 }
 
@@ -155,7 +157,7 @@ __global__ void kernel_XPBD_V0(
     const int offset, // coloration
     Vector3* cb_dN,
     Vector3 *cb_p, int *cb_topology, // mesh
-    scalar *inv_mass,
+    scalar *inv_mass, int* mask,
     scalar *cb_V, Matrix3x3 *cb_JX_inv // element data (Volume * Weight, Inverse of initial jacobian)
 )
 {
@@ -183,14 +185,14 @@ __global__ void kernel_XPBD_V0(
         xpbd_convert_to_constraint(nb_vert_elem, C, grad_C);
         if(C < 1e-12f) continue;
 
-        xpbd_solve(nb_vert_elem,(m==0)?stiffness_1:stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p);
+        xpbd_solve(nb_vert_elem,(m==0)?stiffness_1:stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p, mask);
     }
 }
 
 void GPU_Plane_Fix::step(const GPU_ParticleSystem *ps, const scalar dt) {
     kernel_constraint_plane<<<(ps->nb() + 255) / 256, 256>>>(
         ps->nb(), origin, normal, com, offset, rot,
-        ps->cb_position->buffer, ps->cb_init_position->buffer);
+        ps->cb_position->buffer, ps->cb_init_position->buffer, ps->cb_mask->buffer);
 }
 
 void GPU_PBD_FEM::step(const GPU_ParticleSystem* ps, const scalar dt) {
@@ -200,7 +202,7 @@ void GPU_PBD_FEM::step(const GPU_ParticleSystem* ps, const scalar dt) {
                                                       c_offsets[j],
                                                       cb_dN->buffer,
                                                       ps->cb_position->buffer, cb_topology->buffer,
-                                                      ps->cb_inv_mass->buffer,
+                                                      ps->cb_inv_mass->buffer, ps->cb_mask->buffer,
                                                       cb_V->buffer, cb_JX_inv->buffer);
 
 

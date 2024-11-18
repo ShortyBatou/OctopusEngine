@@ -19,7 +19,7 @@ void Cuda_XPBD_FEM_Dynamic::init() {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         // récupérer la masse
-        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
+        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density, _m_distrib); // depends on density
         for(size_t i = 0; i < e_masses.size(); i++)
             masses[i] += e_masses[i];
     }

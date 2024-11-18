@@ -25,15 +25,15 @@
 #include "Script/Record/DataRecorder.h"
 #include "UI/UI_Component.h"
 
-struct MeshScene : public Scene
+struct MeshScene final : Scene
 {
-    virtual char* name() override { return "Mesh Scene"; }
+    char* name() override { return "Mesh Scene"; }
 
-    virtual void init() override {
+    void init() override {
 
     }
 
-    virtual void build_editor(UI_Editor* editor) {
+    void build_editor(UI_Editor* editor) override {
         editor->add_manager_ui(new UI_Time());
         editor->add_manager_ui(new UI_DisplaySettings());
         editor->add_manager_ui(new UI_Camera());
@@ -44,7 +44,7 @@ struct MeshScene : public Scene
         editor->add_component_ui(new UI_Constraint_Rigid_Controller());
     }
 
-    virtual void build_root(Entity* root) override
+    void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
         root->add_behaviour(new InputManager());
@@ -54,7 +54,7 @@ struct MeshScene : public Scene
     }
 
     // build scene's entities
-    virtual void build_entities() override
+    void build_entities() override
     {
         Vector3 size(1, 1, 1);
         Vector3I cells;
@@ -72,15 +72,13 @@ struct MeshScene : public Scene
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
-        BeamMeshGenerator* generator;
+        BeamMeshGenerator* generator = nullptr;
         switch (element)
         {
-        case Tetra: generator = new TetraBeamGenerator(cells, size); break;
+        case Tetra: case Tetra10: case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
         case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
         case Prism: generator = new PrismBeamGenerator(cells, size); break;
         case Hexa: generator = new HexaBeamGenerator(cells, size); break;
-        case Tetra10: generator = new TetraBeamGenerator(cells, size); break;
-        case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
         default: break;
         }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
@@ -97,7 +95,7 @@ struct MeshScene : public Scene
         build_entity(mesh, color);
     }
 
-    void convert_vtk_mesh(std::string file, std::string name, Element s_elem, int sub) {
+    void convert_vtk_mesh(const std::string& file, const std::string& name, const Element s_elem, const int sub) {
         VTK_Loader loader(AppInfo::PathToAssets() + file);
         Mesh* mesh = loader.build();
         std::vector<Vector3> u_v3 = loader.get_point_data_v3("u");
@@ -125,8 +123,7 @@ struct MeshScene : public Scene
     }
 
     void build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, Element element) {
-        Mesh* mesh;
-        mesh = get_beam_mesh(pos, cells, size, element);
+        Mesh* mesh = get_beam_mesh(pos, cells, size, element);
         //if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         //if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
@@ -139,7 +136,7 @@ struct MeshScene : public Scene
 
         // Mesh converter simulation to rendering (how it will be displayed)
         GL_Graphic* graphic;
-        int type = (mesh->topologies()[Tetra10].size() != 0 || mesh->topologies()[Tetra20].size() != 0) ? 2 : 0;
+        int type = (!mesh->topologies()[Tetra10].empty() || !mesh->topologies()[Tetra20].empty()) ? 2 : 0;
         //graphic = new GL_GraphicElement(0.7);
         switch (type) {
             case 0: graphic = new GL_GraphicSurface(color); break;

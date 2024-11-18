@@ -9,10 +9,10 @@
 struct Cuda_XPBD_FEM_Dynamic final : Component
 {
     explicit Cuda_XPBD_FEM_Dynamic(
-        const scalar density,
+        const scalar density,const Mass_Distribution m_distrib,
         const scalar young, const scalar poisson, const Material material,
         const int iteration = 30, const scalar damping = 0.f, const bool coupled = false)
-        : _density(density), _damping(damping), _young(young), _poisson(poisson), _material(material), _iteration(iteration),
+        : _density(density), _m_distrib(m_distrib), _damping(damping), _young(young), _poisson(poisson), _material(material), _iteration(iteration),
         _mesh(nullptr), _gpu_pbd(nullptr), _coupled_fem(coupled)
     {
     }
@@ -48,6 +48,7 @@ private:
     std::map<Element, std::vector<Color>> _display_colors;
     std::map<Element, GPU_PBD_FEM*> _gpu_fems;
     scalar _density;
+    Mass_Distribution _m_distrib;
     scalar _damping;
     scalar _young, _poisson;
     Material _material;

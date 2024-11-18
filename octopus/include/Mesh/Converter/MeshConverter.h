@@ -167,7 +167,9 @@ struct Tetra10Converter : TetraConverter {
     [[nodiscard]] FEM_Shape *get_shape() const override { return new Tetra_10(); }
 };
 
-struct Tetra20Converter : public TetraConverter {
+
+
+struct Tetra20Converter : TetraConverter {
     [[nodiscard]] Element get_element_type() const override { return Tetra20; }
 
     [[nodiscard]] Mesh::Topology get_elem_topo_edges() const override {

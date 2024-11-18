@@ -2,6 +2,7 @@
 #include "Dynamic/FEM/FEM_Shape.h"
 #include "Mesh/Elements.h"
 #include <iostream>
+#include <Dynamic/FEM/FEM_Generic.h>
 
 void FEM_Shape::build()
 {
@@ -52,36 +53,40 @@ FEM_Shape* get_fem_shape(const Element type)
     return fem;
 }
 
+
 std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry,
-                                     const Mesh::Topology& topology, const scalar density)
+                                     const Mesh::Topology& topology, const scalar density, Mass_Distribution distrib)
 {
     const int nb_vert_elem = elem_nb_vertices(elem);
     const scalar v_density = density / static_cast<scalar>(nb_vert_elem);
     const FEM_Shape* shape = get_fem_shape(elem);
 
     std::vector<scalar> mass(geometry.size());
-    scalar total_mass = 0;
-    for (int i = 0; i < topology.size(); i += nb_vert_elem)
+    if(distrib == Mass_Distribution::Shape)
     {
-        scalar V = 0.f;
-        for (int q = 0; q < shape->weights.size(); ++q)
+        for (int i = 0; i < topology.size(); i += nb_vert_elem)
         {
-            Matrix3x3 J = Matrix::Zero3x3();
+            std::vector<int> e_topo(topology.begin() + i, topology.begin() + i + nb_vert_elem);
+            scalar V = FEM_Generic::compute_volume(shape, geometry, e_topo);
             for (int j = 0; j < nb_vert_elem; j++)
             {
                 const int vid = topology[i + j];
-                J += glm::outerProduct(geometry[vid], shape->dN[q][j]);
+                mass[vid] += v_density * V;
             }
-            V += abs(glm::determinant(J)) * shape->weights[q];
-        }
-
-        for (int j = 0; j < nb_vert_elem; j++)
-        {
-            const int vid = topology[i + j];
-            mass[vid] += v_density * V;
         }
     }
-    std::cout <<  total_mass << " " << *std::min_element(mass.begin(), mass.end()) << " " << *std::max_element(mass.begin(), mass.end()) << std::endl;
+    else // uniform
+    {
+        scalar p_mass = 0;
+        for (int i = 0; i < topology.size(); i += nb_vert_elem)
+        {
+            std::vector<int> e_topo(topology.begin() + i, topology.begin() + i + nb_vert_elem);
+            p_mass += FEM_Generic::compute_volume(shape, geometry, e_topo);
+        }
+        p_mass *= density;
+        p_mass /= geometry.size();
+        for(float & m : mass) m = p_mass;
+    }
     delete shape;
     return mass;
 }

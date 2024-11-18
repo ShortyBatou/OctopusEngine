@@ -224,7 +224,7 @@ struct Hexa_8 final : FEM_Shape {
 };
 
 
-struct Tetra_10 final : FEM_Shape {
+struct Tetra_10 : FEM_Shape {
     Tetra_10() : FEM_Shape(10) { FEM_Shape::build(); }
 
     [[nodiscard]] std::vector<scalar> get_quadrature_coordinates() const override {
@@ -255,22 +255,21 @@ struct Tetra_10 final : FEM_Shape {
     }
 
     // compute N_i(X)
-    [[nodiscard]] std::vector<scalar> build_shape(scalar s, scalar t, scalar l) const override {
+    [[nodiscard]] std::vector<scalar> build_shape(scalar x, scalar y, scalar z) const override {
         return {
-            (1 - s - t - l) * (2.f * (1 - s - t - l) - 1),
-            s * (2 * s - 1),
-            t * (2 * t - 1),
-            l * (2 * l - 1),
-            4 * s * (1 - s - t - l),
-            4 * s * t,
-            4 * t * (1 - s - t - l),
-            4 * l * (1 - s - t - l),
-            4 * s * l,
-            4 * t * l
+            (-2*x - 2*y - 2*z + 1)*(-x - y - z + 1),
+            x*(2*x - 1),
+            y*(2*y - 1),
+            z*(2*z - 1),
+            x*(-4*x - 4*y - 4*z + 4),
+            4*x*y,
+            y*(-4*x - 4*y - 4*z + 4),
+            z*(-4*x - 4*y - 4*z + 4),
+            4*x*z,
+            4*y*z
         };
     }
 };
-
 
 struct Tetra_20 final : FEM_Shape {
     Tetra_20() : FEM_Shape(20) { FEM_Shape::build(); }
@@ -676,4 +675,9 @@ struct Hexa_27 final : FEM_Shape {
 
 FEM_Shape *get_fem_shape(Element type);
 
-std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar density);
+
+enum Mass_Distribution
+{
+    Uniform, Shape
+};
+std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar density, Mass_Distribution distrib = Mass_Distribution::Uniform);

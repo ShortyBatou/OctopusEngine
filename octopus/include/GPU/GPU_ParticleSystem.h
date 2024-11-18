@@ -16,6 +16,7 @@ struct GPU_ParticleSystem {
     Cuda_Buffer<Vector3>* cb_forces;
     Cuda_Buffer<scalar>* cb_mass;
     Cuda_Buffer<scalar>* cb_inv_mass;
+    Cuda_Buffer<int>* cb_mask;
 
     GPU_ParticleSystem(const std::vector<Vector3>& positions, const std::vector<scalar>& masses);
     ~GPU_ParticleSystem() = default;

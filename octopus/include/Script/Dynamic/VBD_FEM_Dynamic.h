@@ -9,14 +9,15 @@
 struct VBD_FEM_Dynamic final : ParticleSystemDynamic
 {
     explicit VBD_FEM_Dynamic(
-        const scalar density,
+        const scalar density, Mass_Distribution m_distrib,
         const scalar young, const scalar poisson, const Material material,
         const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
         : ParticleSystemDynamic(density),
-            _density(density), _damping(damping), _young(young), _poisson(poisson), _material(material),
+            _density(density), _m_distrib(m_distrib), _damping(damping), _young(young), _poisson(poisson), _material(material),
             _iteration(iteration), _sub_iteration(sub_iteration),
             vbd(nullptr)
     {
+
     }
 
     void update() override;
@@ -29,6 +30,7 @@ struct VBD_FEM_Dynamic final : ParticleSystemDynamic
 private:
     std::map<Element, std::vector<Color>> _display_colors;
     scalar _density;
+    Mass_Distribution _m_distrib;
     scalar _damping;
     scalar _young, _poisson;
     Material _material;

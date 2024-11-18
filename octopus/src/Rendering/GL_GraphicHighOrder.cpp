@@ -14,7 +14,7 @@ GL_GraphicHighOrder::GL_GraphicHighOrder(const int quality, const Color &color) 
 }
 
 void GL_GraphicHighOrder::update_gl_vcolors() {
-    Element element = Element::Line;
+    Element element = Line;
     FEM_Shape *shape = nullptr;
     int element_size = 0;
     _gl_geometry->vcolors.resize(_ref_geometry.size());

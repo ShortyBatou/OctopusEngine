@@ -1,7 +1,7 @@
 #include "GPU/GPU_PBD_FEM_Coupled.h"
 #include <GPU/CUMatrix.h>
 
-__device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffness1, const scalar stiffness2, const scalar dt, const scalar* C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p)
+__device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffness1, const scalar stiffness2, const scalar dt, const scalar* C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p, int* mask)
 {
     const scalar a1 = 1.f / (stiffness1 * dt * dt);
     const scalar a2 = 1.f / (stiffness2 * dt * dt);
@@ -17,7 +17,9 @@ __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffnes
     if(abs(glm::determinant(A)) < 1e-12) return;
     Vector2 dt_lambda = -glm::inverse(A) * Vector2(C[0], C[1]);
     for (int i = 0; i < nb_vert_elem; ++i) {
-        p[topology[i]] += (dt_lambda[0] * grad_C[i] + dt_lambda[1] * grad_C[i+nb_vert_elem]) * inv_mass[topology[i]];
+        const int vid = topology[i];
+        if(mask[vid] == 1)
+            p[vid] += (dt_lambda[0] * grad_C[i] + dt_lambda[1] * grad_C[i+nb_vert_elem]) * inv_mass[vid];
     }
 }
 
@@ -53,7 +55,7 @@ __global__ void kernel_XPBD_Coupled_V0(
     const int offset, // coloration
     Vector3* cb_dN,
     Vector3 *cb_p, int *cb_topology, // mesh
-    scalar *inv_mass,
+    scalar *inv_mass, int* mask,
     scalar *cb_V, Matrix3x3 *cb_JX_inv // element data (Volume * Weight, Inverse of initial jacobian)
 )
 {
@@ -78,7 +80,7 @@ __global__ void kernel_XPBD_Coupled_V0(
 
     xpbd_convert_to_constraint(nb_vert_elem, C[0], grad_C);
     xpbd_convert_to_constraint(nb_vert_elem, C[1], grad_C + nb_vert_elem);
-    xpbd_solve_coupled(nb_vert_elem, stiffness_1, stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p);
+    xpbd_solve_coupled(nb_vert_elem, stiffness_1, stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p, mask);
 }
 
 
@@ -133,7 +135,7 @@ void GPU_PBD_FEM_Coupled::step(const GPU_ParticleSystem* ps, const scalar dt) {
                                                       c_offsets[j],
                                                       cb_dN->buffer,
                                                       ps->cb_position->buffer, cb_topology->buffer,
-                                                      ps->cb_inv_mass->buffer,
+                                                      ps->cb_inv_mass->buffer, ps->cb_mask->buffer,
                                                       cb_V->buffer, cb_JX_inv->buffer);
 
 

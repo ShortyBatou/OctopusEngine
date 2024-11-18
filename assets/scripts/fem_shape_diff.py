@@ -2,13 +2,25 @@ from sympy import *
 
 x, y, z = symbols('x y z')
 
+
 # P1
-#shape = [1 - x - y - z, x, y, z] 
+shape = [1 - x - y - z, x, y, z] 
+L1 = shape[0]
+L2 = shape[1]
+L3 = shape[2]
+L4 = shape[3]
+
 
 # P2
-#shape = [(x+y+z-1)*(2*x+2*y+2*z-1), x*(2*x-1), y*(2*y-1), z*(2*z-1), -4*x*(x+y+z-1), 4*x*y, -4*y*(x+y+z-1),-4*z*(x+y+z-1),4*x*z, 4*y*z] 
+shape = [ (2*L1 - 1)*L1, (2*L2 - 1)*L2, (2*L3 - 1)*L3, (2*L4 - 1)*L4, 4 * L1 * L2, 4 * L2 * L3, 4 * L1 * L3, 4 * L1 * L4, 4 * L2 * L4, 4 * L3 * L4] 
+
+# P2 lumping
+#shape = [L1*L1, L2*L2, L3*L3, L4*L4, 2 * L1 * L2, 2 * L2 * L3, 2 * L1 * L3, 2 * L1 * L4, 2 * L2 * L4, 2 * L3 * L4]
+
+
 
 #Q2
+'''
 shape = [
     #corner nodes
     x*y*z*(x - 1)*(y - 1)*(z - 1)/8, 
@@ -44,6 +56,9 @@ shape = [
     
     #volume
     -(x - 1)*(x + 1)*(y - 1)*(y + 1)*(z - 1)*(z + 1)]
+
+
+'''
 
 # P3
 '''
@@ -83,7 +98,7 @@ for i in range(len(shape)):
     d_diff[0,i] = diff(shape[i], x)
     d_diff[1,i] = diff(shape[i], y)
     d_diff[2,i] = diff(shape[i], z)
-
+print(shape)
 print(d_diff)
 
 #print(d_shape_r0)

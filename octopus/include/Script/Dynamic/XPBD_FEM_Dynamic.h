@@ -7,13 +7,13 @@
 
 class XPBD_FEM_Dynamic : public FEM_Dynamic {
 public:
-    XPBD_FEM_Dynamic(const scalar density,
+    XPBD_FEM_Dynamic(const scalar density, Mass_Distribution m_distrib,
                      const scalar young, const scalar poisson,
                      const Material material,
                      const int iteration = 1, const int sub_iteration = 30,
                      const scalar global_damping = 0, const bool coupled = false,
                      const PBDSolverType type = GaussSeidel)
-    : FEM_Dynamic(density, young, poisson, material, sub_iteration),
+    : FEM_Dynamic(density, m_distrib, young, poisson, material, sub_iteration),
     _global_damping(global_damping), _iteration(iteration), _type(type), _coupled_fem(coupled) {
     }
 

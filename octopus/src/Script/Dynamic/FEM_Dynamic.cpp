@@ -143,14 +143,14 @@ std::vector<scalar> FEM_Dynamic::get_stress_vertices() {
     std::vector<scalar> smooth_stress(_ps->nb_particles(), 0.);
     for (auto &it: e_fems) {
         Element type = it.first;
-        int elem_vert = elem_nb_vertices(type);
+        const int elem_vert = elem_nb_vertices(type);
         std::vector<FEM_Generic *> &fems = it.second;
         std::vector<int> &id_fems = e_id_fems[type];
 
         for (size_t i = 0; i < fems.size(); ++i) {
             Mesh::Geometry p = _mesh->get_elem_vertices(type, id_fems[i]);
             std::vector<int> t = _mesh->get_elem_indices(type, id_fems[i]);
-            scalar stress = fems[i]->compute_stress(p);
+            const scalar stress = fems[i]->compute_stress(p);
             std::vector<float> weights(elem_vert);
             for (int j = 0; j < elem_vert; ++j) {
                 smooth_stress[t[j]] += stress / static_cast<scalar>(elem_vert);
@@ -166,35 +166,15 @@ void FEM_Dynamic::build_dynamic() {
     for (Particle *p: _ps->particles()) {
         p->mass = 0;
     }
-    scalar total_volume = 0.f;
-    for (auto &topo: _mesh->topologies()) {
-        Element type = topo.first;
-        int nb = elem_nb_vertices(type);
-        std::vector<int> ids(nb);
-        for (int i = 0; i < topo.second.size(); i += nb) {
-            for (int j = 0; j < nb; ++j) {
-                ids[j] = topo.second[i + j];
-            }
 
-            scalar volume = 0;
-            std::vector<FEM_Generic *> fems = build_element(ids, type, volume);
-            for (FEM_Generic *fem: fems) {
-                e_fems[type].push_back(fem);
-                e_id_fems[type].push_back(i / nb);
-            }
-
-            total_volume += volume;
-
-            for (int j = 0; j < nb; ++j) {
-                Particle *p = _ps->get(ids[j]);
-                p->mass += _density * volume / static_cast<scalar>(nb);
-            }
-        }
+    for (auto &[e, topo]: _mesh->topologies()) {
+        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(), topo, _density, _m_distrib); // depends on density
+        for(int i = 0; i < e_masses.size(); i++)
+            _ps->get(i)->mass += e_masses[i];
     }
+
     scalar total_mass = 0.f;
-    const int n = _ps->nb_particles();
     for (Particle *p: _ps->particles()) {
-        //p->mass = total_volume * _density / static_cast<scalar>(n);
         p->inv_mass = 1.f / p->mass;
         total_mass += p->mass;
     }

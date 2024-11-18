@@ -50,6 +50,7 @@ struct Cuda_XPBD_Scene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
+        args.distribution = Uniform;
         args.young = 1e6;
         args.poisson = 0.45;
         args.damping = 0.1;
@@ -67,12 +68,11 @@ struct Cuda_XPBD_Scene final : Scene
         BeamMeshGenerator* generator = nullptr;
         switch (element)
         {
-            case Tetra: generator = new TetraBeamGenerator(cells, size); break;
+            case Tetra: case Tetra10: case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
             case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
             case Prism: generator = new PrismBeamGenerator(cells, size); break;
-            case Hexa: generator = new HexaBeamGenerator(cells, size); break;
-            case Tetra10: generator = new TetraBeamGenerator(cells, size); break;
-            case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
+            case Hexa: case Hexa27: generator = new HexaBeamGenerator(cells, size); break;
+
             default: generator = new TetraBeamGenerator(cells, size); break;
         }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
@@ -86,6 +86,7 @@ struct Cuda_XPBD_Scene final : Scene
         Mesh* mesh = get_beam_mesh(pos, cells, size, element);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+        if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
         return mesh;
     }
@@ -105,7 +106,7 @@ struct Cuda_XPBD_Scene final : Scene
     void build_obj(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.young, args.poisson, args.material, args.iteration, args.damping));
+        e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.damping));
         if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
         if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         e->add_component(build_graphic(color, element));

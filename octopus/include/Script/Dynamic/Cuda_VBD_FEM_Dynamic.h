@@ -8,10 +8,10 @@
 struct Cuda_VBD_FEM_Dynamic final : Component
 {
     explicit Cuda_VBD_FEM_Dynamic(
-        const scalar density,
+        const scalar density, const Mass_Distribution m_distrib,
         const scalar young, const scalar poisson,
         const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
-        : _density(density), _damping(damping), _young(young), _poisson(poisson),
+        : _density(density), _m_distrib(m_distrib), _damping(damping), _young(young), _poisson(poisson),
           _iteration(iteration), _sub_iteration(sub_iteration),
           _mesh(nullptr), vbd(nullptr)
     { }
@@ -26,6 +26,7 @@ struct Cuda_VBD_FEM_Dynamic final : Component
 private:
     std::map<Element, std::vector<Color>> _display_colors;
     scalar _density;
+    Mass_Distribution _m_distrib;
     scalar _damping;
     scalar _young, _poisson;
     int _iteration;
