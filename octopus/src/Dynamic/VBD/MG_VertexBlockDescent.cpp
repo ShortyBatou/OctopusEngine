@@ -15,23 +15,35 @@ P1_to_P2::P1_to_P2(const Mesh::Topology &topology) {
     const int nb_P2 = elem_nb_vertices(Tetra10);
     const int diff = nb_P2 - nb_P1;
     for (int i = 0; i < topology.size(); i += nb_P2) {
-        for (int j = 0; j < diff; ++j) {
-            int vid = topology[i + nb_P1 + j];
+        // for each particle on edges (red_id in [nb_p1, nb_p2])
+        for (int j = nb_P1; j < nb_P2; ++j) {
+            int vid = topology[i + j];
             if(visited.find(vid) == visited.end()) {
-                ids.push_back(topology[i + nb_P1 + j]);
-                const int a = ref_edges[j].first, b = ref_edges[j].second;
+                ids.push_back(topology[i + j]);
+                const int a = ref_edges[j-nb_P1].first, b = ref_edges[j-nb_P1].second;
                 edges.emplace_back(topology[i + a], topology[i + b]);
                 visited.insert(vid);
             }
-
         }
     }
 }
 
-void P1_to_P2::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
+void P1_to_P2::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) {
     for (int i = 0; i < ids.size(); i++) {
-        const int a = edges[i].first, b = edges[i].second;
-        ps->get(ids[i])->position += (dx[a] + dx[b]) * 0.5f;
+        if(ps->get(ids[i])->active) {
+            const int a = edges[i].first, b = edges[i].second;
+            // place holder that take in count the "correction" of constrained particles to counter inertia
+            if(!ps->get(a)->active) {
+                ps->get(ids[i])->position = y[ids[i]] + ((ps->get(a)->position - y[a]) + dx[b]) * 0.5f;
+            }
+            else if(!ps->get(b)->active) {
+                ps->get(ids[i])->position = y[ids[i]] + ((ps->get(b)->position - y[b]) + dx[a]) * 0.5f;
+            }
+            else {
+                ps->get(ids[i])->position = y[ids[i]] + (dx[a] + dx[b]) * 0.5f;
+            }
+
+        }
     }
 }
 
@@ -79,7 +91,7 @@ P1_to_P2_Mass::P1_to_P2_Mass(const Mesh::Topology &topology) {
     }
 }
 
-void P1_to_P2_Mass::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
+void P1_to_P2_Mass::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) {
     for (int i = 0; i < ps->nb_particles(); i++) {
        ps->get(i)->position = ps->get(i)->last_position;
     }
@@ -94,29 +106,26 @@ void P1_to_P2_Mass::prolongation(ParticleSystem *ps, std::vector<Vector3> dx) {
 int Q1_to_Q2::ref_edges[12][2] = {{0, 1},{1, 2},{2, 3},{3, 0},{0, 4},{1, 5},{2, 6},{3, 7},{4, 5},{5, 6},{6, 7},{7, 0}};
 int Q1_to_Q2::ref_faces[6][4] = {{0,1,2,3},{0,1,4,5},{1,2,5,6},{2,3,6,7},{3,0,7,4},{4,5,6,7}};
 
-void Q1_to_Q2::prolongation(ParticleSystem *ps, const std::vector<Vector3> dx) {
+void Q1_to_Q2::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) {
     for (int i = 0; i < ids_edges.size(); i++) {
         const int a = edges[i][0], b = edges[i][1];
-        ps->get(ids_edges[i])->position += (dx[a] + dx[b]) * 0.5f;
-        //ps->get(ids_edges[i])->position = (ps->get(b)->position + ps->get(a)->position) * 0.5f;
+        ps->get(ids_edges[i])->position = y[ids_edges[i]] + (dx[a] + dx[b]) * 0.5f;
     }
 
     for (int i = 0; i < ids_faces.size(); i++) {
         Vector3 dx_sum = Unit3D::Zero();
         for(int j = 0; j < 4; j++) {
             dx_sum += dx[faces[i][j]];
-            //dx_sum += ps->get(faces[i][j])->position;
         }
-        ps->get(ids_faces[i])->position += dx_sum * 0.25f;
+        ps->get(ids_faces[i])->position = y[ids_faces[i]] + dx_sum * 0.25f;
     }
 
     for (int i = 0; i < ids_volumes.size(); i++) {
         Vector3 dx_sum = Unit3D::Zero();
         for(int j = 0; j < 8; j++) {
             dx_sum += dx[volume[i][j]];
-            //dx_sum += ps->get(volume[i][j])->position;
         }
-        ps->get(ids_volumes[i])->position += dx_sum * 0.125f;
+        ps->get(ids_volumes[i])->position = y[ids_volumes[i]] + dx_sum * 0.125f;
     }
 }
 
@@ -193,8 +202,6 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
         // init prolongation
         _interpolation = new Q1_to_Q2(topology);
     }
-
-
 }
 
 void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geometry &geometry, scalar density, Element e) {
@@ -203,15 +210,15 @@ void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geo
     const int nb_element = static_cast<int>(topology.size()) / _shape->nb;
     std::vector<std::vector<Matrix3x3> > JX_inv(nb_element);
     std::vector<std::vector<scalar> > V(nb_element);
-    std::vector<scalar> masses(geometry.size(), 0);
+    std::vector<scalar> masses(geometry.size(), 0.f);
+    scalar v_total = 0;
     std::set<int> s_ids;
     for (int i = 0; i < nb_element; i++) {
-        scalar mass = 0;
         const int id = i * _shape->nb;
 
         V[i].resize(nb_quadrature);
         JX_inv[i].resize(nb_quadrature);
-
+        scalar V_elem = 0;
         for (int j = 0; j < nb_quadrature; ++j) {
             Matrix3x3 J = Matrix::Zero3x3();
             for (int k = 0; k < l_shape->nb; ++k) {
@@ -219,14 +226,15 @@ void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geo
                 J += glm::outerProduct(geometry[topology[id + k]], l_shape->dN[j][k]);
             }
             V[i][j] = abs(glm::determinant(J)) * l_shape->weights[j];
+            v_total += V[i][j];
             JX_inv[i][j] = glm::inverse(J);
-            mass += V[i][j];
+            V_elem += V[i][j];
         }
-        mass *= density / static_cast<scalar>(l_shape->nb);
-        for (int k = 0; k < _shape->nb; ++k) {
-            masses[topology[id + k]] = mass;
+        for (int k = 0; k < l_shape->nb; ++k) {
+            masses[topology[id] + k] += V_elem * density / l_shape->nb;
         }
     }
+
     const std::vector ids(s_ids.begin(), s_ids.end());
     _grids.push_back(new Grid_Level(l_shape, masses, JX_inv, V, ids));
 }
@@ -244,30 +252,34 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     // coarse to refined (P1=>P2)
-    int it1 = 1, it2 = 1;
+    int it1 = 50, it2 = 0;
     Grid_Level *grid;
 
+    plot_residual(ps, _grids[0], dt, 0);
     grid = _grids[1];
     std::fill(_dx.begin(), _dx.end(), Unit3D::Zero());
     for(int i = 0; i < it1; ++i) {
         for (const int id: grid->_ids) {
-            if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
+            if(ps->get(id)->active)
+                solve_vertex(ps, grid, dt, id);
         }
+        plot_residual(ps, _grids[0], dt, 0);
     }
 
     // prolongatation
-    _interpolation->prolongation(ps, _dx);
+    _interpolation->prolongation(ps, _y, _dx);
+    plot_residual(ps, _grids[0], dt, 0);
 
     grid = _grids[0];
     for(int i = 0; i < it2; ++i) {
         for (const int id: grid->_ids) {
             if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
         }
+        plot_residual(ps, _grids[0], dt, 0);
     }
-    //plot_residual(ps, _grids[0], dt);
 }
 
-void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt) {
+void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt, int id = 0) {
     const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
@@ -280,10 +292,10 @@ void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt)
         }
     }
     sum /= total;
-    DebugUI::Begin("MG Forces");
-    DebugUI::Value("MG Forces val", sum);
-    DebugUI::Plot("MG Forces norm", sum, 200);
-    DebugUI::Range("MG Forces range", sum);
+    DebugUI::Begin(std::to_string(id) + " MG Forces ");
+    DebugUI::Value(std::to_string(id) + " MG Forces val ", sum);
+    DebugUI::Plot(std::to_string(id) + " MG Forces norm", sum, 200);
+    DebugUI::Range(std::to_string(id) + " MG Forces range", sum);
     DebugUI::End();
 }
 
@@ -390,10 +402,8 @@ Matrix3x3 MG_VBD_FEM::assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, co
 
 void MG_VBD_FEM::compute_inertia(ParticleSystem *ps, scalar dt) {
     // normally we should make a better approximation but osef
-
     for (int i = 0; i < ps->nb_particles(); ++i) {
         const Particle *p = ps->get(i);
-        _y[i] = p->position + p->velocity * dt + (
-                    (p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
+        _y[i] = p->position + p->velocity * dt + ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
     }
 }

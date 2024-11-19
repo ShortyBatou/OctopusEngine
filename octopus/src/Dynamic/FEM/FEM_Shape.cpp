@@ -67,7 +67,7 @@ std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& 
         for (int i = 0; i < topology.size(); i += nb_vert_elem)
         {
             std::vector<int> e_topo(topology.begin() + i, topology.begin() + i + nb_vert_elem);
-            scalar V = FEM_Generic::compute_volume(shape, geometry, e_topo);
+            const scalar V = FEM_Generic::compute_volume(shape, geometry, e_topo);
             for (int j = 0; j < nb_vert_elem; j++)
             {
                 const int vid = topology[i + j];

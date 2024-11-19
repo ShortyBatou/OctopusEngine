@@ -25,7 +25,7 @@ struct Grid_Level {
 
 struct GridInterpolation {
     virtual ~GridInterpolation() = default;
-    virtual void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) = 0;
+    virtual void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) = 0;
 };
 
 struct P1_to_P2 final : GridInterpolation {
@@ -35,7 +35,7 @@ struct P1_to_P2 final : GridInterpolation {
 
     explicit P1_to_P2(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
 
     ~P1_to_P2() override = default;
 };
@@ -45,7 +45,7 @@ struct P1_to_P2_Mass final : GridInterpolation {
     std::vector<std::vector<scalar>> weights;
     explicit P1_to_P2_Mass(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
 
     ~P1_to_P2_Mass() override = default;
 };
@@ -63,7 +63,7 @@ struct Q1_to_Q2 final : GridInterpolation {
 
     explicit Q1_to_Q2(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, std::vector<Vector3> dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
 
     ~Q1_to_Q2() override = default;
 };
@@ -78,7 +78,7 @@ struct MG_VBD_FEM final : VBD_Object {
 
     void solve(ParticleSystem *ps, scalar dt);
 
-    void plot_residual(ParticleSystem *ps, Grid_Level* grid, scalar dt) ;
+    void plot_residual(ParticleSystem *ps, Grid_Level* grid, scalar dt, int id) ;
     scalar compute_energy(ParticleSystem *ps, Grid_Level* grid) const;
     std::vector<Vector3> compute_forces(ParticleSystem *ps, Grid_Level* grid, scalar dt) const ;
 

@@ -11,11 +11,9 @@ void Particle::build(const Vector3 &_position, scalar _mass) {
     force = Unit3D::Zero();
     external_forces = Unit3D::Zero();
     mass = _mass;
-    if (mass > 1e-8) {
-        inv_mass = scalar(1.) / _mass;
-    } else {
-        inv_mass = scalar(0.);
-    }
+    if (mass > 1e-8f) inv_mass = 1.f / _mass;
+    else inv_mass = 0.f;
+
 }
 
 void Particle::reset() {

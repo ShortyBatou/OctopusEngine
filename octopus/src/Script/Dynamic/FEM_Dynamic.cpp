@@ -168,11 +168,29 @@ void FEM_Dynamic::build_dynamic() {
     }
 
     for (auto &[e, topo]: _mesh->topologies()) {
-        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(), topo, _density, _m_distrib); // depends on density
+        // get mass
+        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(), topo, _density, _m_distrib);
         for(int i = 0; i < e_masses.size(); i++)
             _ps->get(i)->mass += e_masses[i];
+
+        // build fem objects
+        const int nb = elem_nb_vertices(e);
+        std::vector<int> ids(nb);
+        for (int i = 0; i < topo.size(); i += nb) {
+            for (int j = 0; j < nb; ++j) {
+                ids[j] = topo[i + j];
+            }
+
+            scalar volume = 0;
+            std::vector<FEM_Generic *> fems = build_element(ids, e, volume);
+            for (FEM_Generic *fem: fems) {
+                e_fems[e].push_back(fem);
+                e_id_fems[e].push_back(i / nb);
+            }
+        }
     }
 
+    // build mass
     scalar total_mass = 0.f;
     for (Particle *p: _ps->particles()) {
         p->inv_mass = 1.f / p->mass;

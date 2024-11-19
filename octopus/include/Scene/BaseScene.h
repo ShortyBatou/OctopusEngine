@@ -57,7 +57,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -70,26 +70,30 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e7f;
-        args.poisson = 0.499f;
-        args.damping = 1e-6;
+        args.young = 1e6f;
+        args.poisson = 0.45;
+        args.damping = 1e-4;
         args.iteration = 1;
-        args.sub_iteration = 50;
+        args.sub_iteration = 1;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(2, 1, 1);
+        const Vector3 size(4, 1, 1);
         Vector3I cells(64, 16, 16);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         cells = Vector3I(1, 1, 1);
-        //build_obj(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args, false);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
-        cells = Vector3I(16, 8, 8);
+        cells = Vector3I(4, 1, 1);
         //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.7,0.4,0.8,0.), Tetra10, args, true, true);
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, false);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Tetra10, args, false);
+        args.iteration = 50;
+        build_vbd_entity(Vector3(0,0,-1.1),cells, size, Color(0.3,0.3,0.8,0.), Tetra, args, false);
+        args.sub_iteration = 100;
+        build_fem_entity(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args);
+        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra, args);
         //cells = Vector3I(32, 16, 16);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, false);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10_Lumped, args, true, true);
@@ -102,7 +106,7 @@ struct BaseScene final : Scene
         args.iteration = 150;
         args.damping = 0.001;
         //build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
-        args.sub_iteration = 150;
+
         //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa27, args);
         //cells = Vector3I(10, 20, 10);
         //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra20, args, true);
@@ -136,8 +140,8 @@ struct BaseScene final : Scene
     }
 
     GL_Graphic* build_graphic(const Color& color, const Element element) {
-        return new GL_GraphicHighOrder(2, color);
-        //return new GL_GraphicSurface(color);
+        //return new GL_GraphicHighOrder(2, color);
+        return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {
