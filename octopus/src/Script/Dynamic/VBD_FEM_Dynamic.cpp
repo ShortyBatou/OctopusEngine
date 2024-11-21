@@ -3,6 +3,8 @@
 #include <Manager/TimeManager.h>
 #include <Mesh/Generator/BeamGenerator.h>
 #include <Dynamic/VBD/MG_VertexBlockDescent.h>
+#include <Dynamic/VBD/VBD_FEM.h>
+
 #include "Dynamic/Base/Solver.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 

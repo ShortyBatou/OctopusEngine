@@ -248,7 +248,7 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 }
 
 
-void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
+void MG_VBD_FEM::solve(VertexBlockDescent *ps, scalar dt) {
     // coarse to refined (P1=>P2)
     int it1 = 1, it2 = 0;
     Grid_Level *grid;
@@ -281,7 +281,7 @@ void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     }
 }
 
-void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt, int id = 0) {
+void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, int id = 0) {
     const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
@@ -301,12 +301,12 @@ void MG_VBD_FEM::plot_residual(ParticleSystem *ps, Grid_Level* grid,  scalar dt,
     DebugUI::End();
 }
 
-scalar MG_VBD_FEM::compute_energy(ParticleSystem *ps, Grid_Level* grid) const {
+scalar MG_VBD_FEM::compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const {
     // can wait
     return 0;
 }
 
-std::vector<Vector3> MG_VBD_FEM::compute_forces(ParticleSystem *ps, Grid_Level* grid, scalar dt) const {
+std::vector<Vector3> MG_VBD_FEM::compute_forces(VertexBlockDescent *ps, Grid_Level* grid, scalar dt) const {
     std::vector forces(ps->nb_particles(), Unit3D::Zero());
     const int &nb_vert_elem = _shape->nb;
     const int nb_quadrature = _shape->nb_quadratures();
@@ -334,7 +334,7 @@ std::vector<Vector3> MG_VBD_FEM::compute_forces(ParticleSystem *ps, Grid_Level* 
     return forces;
 }
 
-void MG_VBD_FEM::solve_vertex(ParticleSystem *ps, Grid_Level *grid, scalar dt, int vid) {
+void MG_VBD_FEM::solve_vertex(VertexBlockDescent *ps, Grid_Level *grid, scalar dt, int vid) {
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
@@ -360,7 +360,7 @@ void MG_VBD_FEM::solve_vertex(ParticleSystem *ps, Grid_Level *grid, scalar dt, i
     _dx[vid] += dx;
 }
 
-void MG_VBD_FEM::solve_element(ParticleSystem *ps, const Grid_Level *grid, const int eid, const int ref_id, Vector3 &f_i, Matrix3x3 &H_i) {
+void MG_VBD_FEM::solve_element(VertexBlockDescent *ps, const Grid_Level *grid, const int eid, const int ref_id, Vector3 &f_i, Matrix3x3 &H_i) {
     const int nb_quadrature = grid->_shape->nb_quadratures();
     const int nb_vert_elem = grid->_shape->nb;
     const int nb_vert_elem_max = _shape->nb;
@@ -400,7 +400,7 @@ Matrix3x3 MG_VBD_FEM::assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, co
     return H;
 }
 
-void MG_VBD_FEM::compute_inertia(ParticleSystem *ps, scalar dt) {
+void MG_VBD_FEM::compute_inertia(VertexBlockDescent *ps, scalar dt) {
     // normally we should make a better approximation but osef
     for (int i = 0; i < ps->nb_particles(); ++i) {
         const Particle *p = ps->get(i);

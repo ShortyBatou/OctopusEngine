@@ -5,7 +5,7 @@
 #include "Dynamic/Base/ParticleSystem.h"
 #include "Dynamic/FEM/FEM_Shape.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
-#include "Dynamic/VBD/VBD_Object.h"
+#include "Dynamic/VBD/VertexBlockDescent.h"
 
 struct Grid_Level {
     Grid_Level(FEM_Shape *shape,
@@ -76,17 +76,17 @@ struct MG_VBD_FEM final : VBD_Object {
     void build_neighboors(const Mesh::Topology &topology);
 
 
-    void solve(ParticleSystem *ps, scalar dt);
+    void solve(VertexBlockDescent *ps, scalar dt);
 
-    void plot_residual(ParticleSystem *ps, Grid_Level* grid, scalar dt, int id) ;
-    scalar compute_energy(ParticleSystem *ps, Grid_Level* grid) const;
-    std::vector<Vector3> compute_forces(ParticleSystem *ps, Grid_Level* grid, scalar dt) const ;
+    void plot_residual(VertexBlockDescent *ps, Grid_Level* grid, scalar dt, int id) ;
+    scalar compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const;
+    std::vector<Vector3> compute_forces(VertexBlockDescent *ps, Grid_Level* grid, scalar dt) const ;
 
     // int i = vertex index for ids
-    void solve_vertex(ParticleSystem *ps, Grid_Level *grid, scalar dt, int i);
-    void solve_element(ParticleSystem *ps, const Grid_Level *grid, int eid, int ref_id, Vector3 &f_i, Matrix3x3 &H_i);
+    void solve_vertex(VertexBlockDescent *ps, Grid_Level *grid, scalar dt, int i);
+    void solve_element(VertexBlockDescent *ps, const Grid_Level *grid, int eid, int ref_id, Vector3 &f_i, Matrix3x3 &H_i);
     Matrix3x3 assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, Vector3 dF_dx);
-    void compute_inertia(ParticleSystem *ps, scalar dt) override;
+    void compute_inertia(VertexBlockDescent *ps, scalar dt) override;
 
 protected:
     scalar _k_damp;
