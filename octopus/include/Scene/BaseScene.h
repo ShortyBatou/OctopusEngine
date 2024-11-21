@@ -74,9 +74,9 @@ struct BaseScene final : Scene
         args.poisson = 0.45;
         args.damping = 1e-4;
         args.iteration = 1;
-        args.sub_iteration = 1;
+        args.sub_iteration = 50;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
@@ -88,12 +88,11 @@ struct BaseScene final : Scene
         cells = Vector3I(4, 1, 1);
         //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.7,0.4,0.8,0.), Tetra10, args, true, true);
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Tetra10, args, false);
-        args.iteration = 50;
-        build_vbd_entity(Vector3(0,0,-1.1),cells, size, Color(0.3,0.3,0.8,0.), Tetra, args, false);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, false);
+        build_vbd_entity(Vector3(0,0,-1.1),cells, size, Color(0.3,0.3,0.8,0.), Hexa, args, false);
         args.sub_iteration = 100;
-        build_fem_entity(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra10, args);
-        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.8f,0.25f,0.25f,0.f), Tetra, args);
+        build_fem_entity(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args);
+        build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa, args);
         //cells = Vector3I(32, 16, 16);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, false);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10_Lumped, args, true, true);

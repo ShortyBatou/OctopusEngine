@@ -211,10 +211,9 @@ void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geo
     std::vector<std::vector<Matrix3x3> > JX_inv(nb_element);
     std::vector<std::vector<scalar> > V(nb_element);
     std::vector<scalar> masses(geometry.size(), 0.f);
-    scalar v_total = 0;
     std::set<int> s_ids;
     for (int i = 0; i < nb_element; i++) {
-        const int id = i * _shape->nb;
+        const int id = i * _shape->nb; // first vertex of element
 
         V[i].resize(nb_quadrature);
         JX_inv[i].resize(nb_quadrature);
@@ -226,7 +225,6 @@ void MG_VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geo
                 J += glm::outerProduct(geometry[topology[id + k]], l_shape->dN[j][k]);
             }
             V[i][j] = abs(glm::determinant(J)) * l_shape->weights[j];
-            v_total += V[i][j];
             JX_inv[i][j] = glm::inverse(J);
             V_elem += V[i][j];
         }
@@ -252,13 +250,15 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
     // coarse to refined (P1=>P2)
-    int it1 = 50, it2 = 0;
+    int it1 = 1, it2 = 0;
     Grid_Level *grid;
 
     plot_residual(ps, _grids[0], dt, 0);
     grid = _grids[1];
     std::fill(_dx.begin(), _dx.end(), Unit3D::Zero());
     for(int i = 0; i < it1; ++i) {
+        std::iota(grid->_ids.begin(), grid->_ids.end(), 0);
+        std::shuffle(grid->_ids.begin(), grid->_ids.end(), std::mt19937());
         for (const int id: grid->_ids) {
             if(ps->get(id)->active)
                 solve_vertex(ps, grid, dt, id);
@@ -272,6 +272,8 @@ void MG_VBD_FEM::solve(ParticleSystem *ps, scalar dt) {
 
     grid = _grids[0];
     for(int i = 0; i < it2; ++i) {
+        std::iota(grid->_ids.begin(), grid->_ids.end(), 0);
+        std::shuffle(grid->_ids.begin(), grid->_ids.end(), std::mt19937());
         for (const int id: grid->_ids) {
             if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
         }
@@ -332,26 +334,25 @@ std::vector<Vector3> MG_VBD_FEM::compute_forces(ParticleSystem *ps, Grid_Level* 
     return forces;
 }
 
-// int i = vertex index for ids
-void MG_VBD_FEM::solve_vertex(ParticleSystem *ps, Grid_Level *grid, scalar dt, int i) {
-    const int vid = grid->_ids[i];
-    // need current grid info
+void MG_VBD_FEM::solve_vertex(ParticleSystem *ps, Grid_Level *grid, scalar dt, int vid) {
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
-
+    scalar mass = grid->_masses[vid];
+    Particle *p = ps->get(vid);
     for (int j = 0; j < nb_owners; ++j) {
         const int owner = _owners[vid][j];
         const int ref_id = _ref_id[vid][j];
         solve_element(ps, grid, owner, ref_id, f_i, H_i);
     }
-    // Inertia
-    Particle *p = ps->get(vid);
-    f_i += -p->mass / (dt * dt) * (p->position - _y[vid]);
-    H_i += Matrix3x3(p->mass / (dt * dt));
 
+    // Damping
     f_i -= _k_damp / dt * H_i * (p->position - p->last_position);
     H_i += _k_damp / dt * H_i;
+
+    // Inertia
+    f_i += -mass / (dt * dt) * (p->position - _y[vid]);
+    H_i += Matrix3x3(mass / (dt * dt));
 
     const scalar detH = abs(glm::determinant(H_i));
     const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
@@ -368,8 +369,7 @@ void MG_VBD_FEM::solve_element(ParticleSystem *ps, const Grid_Level *grid, const
         Matrix3x3 Jx = Matrix::Zero3x3();
         for (int j = 0; j < nb_vert_elem; ++j) {
             const int vid = _topology[eid * nb_vert_elem_max + j];
-            Vector3 p = ps->get(vid)->position;
-            Jx += glm::outerProduct(p, grid->_shape->dN[i][j]);
+            Jx += glm::outerProduct(ps->get(vid)->position, grid->_shape->dN[i][j]);
         }
 
         Matrix3x3 F = Jx * grid->_JX_inv[eid][i];
