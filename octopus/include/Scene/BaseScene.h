@@ -71,10 +71,10 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.distribution = Shape;
         args.young = 1e6f;
-        args.poisson = 0.45;
-        args.damping = 1e-4;
-        args.iteration = 1;
-        args.sub_iteration = 50;
+        args.poisson = 0.499;
+        args.damping = 1e-5;
+        args.iteration = 25;
+        args.sub_iteration = 1;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
@@ -87,29 +87,17 @@ struct BaseScene final : Scene
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
         cells = Vector3I(4, 1, 1);
         //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
-        //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.7,0.4,0.8,0.), Tetra10, args, true, true);
         build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, false);
-        build_vbd_entity(Vector3(0,0,-1.1),cells, size, Color(0.3,0.3,0.8,0.), Hexa, args, false);
+        build_vbd_entity(Vector3(0,0,-1.1),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
         args.sub_iteration = 100;
         build_fem_entity(Vector3(0,0,1.1), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa27, args);
         build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.8f,0.25f,0.25f,0.f), Hexa, args);
-        //cells = Vector3I(32, 16, 16);
-        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true, false);
-        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Tetra10_Lumped, args, true, true);
 
-        cells = Vector3I(8, 2, 2);
-        args.damping = 5e-6;
+        args.damping = 10;
+        args.sub_iteration = 50;
+        cells = Vector3I(32, 8, 8);
+        build_xpbd_entity(Vector3(0,0,-2.2),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
 
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra10, args, true);
-
-        args.iteration = 150;
-        args.damping = 0.001;
-        //build_fem_entity(Vector3(0,0,2.2), cells,size, Color(0.5f,0.5f,0.85f,0.f), Tetra10, args);
-
-        //build_fem_entity(Vector3(0,0,0), cells,size, Color(0.85f,0.5f,0.5f,0.f), Hexa27, args);
-        //cells = Vector3I(10, 20, 10);
-        //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.8f,0.25f,0.f), Tetra20, args, true);
-        //build_obj(Vector3(0,0,0), cells,size, Color(0.25f,0.25f,0.8f,0.f), Tetra10, args, false);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {

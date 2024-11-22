@@ -25,7 +25,7 @@ struct Grid_Level {
 
 struct GridInterpolation {
     virtual ~GridInterpolation() = default;
-    virtual void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) = 0;
+    virtual void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) = 0;
 };
 
 struct P1_to_P2 final : GridInterpolation {
@@ -35,7 +35,7 @@ struct P1_to_P2 final : GridInterpolation {
 
     explicit P1_to_P2(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) override;
 
     ~P1_to_P2() override = default;
 };
@@ -45,7 +45,7 @@ struct P1_to_P2_Mass final : GridInterpolation {
     std::vector<std::vector<scalar>> weights;
     explicit P1_to_P2_Mass(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) override;
 
     ~P1_to_P2_Mass() override = default;
 };
@@ -63,7 +63,7 @@ struct Q1_to_Q2 final : GridInterpolation {
 
     explicit Q1_to_Q2(const Mesh::Topology &topology);
 
-    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y, const std::vector<Vector3>& dx) override;
+    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) override;
 
     ~Q1_to_Q2() override = default;
 };
@@ -89,12 +89,14 @@ struct MG_VBD_FEM final : VBD_Object {
     void compute_inertia(VertexBlockDescent *ps, scalar dt) override;
 
 protected:
+    std::vector<int> _max_it;
+    int _it_count;
+    int _current_grid;
     scalar _k_damp;
     std::vector<Grid_Level *> _grids;
     GridInterpolation *_interpolation;
     FEM_ContinuousMaterial *_material;
     std::vector<Vector3> _y;
-    std::vector<Vector3> _dx;
     std::vector<std::vector<int> > _owners; // for each vertice
     std::vector<std::vector<int> > _ref_id; // for each vertice
     FEM_Shape *_shape;
