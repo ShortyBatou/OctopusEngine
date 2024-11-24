@@ -1,11 +1,14 @@
 #pragma once
+#include "GPU_Dynamic.h"
 #include "Core/Base.h"
-#include "GPU/GPU_ParticleSystem.h"
-struct GPU_Integrator {
-    virtual ~GPU_Integrator() = default;
-    virtual void integrate(const GPU_ParticleSystem* ps, scalar dt) = 0;
+
+class ParticleSystem;
+
+struct GPU_Integrator : GPU_Dynamic {
+    ~GPU_Integrator() override = default;
+    void step(const GPU_ParticleSystem* ps, scalar dt) override = 0;
 };
 
 struct GPU_SemiExplicit final : GPU_Integrator {
-    void integrate(const GPU_ParticleSystem* ps, scalar dt) override;
+    void step(const GPU_ParticleSystem* ps, scalar dt) override;
 };

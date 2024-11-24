@@ -1,13 +1,16 @@
 #pragma once
+
 #include "Core/Base.h"
+#include <Mesh/Mesh.h>
 #include "Mesh/Elements.h"
 #include "cuda_runtime.h"
-#include "GPU/GPU_PBD_FEM.h"
+#include <GPU/GPU_ParticleSystem.h>
+#include "GPU/PBD/GPU_PBD_FEM.h"
 
 struct GPU_PBD_FEM_Coupled final : GPU_PBD_FEM {
     GPU_PBD_FEM_Coupled(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, scalar young, scalar poisson, Material material);
 
-    ~GPU_PBD_FEM_Coupled() override = default;
+    ~GPU_PBD_FEM_Coupled() = default;
     void step(const GPU_ParticleSystem *ps, scalar dt) override;
 };
 

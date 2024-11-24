@@ -5,26 +5,21 @@
 #include "Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h"
 #include "Tools/Random.h"
 #include <Manager/Debug.h>
-#include "GPU/GPU_PBD.h"
-#include "GPU/GPU_PBD_FEM.h"
-#include "GPU/GPU_PBD_FEM_Coupled.h"
+#include "GPU/PBD/GPU_PBD.h"
+#include "GPU/PBD/GPU_PBD_FEM.h"
+#include "GPU/PBD/GPU_PBD_FEM_Coupled.h"
 #include <random>
 #include <set>
 #include <Manager/Input.h>
 
 
-void Cuda_XPBD_FEM_Dynamic::init() {
-    _mesh = _entity->get_component<Mesh>();
-    std::vector masses(_mesh->nb_vertices(),0.f);
-    for(auto&[e, topo] : _mesh->topologies()) {
-        if(topo.empty()) continue;
-        // récupérer la masse
-        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density, _m_distrib); // depends on density
-        for(size_t i = 0; i < e_masses.size(); i++)
-            masses[i] += e_masses[i];
-    }
+GPU_ParticleSystem* Cuda_XPBD_FEM_Dynamic::create_particle_system()
+{
+   return new GPU_PBD(_mesh->geometry(), get_fem_masses(), _sub_iterations);
+}
 
-    _gpu_pbd = new GPU_PBD(_mesh->geometry(), masses, _iteration, _damping);
+void Cuda_XPBD_FEM_Dynamic::build_dynamics()
+{
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         if(_coupled_fem)
@@ -32,15 +27,11 @@ void Cuda_XPBD_FEM_Dynamic::init() {
         else
             _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
 
-        // récupérer la masse
-        const std::vector<scalar> e_masses = compute_fem_mass(e, _mesh->geometry(),topo, _density); // depends on density
-        for(size_t i = 0; i < e_masses.size(); i++)
-            masses[i] += e_masses[i];
-
         // create CUDA PBD Gauss-Seidel
-        _gpu_pbd->dynamic.push_back(_gpu_fems[e]);
+        _gpu_ps->add_dynamics(_gpu_fems[e]);
     }
 }
+
 
 void Cuda_XPBD_FEM_Dynamic::update() {
     if(Time::Frame() == 1) {
@@ -56,12 +47,10 @@ void Cuda_XPBD_FEM_Dynamic::update() {
             for(int i = 0; i < nb_color; ++i) {
                 _display_colors[e][i] = color_map[_gpu_fems[e]->colors[i]];
             }
-
         }
     }
 
-
-    if(Input::Loop(Key::D)) {
+    if(Input::Loop(Key::KP_1)) {
         GL_Graphic* graphic = entity()->get_component<GL_Graphic>();
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
@@ -75,13 +64,7 @@ void Cuda_XPBD_FEM_Dynamic::update() {
         graphic->set_multi_color(false);
         graphic->set_element_color(false);
     }
-    Time::Tic();
-    _gpu_pbd->step(Time::Fixed_DeltaTime());
-    const scalar start = Time::Tac();
-    DebugUI::Begin("Dynamic " + entity()->name());
-    DebugUI::Range("time ms", start*1000.f);
-    DebugUI::End();
 
-    _gpu_pbd->get_position(_mesh->geometry());
+    Cuda_ParticleSystem_Dynamics::update();
 }
 

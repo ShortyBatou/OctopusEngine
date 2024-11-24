@@ -6,10 +6,10 @@
 #include <Manager/Input.h>
 
 void Cuda_Constraint_Rigid_Controller::late_init() {
-    Cuda_XPBD_FEM_Dynamic *cuda_dynamic = _entity->get_component<Cuda_XPBD_FEM_Dynamic>();
+    Cuda_ParticleSystem_Dynamics *cuda_dynamic = _entity->get_component<Cuda_ParticleSystem_Dynamics>();
     Mesh* mesh = _entity->get_component<Mesh>();
     _fixation = new GPU_Plane_Fix(mesh->geometry(), _plane_pos, _plane_normal);
-    cuda_dynamic->add_dynamic(_fixation);
+    cuda_dynamic->get_particle_system()->add_dynamics(_fixation);
     _timer = 0;
     _smooth_step = _smooth_iterations;
 }
@@ -44,7 +44,6 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _mode = 0;
         //rgn_crush();
     }
-
 
     if (_mode == 1) {
         Matrix4x4 rot = _fixation->rot;

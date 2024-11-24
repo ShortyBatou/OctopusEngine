@@ -1,5 +1,6 @@
-#include "GPU/GPU_PBD_FEM_Coupled.h"
 #include <GPU/CUMatrix.h>
+#include "GPU/PBD/GPU_PBD_FEM_Coupled.h"
+#include <GPU/PBD/GPU_PBD_FEM_Materials.h>
 
 __device__ void xpbd_solve_coupled(const int nb_vert_elem, const scalar stiffness1, const scalar stiffness2, const scalar dt, const scalar* C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p, int* mask)
 {
@@ -132,8 +133,8 @@ void GPU_PBD_FEM_Coupled::step(const GPU_ParticleSystem* ps, const scalar dt) {
                                                        lambda, mu, _material,
                                                       c_offsets[j],
                                                       cb_dN->buffer,
-                                                      ps->cb_position->buffer, cb_topology->buffer,
-                                                      ps->cb_inv_mass->buffer, ps->cb_mask->buffer,
+                                                      ps->buffer_position(), cb_topology->buffer,
+                                                      ps->buffer_inv_mass(), ps->buffer_mask(),
                                                       cb_V->buffer, cb_JX_inv->buffer);
 
 
