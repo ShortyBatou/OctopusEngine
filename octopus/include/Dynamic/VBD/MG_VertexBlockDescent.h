@@ -11,7 +11,7 @@ struct Grid_Level {
     Grid_Level(FEM_Shape *shape,
                const std::vector<scalar> &masses,
                const std::vector<std::vector<Matrix3x3> > &jx_inv,
-               const std::vector<std::vector<scalar> > &v, std::vector<int> ids) : _shape(shape), _masses(masses),
+               const std::vector<std::vector<scalar> > &v, const std::vector<int>& ids) : _shape(shape), _masses(masses),
         _JX_inv(jx_inv), _V(v), _ids(ids) {
     }
 
@@ -68,6 +68,7 @@ struct Q1_to_Q2 final : GridInterpolation {
     ~Q1_to_Q2() override = default;
 };
 
+
 struct MG_VBD_FEM final : VBD_Object {
     MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, Element e,
                FEM_ContinuousMaterial *material, scalar damp, scalar density);
@@ -76,7 +77,9 @@ struct MG_VBD_FEM final : VBD_Object {
     void build_neighboors(const Mesh::Topology &topology);
 
 
-    void solve(VertexBlockDescent *ps, scalar dt);
+    void solve(VertexBlockDescent *ps, scalar dt) override;
+
+    void interpolate(VertexBlockDescent *ps) const;
 
     void plot_residual(VertexBlockDescent *ps, Grid_Level* grid, scalar dt, int id) ;
     scalar compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const;
@@ -101,4 +104,21 @@ protected:
     std::vector<std::vector<int> > _ref_id; // for each vertice
     FEM_Shape *_shape;
     Mesh::Topology _topology;
+};
+
+struct MG_VertexBlockDescent final : VertexBlockDescent {
+    explicit MG_VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
+        : VertexBlockDescent(solver, iteration, sub_iteration, rho) {
+    }
+
+    void step(scalar dt) override;
+    void add_fem(MG_VBD_FEM *obj) {
+        _objs.push_back(obj);
+        _fems.push_back(obj);
+    }
+
+    ~MG_VertexBlockDescent() override {
+    }
+protected:
+    std::vector<MG_VBD_FEM *> _fems;
 };

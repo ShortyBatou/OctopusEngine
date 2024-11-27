@@ -9,7 +9,7 @@ void Cuda_Constraint_Rigid_Controller::late_init() {
     Cuda_ParticleSystem_Dynamics *cuda_dynamic = _entity->get_component<Cuda_ParticleSystem_Dynamics>();
     Mesh* mesh = _entity->get_component<Mesh>();
     _fixation = new GPU_Plane_Fix(mesh->geometry(), _plane_pos, _plane_normal);
-    cuda_dynamic->get_particle_system()->add_dynamics(_fixation);
+    cuda_dynamic->get_particle_system()->add_constraint(_fixation);
     _timer = 0;
     _smooth_step = _smooth_iterations;
 }

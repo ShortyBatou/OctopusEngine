@@ -10,8 +10,7 @@
 void VBD_FEM::compute_inertia(VertexBlockDescent* vbd, const scalar dt) {
     for (int i = 0; i <  vbd->nb_particles(); ++i) {
         Particle *p = vbd->get(i);
-        if (p->active) _y[i] = p->position + p->velocity * dt + (
-                                   (p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
+        _y[i] = p->position + p->velocity * dt + ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
     }
 }
 
@@ -59,7 +58,7 @@ void VBD_FEM::solve(VertexBlockDescent *vbd, const scalar dt) {
     const int nb_vertices = static_cast<int>(_owners.size());
     std::vector<int> ids(nb_vertices);
     std::iota(ids.begin(), ids.end(), 0);
-    std::shuffle(ids.begin(), ids.end(), std::mt19937());
+    //std::shuffle(ids.begin(), ids.end(), std::mt19937());
     for (int i = 0; i < nb_vertices; ++i) {
         if (vbd->get(ids[i])->active) solve_vertex(vbd, dt, ids[i]);
     }
@@ -161,9 +160,12 @@ void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int v
     H_i += _k_damp / dt * H_i;
 
     // Inertia
-    f_i += -p->mass / (dt * dt) * (p->position - _y[vid]);
+    f_i -= p->mass / (dt * dt) * (p->position - _y[vid]);
     H_i += Matrix3x3(p->mass / (dt * dt));
 
+    const Vector3 f2 = H_i * (p->position - p->last_position);
+
+    std::cout << "(" << f_i.x << "," <<  f_i.y << "," <<  f_i.z << ") " << "(" << f2.x << "," <<  f2.y << "," <<  f2.z << ") "  << std::endl;
     const scalar detH = abs(glm::determinant(H_i));
     const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
     p->position += dx;

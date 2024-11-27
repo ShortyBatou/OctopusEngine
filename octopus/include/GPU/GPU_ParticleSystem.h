@@ -20,7 +20,7 @@ struct GPU_ParticleSystem
     void get_inv_mass(std::vector<scalar>& w) const { _cb_inv_mass->get_data(w); }
 
     virtual void add_dynamics(GPU_Dynamic* dynamic) { _dynamics.push_back(dynamic); }
-
+    virtual void add_constraint(GPU_Dynamic* constraint) { _constraints.push_back(constraint); }
     [[nodiscard]] Vector3* buffer_position() const { return _cb_position->buffer; }
     [[nodiscard]] Vector3* buffer_prev_position() const { return _cb_prev_position->buffer; }
     [[nodiscard]] Vector3* buffer_init_position() const { return _cb_init_position->buffer; }
@@ -51,7 +51,7 @@ public:
 protected:
     GPU_Integrator* _integrator;
     std::vector<GPU_Dynamic*> _dynamics;
-
+    std::vector<GPU_Dynamic*> _constraints;
 
     int _nb_particles;
     Cuda_Buffer<Vector3>* _cb_position;

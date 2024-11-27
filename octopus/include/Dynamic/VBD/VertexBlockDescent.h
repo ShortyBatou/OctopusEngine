@@ -6,7 +6,7 @@
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 #include "Dynamic/VBD/VBD_Object.h"
 
-struct VertexBlockDescent final : ParticleSystem {
+struct VertexBlockDescent : ParticleSystem {
     explicit VertexBlockDescent(Solver *solver, const int iteration, const int sub_iteration, const scalar rho)
         : ParticleSystem(solver), _iteration(iteration), _sub_iteration(sub_iteration), _rho(rho) {
     }

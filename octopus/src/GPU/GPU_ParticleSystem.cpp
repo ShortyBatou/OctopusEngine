@@ -19,8 +19,9 @@ GPU_ParticleSystem::GPU_ParticleSystem(const std::vector<Vector3>& positions, co
     _cb_mask = new Cuda_Buffer(std::vector(_nb_particles, 1));
 }
 
-void GPU_ParticleSystem::step(scalar dt)
+void GPU_ParticleSystem::step(const scalar dt)
 {
     for(GPU_Dynamic* dynamic : _dynamics) dynamic->step(this, dt);
     _integrator->step(this, dt);
+    for(GPU_Dynamic* constraint : _constraints) constraint->step(this, dt);
 }

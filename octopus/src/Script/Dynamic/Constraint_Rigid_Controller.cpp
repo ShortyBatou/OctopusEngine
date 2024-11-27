@@ -15,7 +15,7 @@ void Constraint_Rigid_Controller::late_init() {
     _fixation = new RB_Fixation(ids);
     _plane = new PlaneConstraint(_plane_pos, -_plane_normal);
     ps->add_constraint(_fixation);
-    ps->add_effect(_plane);
+    //ps->add_effect(_plane);
     _plane->set_active(false);
     _timer = 0;
     _smooth_step = _smooth_iterations;

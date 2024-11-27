@@ -9,9 +9,9 @@ struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
 {
     explicit Cuda_FEM_Dynamic(int sub_it,
         const scalar density, const Mass_Distribution m_distrib,
-        const scalar young, const scalar poisson, const Material material) :
+        const scalar young, const scalar poisson, const Material material, scalar damping) :
         Cuda_ParticleSystem_Dynamics(sub_it, density), _m_distrib(m_distrib),
-              _young(young), _poisson(poisson), _material(material)
+              _young(young), _poisson(poisson), _material(material), _damping(damping)
     {}
 
     GPU_ParticleSystem* create_particle_system() override
@@ -24,7 +24,7 @@ struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
             // create CUDA FEM Explicit
-            _gpu_ps->add_dynamics(new GPU_Explicit_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material));
+            _gpu_ps->add_dynamics(new GPU_Explicit_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, _damping));
         }
     }
 
@@ -42,5 +42,6 @@ struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
 
     Mass_Distribution _m_distrib;
     scalar _young, _poisson;
+    scalar _damping;
     Material _material;
 };

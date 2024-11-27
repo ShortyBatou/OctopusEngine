@@ -17,7 +17,7 @@ __global__ void kernel_constraint_plane(const int n, const Vector3 origin, const
     scalar s = dot(p_init[i] - origin, normal);
     if (s > 0) {
         const Vector3 target = offset + com + rot * (p_init[i] - com);
-        p[i] += (target - p[i]);
+        p[i] = target;
         mask[i] = 0;
     }
 }

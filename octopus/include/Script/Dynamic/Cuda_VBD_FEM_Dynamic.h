@@ -11,8 +11,7 @@ struct Cuda_VBD_FEM_Dynamic final : Cuda_FEM_Dynamic
         const scalar density, const Mass_Distribution m_distrib,
         const scalar young, const scalar poisson, Material material,
         const int iteration = 30, const int sub_iteration=1, const scalar damping = 0.f)
-        : Cuda_FEM_Dynamic(sub_iteration, density, m_distrib, young, poisson, material),
-        _damping(damping), _iteration(iteration)
+        : Cuda_FEM_Dynamic(sub_iteration, density, m_distrib, young, poisson, material, damping), _iteration(iteration)
     { }
 
 
@@ -24,6 +23,5 @@ struct Cuda_VBD_FEM_Dynamic final : Cuda_FEM_Dynamic
     ~Cuda_VBD_FEM_Dynamic() override = default;
 private:
     std::map<Element, std::vector<Color>> _display_colors;
-    scalar _damping;
     int _iteration;
 };

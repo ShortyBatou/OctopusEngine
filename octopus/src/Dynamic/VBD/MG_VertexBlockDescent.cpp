@@ -30,12 +30,11 @@ P1_to_P2::P1_to_P2(const Mesh::Topology &topology) {
 
 void P1_to_P2::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) {
     for (int i = 0; i < ids.size(); i++) {
-        if(ps->get(ids[i])->active) {
-            const int a = edges[i].first, b = edges[i].second;
-            Vector3 dx_a = ps->get(a)->position - y[a];
-            Vector3 dx_b = ps->get(b)->position - y[b];
-            ps->get(ids[i])->position = y[ids[i]] + (dx_a + dx_b) * 0.5f;
-        }
+        const int a = edges[i].first, b = edges[i].second;
+        Vector3 dx_a = ps->get(a)->position - y[a];
+        Vector3 dx_b = ps->get(b)->position - y[b];
+        ps->get(ids[i])->position = y[ids[i]] + (dx_a + dx_b) * 0.5f;
+
     }
 }
 
@@ -176,10 +175,10 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({0,25});
+    _max_it = std::vector<int>({25,0});
     _it_count = 0;
     _current_grid = 1;
-    // init neighboors for each particles (same for each level)
+    // init neighboors for each particle (same for each level)
     build_neighboors(topology);
     if(e == Tetra10) {
         // init constant for P2 => init grid[0]
@@ -245,7 +244,7 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 }
 
 
-void MG_VBD_FEM::solve(VertexBlockDescent *ps, scalar dt) {
+void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     _it_count++;
     while(_it_count > _max_it[_current_grid]) {
         _it_count = 1;
@@ -254,17 +253,13 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, scalar dt) {
 
     Grid_Level *grid = _grids[_current_grid];
 
-    std::shuffle(grid->_ids.begin(), grid->_ids.end(), std::mt19937());
+    //std::shuffle(grid->_ids.begin(), grid->_ids.end(), std::mt19937());
     for (const int id: grid->_ids) {
-        if(ps->get(id)->active)
-            solve_vertex(ps, grid, dt, id);
+        if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
     }
-
-    // prolongatation
-    if(_current_grid == 1) _interpolation->prolongation(ps, _y);
 }
 
-void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, int id = 0) {
+void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id = 0) {
     const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
@@ -291,21 +286,23 @@ scalar MG_VBD_FEM::compute_energy(VertexBlockDescent *ps, Grid_Level* grid) cons
 
 std::vector<Vector3> MG_VBD_FEM::compute_forces(VertexBlockDescent *ps, Grid_Level* grid, scalar dt) const {
     std::vector forces(ps->nb_particles(), Unit3D::Zero());
-    const int &nb_vert_elem = _shape->nb;
-    const int nb_quadrature = _shape->nb_quadratures();
-    for (int e = 0; e < _topology.size(); e += _shape->nb) {
-        const int eid = e / _shape->nb;
+    const int global_nb_vert_elem = _shape->nb; // global size
+    const int nb_vert_elem = grid->_shape->nb;
+    const int nb_quadrature = grid->_shape->nb_quadratures(); // nb quadrature for this grid
+
+    for (int e = 0; e < _topology.size(); e += global_nb_vert_elem) {
+        const int eid = e / global_nb_vert_elem; // element id
         for (int i = 0; i < nb_quadrature; ++i) {
             Matrix3x3 Jx = Matrix::Zero3x3();
             for (int j = 0; j < nb_vert_elem; ++j) {
-                const int vid = _topology[eid * nb_vert_elem + j];
-                Jx += glm::outerProduct(ps->get(vid)->position, _shape->dN[i][j]);
+                const int vid = _topology[e + j];
+                Jx += glm::outerProduct(ps->get(vid)->position, grid->_shape->dN[i][j]);
             }
 
             Matrix3x3 F = Jx * grid->_JX_inv[eid][i];
             Matrix3x3 P = _material->get_pk1(F) * glm::transpose(grid->_JX_inv[eid][i]) * grid->_V[eid][i];
             for (int j = 0; j < nb_vert_elem; ++j) {
-                const int vid = _topology[eid * nb_vert_elem + j];
+                const int vid = _topology[e + j];
                 forces[vid] -= P * _shape->dN[i][j];
             }
         }
@@ -321,7 +318,7 @@ void MG_VBD_FEM::solve_vertex(VertexBlockDescent *ps, Grid_Level *grid, scalar d
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
-    scalar mass = grid->_masses[vid];
+    const scalar mass = grid->_masses[vid];
     Particle *p = ps->get(vid);
     for (int j = 0; j < nb_owners; ++j) {
         const int owner = _owners[vid][j];
@@ -383,9 +380,35 @@ Matrix3x3 MG_VBD_FEM::assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, co
 }
 
 void MG_VBD_FEM::compute_inertia(VertexBlockDescent *ps, scalar dt) {
-    // normally we should make a better approximation but osef
     for (int i = 0; i < ps->nb_particles(); ++i) {
         const Particle *p = ps->get(i);
         _y[i] = p->position + p->velocity * dt + ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
     }
+}
+
+void MG_VBD_FEM::interpolate(VertexBlockDescent *ps) const {
+    // prolongatation
+    if(_current_grid == 1) _interpolation->prolongation(ps, _y);
+
+    // restriction is implicit (injection)
+}
+
+void MG_VertexBlockDescent::step(const scalar dt) {
+    const scalar sub_dt = dt / static_cast<scalar>(_sub_iteration);
+    for (int i = 0; i < _sub_iteration; ++i) {
+        for(VBD_Object* obj : _objs) obj->compute_inertia(this, sub_dt);
+        // get the first guess
+        step_solver(sub_dt);
+        scalar omega = 0;
+        for (int j = 0; j < _iteration; ++j) {
+            for(VBD_Object* obj : _objs) obj->solve(this, sub_dt);
+            chebyshev_acceleration(j, omega);
+            for(const MG_VBD_FEM* obj : _fems) obj->interpolate(this);
+        }
+        step_effects(sub_dt);
+        step_constraint(sub_dt);
+        for(const MG_VBD_FEM* obj : _fems) obj->interpolate(this);
+        update_velocity(sub_dt);
+    }
+    reset_external_forces();
 }

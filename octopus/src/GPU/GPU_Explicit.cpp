@@ -9,8 +9,8 @@ void GPU_Explicit::step(const scalar dt) const
 }
 
 GPU_Explicit_FEM::GPU_Explicit_FEM(const Element element, const Mesh::Geometry& geometry, const Mesh::Topology& topology, // mesh
-                                   const scalar young, const scalar poisson, const Material material)
-    : GPU_FEM(element, geometry, topology, young, poisson, material)
+                                   const scalar young, const scalar poisson, const Material material, const scalar damping)
+    : GPU_FEM(element, geometry, topology, young, poisson, material), _damping(damping)
 {
     cb_topology = new Cuda_Buffer(topology);
     int nb_vertices = geometry.size();
@@ -40,8 +40,9 @@ GPU_Explicit_FEM::GPU_Explicit_FEM(const Element element, const Mesh::Geometry& 
         nb_neighbors.push_back(static_cast<int>(e_neighbors[i].size()));
         n_max = std::max(n_max, nb_neighbors.back());
     }
-    nb_threads = nb_vertices;
-    block_size = n_max * nb_quadrature;
+
+    _block_size = n_max * nb_quadrature;
+    _nb_threads = nb_vertices * _block_size;
     c_offsets.push_back(n);
 
     cb_nb_neighbors = new Cuda_Buffer(nb_neighbors);

@@ -6,13 +6,14 @@
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
     const int n, const int nb_quadrature, const int elem_nb_verts,
-    const scalar lambda, const scalar mu,
+    const scalar lambda, const scalar mu, scalar damping, scalar dt,
     int *nb_owners, // nb_vertices
     int *owner_off, // nb_vertices
     int *owners, // nb_neighbors.size()
     int *ref_vid, // nb_neighbors.size()
     int *topology, // nb_element * elem_nb_vert
     Vector3 *p, // nb_vertices
+    Vector3 *p_init, // nb_vertices
     Vector3 *f,
     Vector3 *dN, // elem_nb_verts * nb_quadrature
     Matrix3x3 *JX_inv, // nb_element * nb_quadrature
@@ -46,52 +47,84 @@ __global__ void kernel_solve(
         Jx += glm::outerProduct(p[topo[i]], dN[qv_off + i]);
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
-
-    // Neohooke
-    // Force
     const scalar detF = glm::determinant(F);
     const scalar alpha = 1.f + mu / lambda;
     Matrix3x3 comF(0);
     comF[0] = glm::cross(F[1], F[2]);
     comF[1] = glm::cross(F[2], F[0]);
     comF[2] = glm::cross(F[0], F[1]);
-    const Matrix3x3 P = mu * F + lambda * (detF - alpha) * comF;
+    // H = sum mi / h^2 I + sum d^2W / dxi^2
+    scalar s = lambda * (detF - alpha);
+    // lambda * (I3 - alpha) * H3
+    d2W_dF2[0] = Matrix3x3(0);
+    d2W_dF2[1] = vec_hat(F[2]) * s;
+    d2W_dF2[2] = -vec_hat(F[1]) * s;
+    d2W_dF2[3] = -d2W_dF2[1];
+    d2W_dF2[4] = Matrix3x3(0);
+    d2W_dF2[5] = vec_hat(F[0]) * s;
+    d2W_dF2[6] = -d2W_dF2[2];
+    d2W_dF2[7] = -d2W_dF2[5];
+    d2W_dF2[8] = Matrix3x3(0);
+
+    // mu/2 * H2 = mu * I_9x9x
+    for (int i = 0; i < 3; ++i) {
+        d2W_dF2[0][i][i] += mu;
+        d2W_dF2[4][i][i] += mu;
+        d2W_dF2[8][i][i] += mu;
+    }
+
+    // lambda vec(com F) * vec(com F)^T
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 
     const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
-    // Compute force at vertex i
-    Vector3 fi = -P * dF_dx * V[qe_off];
+    // assemble hessian
+    Matrix3x3 H;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            Matrix3x3 H_kl;
+            for(int l = 0; l < 3; ++l) {
+                for(int k = 0; k < 3; ++k) {
+                    H_kl[k][l] = d2W_dF2[k+l*3][i][j];
+                }
+            }
+            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V[qe_off];
+        }
+    }
+
 
     // shared variable : f, H
     // we can do a much better reduction (without atomic add with a shared buffer)
-
-    __shared__ Vector3 s_f_H[128]; // size = block_size * 12 * sizeof(float)
-    s_f_H[tid] = fi;
+    __shared__ Matrix3x3 s_H[128]; // size = block_size * 12 * sizeof(float)
+    s_H[tid] = H;
 
     __syncthreads();
     int t = size_of_block;
     int i,b;
     for(i=t/2, b=(t+1)/2; i > 0; b=(b+1)/2, i/=2) {
         if(tid < i) {
-            s_f_H[tid] += s_f_H[tid+b];
+            s_H[tid] += s_H[tid+b];
             __syncthreads();
         }
         i = (b>i) ? b : i;
     }
 
     if (threadIdx.x == 0) {
-        f[vid] = s_f_H[0];
-        printf("%d \n", vid);
+        H = s_H[0];
+        H += damping / dt * H;
+        f[vid] += H * (p[vid] - p_init[vid]);
     }
 }
 
 void GPU_Explicit_FEM::step(const GPU_ParticleSystem* ps, scalar dt)
 {
-    int grid_size = (nb_threads+block_size-1)/block_size;
+    int grid_size = (_nb_threads+_block_size-1)/_block_size;
 
-    kernel_solve<<<grid_size, block_size>>>(
-        nb_threads, nb_quadrature, elem_nb_vert, lambda, mu,
+    kernel_solve<<<grid_size, _block_size>>>(
+        _nb_threads, nb_quadrature, elem_nb_vert, lambda, mu, _damping, dt,
         cb_nb_neighbors->buffer, cb_neighbors_offset->buffer, cb_neighbors->buffer, cb_ref_vid->buffer,
-        cb_topology->buffer, ps->buffer_position(),  ps->buffer_forces(),
+        cb_topology->buffer, ps->buffer_position(), ps->buffer_init_position(), ps->buffer_forces(),
         cb_dN->buffer, cb_JX_inv->buffer, cb_V->buffer
     );
 }

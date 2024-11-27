@@ -25,13 +25,13 @@ protected:
 struct GPU_Explicit_FEM final : GPU_FEM
 {
     GPU_Explicit_FEM(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
-                        scalar young, scalar poisson, Material material);
+                        scalar young, scalar poisson, Material material, scalar damping);
     void step(const GPU_ParticleSystem* ps, scalar dt) override;
 
     void build_graph_color(const Mesh::Topology &topology, int nb_vertices);
-
-    int block_size;
-    int nb_threads;
+    scalar _damping;
+    int _block_size;
+    int _nb_threads;
 
     Cuda_Buffer<int> *cb_neighbors_offset; // offset to the first neighbors for each vertice
     Cuda_Buffer<int> *cb_nb_neighbors; // number of neighbors for each vertices
