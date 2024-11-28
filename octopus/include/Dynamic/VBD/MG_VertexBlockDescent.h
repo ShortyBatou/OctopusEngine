@@ -79,7 +79,7 @@ struct MG_VBD_FEM final : VBD_Object {
 
     void solve(VertexBlockDescent *ps, scalar dt) override;
 
-    void interpolate(VertexBlockDescent *ps) const;
+    void interpolate(VertexBlockDescent *ps, scalar dt);
 
     void plot_residual(VertexBlockDescent *ps, Grid_Level* grid, scalar dt, int id) ;
     scalar compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const;

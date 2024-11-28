@@ -163,9 +163,6 @@ void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int v
     f_i -= p->mass / (dt * dt) * (p->position - _y[vid]);
     H_i += Matrix3x3(p->mass / (dt * dt));
 
-    const Vector3 f2 = H_i * (p->position - p->last_position);
-
-    std::cout << "(" << f_i.x << "," <<  f_i.y << "," <<  f_i.z << ") " << "(" << f2.x << "," <<  f2.y << "," <<  f2.z << ") "  << std::endl;
     const scalar detH = abs(glm::determinant(H_i));
     const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
     p->position += dx;

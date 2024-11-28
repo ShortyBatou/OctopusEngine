@@ -52,6 +52,9 @@ void GPU_VBD::step(const scalar dt) {
         for(GPU_Dynamic* dynamic : _dynamics)
             dynamic->step(this, dt);
 
+        for(GPU_Dynamic * constraint : _constraints)
+            constraint->step(this, dt);
+
         // Acceleration (Chebychev)
         //if(j == 1) omega = 2.f / (2.f - r * r);
         //else if(j > 1) omega = 4.f / (4.f - r * r * omega);

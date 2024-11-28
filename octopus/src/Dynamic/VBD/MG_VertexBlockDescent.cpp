@@ -175,7 +175,7 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({25,0});
+    _max_it = std::vector<int>({0,25});
     _it_count = 0;
     _current_grid = 1;
     // init neighboors for each particle (same for each level)
@@ -249,6 +249,10 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     while(_it_count > _max_it[_current_grid]) {
         _it_count = 1;
         _current_grid = (_current_grid + 1) % static_cast<int>(_grids.size());
+        if(_current_grid == 0) {
+            _interpolation->prolongation(ps, _y);
+            plot_residual(ps, _grids[_current_grid], dt, 0);
+        }
     }
 
     Grid_Level *grid = _grids[_current_grid];
@@ -257,9 +261,11 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     for (const int id: grid->_ids) {
         if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
     }
+    plot_residual(ps, _grids[_current_grid], dt, 0);
+
 }
 
-void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id = 0) {
+void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id) {
     const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
@@ -386,9 +392,12 @@ void MG_VBD_FEM::compute_inertia(VertexBlockDescent *ps, scalar dt) {
     }
 }
 
-void MG_VBD_FEM::interpolate(VertexBlockDescent *ps) const {
+void MG_VBD_FEM::interpolate(VertexBlockDescent *ps, scalar dt) {
     // prolongatation
-    if(_current_grid == 1) _interpolation->prolongation(ps, _y);
+    if(_current_grid == 1) {
+        _interpolation->prolongation(ps, _y);
+        plot_residual(ps, _grids[_current_grid], dt, 0);
+    }
 
     // restriction is implicit (injection)
 }
@@ -402,12 +411,12 @@ void MG_VertexBlockDescent::step(const scalar dt) {
         scalar omega = 0;
         for (int j = 0; j < _iteration; ++j) {
             for(VBD_Object* obj : _objs) obj->solve(this, sub_dt);
-            chebyshev_acceleration(j, omega);
-            for(const MG_VBD_FEM* obj : _fems) obj->interpolate(this);
+            //chebyshev_acceleration(j, omega);
+            //for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
         }
         step_effects(sub_dt);
         step_constraint(sub_dt);
-        for(const MG_VBD_FEM* obj : _fems) obj->interpolate(this);
+        for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
         update_velocity(sub_dt);
     }
     reset_external_forces();

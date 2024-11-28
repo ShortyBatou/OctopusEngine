@@ -14,7 +14,7 @@ __global__ void kernel_solve(
     int *topology, // nb_element * elem_nb_vert
     Vector3 *p, // nb_vertices
     Vector3 *p_init, // nb_vertices
-    Vector3 *f,
+    Vector3 *v, Vector3 *f,
     Vector3 *dN, // elem_nb_verts * nb_quadrature
     Matrix3x3 *JX_inv, // nb_element * nb_quadrature
     scalar *V // nb_element * nb_quadrature
@@ -47,12 +47,30 @@ __global__ void kernel_solve(
         Jx += glm::outerProduct(p[topo[i]], dN[qv_off + i]);
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
+
+
+    /*
+    //Hooke
+    //force
+    const Matrix3x3 e = 0.5f * (glm::transpose(F) + F ) - Matrix3x3(1.f);
+    const Matrix3x3 P = lambda * (e[0][0]+e[1][1]+e[2][2]) * Matrix3x3(1.f) + mu * e;
+
+    //Hessian
+    for(int i = 0; i < 9; ++i) { d2W_dF2[i] = Matrix3x3(0); }
+    for(int i = 0; i < 3; ++i) {
+        d2W_dF2[i * 4] = Matrix3x3(lambda + mu);
+    }
+    */
+
+    // Neohooke
+    // Force
     const scalar detF = glm::determinant(F);
     const scalar alpha = 1.f + mu / lambda;
     Matrix3x3 comF(0);
     comF[0] = glm::cross(F[1], F[2]);
     comF[1] = glm::cross(F[2], F[0]);
     comF[2] = glm::cross(F[0], F[1]);
+    const Matrix3x3 P = mu * F + lambda * (detF - alpha) * comF;
     // H = sum mi / h^2 I + sum d^2W / dxi^2
     scalar s = lambda * (detF - alpha);
     // lambda * (I3 - alpha) * H3
@@ -79,6 +97,9 @@ __global__ void kernel_solve(
             d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 
     const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
+    // Compute force at vertex i
+    Vector3 fi = -P * dF_dx * V[qe_off];
+
     // assemble hessian
     Matrix3x3 H;
     for (int j = 0; j < 3; ++j) {
@@ -92,28 +113,25 @@ __global__ void kernel_solve(
             H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V[qe_off];
         }
     }
-
+    fi -= damping * H * v[vid];
 
     // shared variable : f, H
-    // we can do a much better reduction (without atomic add with a shared buffer)
-    __shared__ Matrix3x3 s_H[128]; // size = block_size * 12 * sizeof(float)
-    s_H[tid] = H;
+    __shared__ Vector3 s_f_H[256]; // size = block_size * 12 * sizeof(float)
+    s_f_H[tid] = fi;
 
     __syncthreads();
     int t = size_of_block;
     int i,b;
     for(i=t/2, b=(t+1)/2; i > 0; b=(b+1)/2, i/=2) {
         if(tid < i) {
-            s_H[tid] += s_H[tid+b];
+            s_f_H[tid] += s_f_H[tid+b];
             __syncthreads();
         }
         i = (b>i) ? b : i;
     }
 
     if (threadIdx.x == 0) {
-        H = s_H[0];
-        H += damping / dt * H;
-        f[vid] += H * (p[vid] - p_init[vid]);
+        f[vid] = Vector3(s_f_H[0]);
     }
 }
 
@@ -124,7 +142,7 @@ void GPU_Explicit_FEM::step(const GPU_ParticleSystem* ps, scalar dt)
     kernel_solve<<<grid_size, _block_size>>>(
         _nb_threads, nb_quadrature, elem_nb_vert, lambda, mu, _damping, dt,
         cb_nb_neighbors->buffer, cb_neighbors_offset->buffer, cb_neighbors->buffer, cb_ref_vid->buffer,
-        cb_topology->buffer, ps->buffer_position(), ps->buffer_init_position(), ps->buffer_forces(),
+        cb_topology->buffer, ps->buffer_position(), ps->buffer_init_position(), ps->buffer_velocity(), ps->buffer_forces(),
         cb_dN->buffer, cb_JX_inv->buffer, cb_V->buffer
     );
 }
