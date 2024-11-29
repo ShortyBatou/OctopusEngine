@@ -22,7 +22,6 @@ struct Cuda_ParticleSystem_Dynamics : Component
     void update() override
     {
         const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
-        std::cout << entity()->id() << "  " << sub_dt << std::endl;
         for(int i = 0; i < _sub_iterations; i++)
             _gpu_ps->step(sub_dt);
         _gpu_ps->get_position(_mesh->geometry());

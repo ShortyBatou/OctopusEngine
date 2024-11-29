@@ -69,12 +69,12 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.distribution = Shape;
+        args.distribution = Uniform;
         args.young = 1e7f;
         args.poisson = 0.49;
         args.damping = 1e-4;
-        args.iteration = 25;
-        args.sub_iteration = 1;
+        args.iteration = 1;
+        args.sub_iteration = 150;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
         args.dir = Unit3D::right();
@@ -89,10 +89,9 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
 
 
-        args.damping = 5e-5;
+        args.damping = 1e-5;
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tetra10, args, true);
-        args.sub_iteration = 150;
-        build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Tetra, args, true);
+        build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
         args.sub_iteration = 50;
         args.iteration = 100;
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
