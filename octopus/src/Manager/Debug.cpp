@@ -143,9 +143,14 @@ void DebugUI_Range::draw(int w, int h) {
 }
 
 void DebugUI_Range::add_value(const float value) {
-    ++_nb_values;
+    _vals.push(value);
+    if(_vals.size() > _nb_max) {
+        _vsum -= _vals.front();
+        _vals.pop();
+    }
+
     _vsum += value;
-    _vmean = _vsum / static_cast<scalar>(_nb_values);
+    _vmean = _vsum / static_cast<scalar>(_vals.size());
     _vmin = std::min(value, _vmin);
     _vmax = std::max(value, _vmax);
 }

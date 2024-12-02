@@ -17,9 +17,8 @@ void ParticleSystem::reset_external_forces() {
 
 void ParticleSystem::step_solver(const scalar dt) {
     for (Particle *particle: _particles) {
-        if (!particle->active) continue;
         particle->last_position = particle->position;
-
+        if (!particle->active) continue;
         _solver->integrate(particle, dt);
     }
 }

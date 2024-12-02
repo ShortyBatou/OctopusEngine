@@ -31,69 +31,11 @@ P1_to_P2::P1_to_P2(const Mesh::Topology &topology) {
 void P1_to_P2::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) {
     for (int i = 0; i < ids.size(); i++) {
         const int a = edges[i].first, b = edges[i].second;
-        Vector3 dx_a = ps->get(a)->position - y[a];
-        Vector3 dx_b = ps->get(b)->position - y[b];
-        ps->get(ids[i])->position = y[ids[i]] + (dx_a + dx_b) * 0.5f;
-
+        Vector3 dx_a = ps->get(a)->position - ps->get(a)->last_position;
+        Vector3 dx_b = ps->get(b)->position - ps->get(b)->last_position;
+        ps->get(ids[i])->position = ps->get(ids[i])->last_position + (dx_a + dx_b) * 0.5f;
     }
 }
-
-P1_to_P2_Mass::P1_to_P2_Mass(const Mesh::Topology &topology) {
-    int max_id = *std::max_element(topology.begin(), topology.end()) + 1;
-    ids.resize(max_id);
-    weights.resize(max_id);
-    const int nb_P1 = elem_nb_vertices(Tetra);
-    const int nb_P2 = elem_nb_vertices(Tetra10);
-    const int diff = nb_P2 - nb_P1;
-
-    std::vector<std::vector<int>> owners(max_id);
-    std::vector<std::vector<int>> ref_id(max_id);
-    for (int i = 0; i < topology.size(); i += nb_P2) {
-        int eid = i / nb_P2;
-        for(int j = 0; j < nb_P2; ++j) {
-            const int vid = topology[i+j];
-            owners[vid].push_back(eid);
-            ref_id[vid].push_back(j);
-        }
-    }
-
-    // for each point
-    for(int i = 0; i < owners.size(); ++i) {
-        // we get the weights
-        for(int j = 0; j < owners[i].size(); ++j) {
-            const int eid = owners[i][j];
-            const int rid = ref_id[i][j];
-            if(rid < 4) {
-                for(int k = 0; k < 4; ++k) {
-                    ids[i].push_back(topology[eid * nb_P2 + k]);
-                    if(k == rid) weights[i].push_back(0.2);
-                    else weights[i].push_back(-0.1333333);
-                }
-            }
-            else {
-                std::pair<int,int> edge = P1_to_P2::ref_edges[rid-4];
-                for(int k = 0; k < 4; ++k) {
-                    ids[i].push_back(topology[eid * nb_P2 + k]);
-                    if(rid == edge.first || rid == edge.second) weights[i].push_back(0.53333);
-                    else weights[i].push_back(-0.1333333);
-                }
-            }
-        }
-    }
-}
-
-void P1_to_P2_Mass::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) {
-    for (int i = 0; i < ps->nb_particles(); i++) {
-       ps->get(i)->position = ps->get(i)->last_position;
-    }
-    for (int i = 0; i < ids.size(); i++) {
-        for(int j = 0; j < ids[i].size(); ++j) {
-            Vector3 dx = ps->get(ids[i][j])->position - y[ids[i][j]];
-            ps->get(i)->position += dx * weights[i][j];
-        }
-    }
-}
-
 
 int Q1_to_Q2::ref_edges[12][2] = {{0, 1},{1, 2},{2, 3},{3, 0},{0, 4},{1, 5},{2, 6},{3, 7},{4, 5},{5, 6},{6, 7},{7, 0}};
 int Q1_to_Q2::ref_faces[6][4] = {{0,1,2,3},{0,1,4,5},{1,2,5,6},{2,3,6,7},{3,0,7,4},{4,5,6,7}};
@@ -101,25 +43,25 @@ int Q1_to_Q2::ref_faces[6][4] = {{0,1,2,3},{0,1,4,5},{1,2,5,6},{2,3,6,7},{3,0,7,
 void Q1_to_Q2::prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) {
     for (int i = 0; i < ids_edges.size(); i++) {
         const int a = edges[i][0], b = edges[i][1];
-        Vector3 dx_a = ps->get(a)->position - y[a];
-        Vector3 dx_b = ps->get(b)->position - y[b];
-        ps->get(ids_edges[i])->position = y[ids_edges[i]] + (dx_a + dx_b) * 0.5f;
+        Vector3 dx_a = ps->get(a)->position - ps->get(a)->last_position;
+        Vector3 dx_b = ps->get(b)->position - ps->get(b)->last_position;
+        ps->get(ids_edges[i])->position = ps->get(ids_edges[i])->last_position + (dx_a + dx_b) * 0.5f;
     }
 
     for (int i = 0; i < ids_faces.size(); i++) {
         Vector3 dx_sum = Unit3D::Zero();
         for(int j = 0; j < 4; j++) {
-            dx_sum += ps->get(faces[i][j])->position - y[faces[i][j]];
+            dx_sum += ps->get(faces[i][j])->position - ps->get(faces[i][j])->last_position;
         }
-        ps->get(ids_faces[i])->position = y[ids_faces[i]] + dx_sum * 0.25f;
+        ps->get(ids_faces[i])->position = ps->get(ids_faces[i])->last_position + dx_sum * 0.25f;
     }
 
     for (int i = 0; i < ids_volumes.size(); i++) {
         Vector3 dx_sum = Unit3D::Zero();
         for(int j = 0; j < 8; j++) {
-            dx_sum += ps->get(volume[i][j])->position - y[volume[i][j]];
+            dx_sum += ps->get(volume[i][j])->position - ps->get(volume[i][j])->last_position;
         }
-        ps->get(ids_volumes[i])->position = y[ids_volumes[i]] + dx_sum * 0.125f;
+        ps->get(ids_volumes[i])->position = ps->get(ids_volumes[i])->last_position + dx_sum * 0.125f;
     }
 }
 
@@ -164,7 +106,6 @@ Q1_to_Q2::Q1_to_Q2(const Mesh::Topology &topology) {
     }
 }
 
-
 MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, Element e,
                FEM_ContinuousMaterial *material, scalar damp, scalar density) {
     // init global data and shape (P2)
@@ -175,7 +116,7 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({0,25});
+    _max_it = std::vector<int>({5,35});
     _it_count = 0;
     _current_grid = 1;
     // init neighboors for each particle (same for each level)
@@ -248,11 +189,8 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     _it_count++;
     while(_it_count > _max_it[_current_grid]) {
         _it_count = 1;
+        interpolate(ps, dt);
         _current_grid = (_current_grid + 1) % static_cast<int>(_grids.size());
-        if(_current_grid == 0) {
-            _interpolation->prolongation(ps, _y);
-            plot_residual(ps, _grids[_current_grid], dt, 0);
-        }
     }
 
     Grid_Level *grid = _grids[_current_grid];
@@ -261,8 +199,8 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     for (const int id: grid->_ids) {
         if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
     }
-    plot_residual(ps, _grids[_current_grid], dt, 0);
-
+    interpolate(ps, dt);
+    plot_residual(ps, _grids[0], dt, 0);
 }
 
 void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id) {
@@ -396,7 +334,6 @@ void MG_VBD_FEM::interpolate(VertexBlockDescent *ps, scalar dt) {
     // prolongatation
     if(_current_grid == 1) {
         _interpolation->prolongation(ps, _y);
-        plot_residual(ps, _grids[_current_grid], dt, 0);
     }
 
     // restriction is implicit (injection)
@@ -411,7 +348,7 @@ void MG_VertexBlockDescent::step(const scalar dt) {
         scalar omega = 0;
         for (int j = 0; j < _iteration; ++j) {
             for(VBD_Object* obj : _objs) obj->solve(this, sub_dt);
-            //chebyshev_acceleration(j, omega);
+            chebyshev_acceleration(j, omega);
             //for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
         }
         step_effects(sub_dt);

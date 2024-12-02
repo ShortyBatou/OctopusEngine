@@ -69,40 +69,45 @@ struct BaseScene final : Scene
     {  
         SimulationArgs args{};
         args.density = 1000;
-        args.distribution = Uniform;
+        args.distribution = Shape;
         args.young = 1e7f;
         args.poisson = 0.49;
-        args.damping = 1e-4;
-        args.iteration = 1;
-        args.sub_iteration = 150;
+        args.damping = 1e-5;
+        args.iteration = 40;
+        args.sub_iteration = 1;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(2, 1, 1);
-        Vector3I cells(16, 8, 8);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells(16, 2, 2);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
         //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, false);
-        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
-
-
-        args.damping = 1e-5;
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tetra10, args, true);
-        build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
-        args.sub_iteration = 50;
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, false);
+        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Hexa27, args, false);
         args.iteration = 100;
+        //build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.3,0.8,0.8,0.), Hexa27, args, false);
+        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.3,0.8,0.), Hexa, args, false);
+
+        args.damping = 5e-6;
+        args.sub_iteration = 300;
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tdetra10, args, true);
+        build_fem_entity(Vector3(0,0,-1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
+        args.damping = 5e-5;
+        //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
+
+        args.sub_iteration = 50;
+        args.iteration = 1;
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
         args.damping = 1e-6;
         //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tetra10, args, false);
 
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
-        args.damping = 10;
-        args.sub_iteration = 50;
-        cells = Vector3I(32, 8, 8);
-        //build_xpbd_entity(Vector3(0,0,-1.2),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
+        args.damping = 20;
+        args.sub_iteration = 100;
+        build_xpbd_entity(Vector3(0,0,-1.2),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
         //build_xpbd_entity(Vector3(0,0,-2.2),cells, size, Color(0.7,0.4,0.8,0.), Tetra, args, true, true);
 
     }

@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <iomanip>
+#include <queue>
 
 
 class Debug : public Singleton<Debug> {
@@ -111,7 +112,7 @@ struct DebugUI_Range final : DebugUI_Component {
     explicit DebugUI_Range(const std::string &name)
         : DebugUI_Component(name),
           _vmin(std::numeric_limits<float>::max()), _vmax(std::numeric_limits<float>::min()), _vmean(0),
-          _vsum(0), _nb_values(0) {
+          _vsum(0), _nb_max(100) {
     }
 
 
@@ -120,8 +121,9 @@ struct DebugUI_Range final : DebugUI_Component {
     void add_value(float value);
 
 protected:
+    std::queue<scalar> _vals;
     float _vmin, _vmax, _vmean, _vsum;
-    int _nb_values;
+    int _nb_max;
 };
 
 

@@ -2,7 +2,7 @@
 #include <GPU/CUMatrix.h>
 
 // fem global function
-__device__ Matrix3x3 compute_transform(int nb_vert_elem, Vector3 *pos, int *topology, Vector3 *dN) {
+__device__ Matrix3x3 compute_transform(const int nb_vert_elem, Vector3 *pos, int *topology, Vector3 *dN) {
     // Compute transform (reference => scene)
     Matrix3x3 Jx = Matrix3x3(0.f);
     for (int j = 0; j < nb_vert_elem; ++j) {

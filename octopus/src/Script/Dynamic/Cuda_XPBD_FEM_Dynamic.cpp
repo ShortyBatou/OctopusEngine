@@ -15,7 +15,7 @@
 
 GPU_ParticleSystem* Cuda_XPBD_FEM_Dynamic::create_particle_system()
 {
-   return new GPU_PBD(_mesh->geometry(), get_fem_masses(), _sub_iterations);
+   return new GPU_PBD(_mesh->geometry(), get_fem_masses(), _sub_iterations, _damping);
 }
 
 void Cuda_XPBD_FEM_Dynamic::build_dynamics()

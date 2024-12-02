@@ -22,6 +22,10 @@ void GPU_PBD::step(const scalar dt)  {
         if(dynamic->active)
             dynamic->step(this, dt);
     }
+    for(GPU_Dynamic* constraint : _constraints) {
+        if(constraint->active)
+            constraint->step(this, dt);
+    }
 
     kernel_velocity_update<<<(_nb_particles + 255) / 256, 256>>>(_nb_particles, dt, _global_damping,
                                                                buffer_position(), buffer_prev_position(), buffer_inv_mass(), buffer_velocity());

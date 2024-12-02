@@ -40,16 +40,6 @@ struct P1_to_P2 final : GridInterpolation {
     ~P1_to_P2() override = default;
 };
 
-struct P1_to_P2_Mass final : GridInterpolation {
-    std::vector<std::vector<int>> ids;
-    std::vector<std::vector<scalar>> weights;
-    explicit P1_to_P2_Mass(const Mesh::Topology &topology);
-
-    void prolongation(ParticleSystem *ps, const std::vector<Vector3>& y) override;
-
-    ~P1_to_P2_Mass() override = default;
-};
-
 struct Q1_to_Q2 final : GridInterpolation {
     std::vector<int> ids_edges;
     std::vector<int> ids_faces;

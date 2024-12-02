@@ -6,6 +6,7 @@
 #include "Core/Component.h"
 #include<vector> // for vector
 #include <Dynamic/Base/ParticleSystem.h>
+#include <Manager/Debug.h>
 
 struct Cuda_ParticleSystem_Dynamics : Component
 {
@@ -21,10 +22,18 @@ struct Cuda_ParticleSystem_Dynamics : Component
 
     void update() override
     {
+        Time::Tic();
         const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
         for(int i = 0; i < _sub_iterations; i++)
             _gpu_ps->step(sub_dt);
+        scalar t = Time::Tac() * 1000.f;
         _gpu_ps->get_position(_mesh->geometry());
+
+        DebugUI::Begin("Entity " + std::to_string(entity()->id()));
+        DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t);
+        DebugUI::Range("Range (" + std::to_string(entity()->id()) + ")", t);
+        DebugUI::Value("Value (" + std::to_string(entity()->id()) + ")", t);
+        DebugUI::End();
     }
 
     [[nodiscard]] GPU_ParticleSystem* get_particle_system() const
