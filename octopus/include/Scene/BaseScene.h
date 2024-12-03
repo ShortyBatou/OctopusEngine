@@ -76,7 +76,7 @@ struct BaseScene final : Scene
         args.iteration = 40;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = StVK;
 
@@ -89,7 +89,7 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Hexa27, args, false);
         args.iteration = 100;
         //build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.3,0.8,0.8,0.), Hexa27, args, false);
-        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.3,0.8,0.), Hexa, args, false);
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.3,0.8,0.), Hexa, args, false);
 
         args.damping = 5e-6;
         args.sub_iteration = 300;
@@ -104,12 +104,12 @@ struct BaseScene final : Scene
         args.iteration = 1;
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
         args.damping = 1e-6;
-        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
 
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
         args.damping = 20;
         args.sub_iteration = 100;
-        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
+        build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
         //build_xpbd_entity(Vector3(0,0,-2.2),cells, size, Color(0.7,0.4,0.8,0.), Tetra, args, true, true);
 
     }
