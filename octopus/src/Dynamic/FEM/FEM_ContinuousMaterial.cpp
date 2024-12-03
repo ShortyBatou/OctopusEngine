@@ -35,6 +35,30 @@ scalar M_StVK::get_energy(const Matrix3x3 &F) {
     return 0.5f * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
 }
 
+void M_StVK::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x3>& H) {
+    const auto FFt = F * glm::transpose(F);
+    const auto FtF = glm::transpose(F) * F;
+    const scalar g1 = 0.5f * lambda;
+    const scalar H2 = mu;
+    const Matrix3x3 H1 = (0.5f * (this->lambda) * Matrix::Trace(FFt) - this->mu) * Matrix::Identity3x3();
+    const Matrix3x3 H2_A = H2 * FFt;
+    const Matrix3x3 diag = H1 + H2_A;
+    H.resize(9, Matrix::Zero3x3());
+
+    for(int i = 0; i <= 2; ++i) {
+        H[i * 4] += diag; // 0, 4, 8
+        for(int j = i; j <= 2; ++j) { // 1, 2, 5
+            H[i * 4 + j] += (H2+g1) * glm::outerProduct(F[i],F[j]);
+            H[i*4+j] += Matrix::Identity3x3() * FtF[i][j];
+        }
+    }
+
+    // symmetric matrix
+    H[3] = H[1];
+    H[6] = H[2];
+    H[7] = H[5];
+}
+
 
 Matrix3x3 M_NeoHooke::get_pk1(const Matrix3x3 &F) {
     scalar I_3 = glm::determinant(F);

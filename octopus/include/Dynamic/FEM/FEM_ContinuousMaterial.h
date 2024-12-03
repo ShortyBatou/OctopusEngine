@@ -25,6 +25,8 @@ struct M_StVK final : FEM_ContinuousMaterial {
     Matrix3x3 get_pk1(const Matrix3x3& F) override;
 
     scalar get_energy(const Matrix3x3& F) override;
+
+    void get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) override;
 };
 
 struct M_NeoHooke final : FEM_ContinuousMaterial {
