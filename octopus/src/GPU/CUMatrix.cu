@@ -9,6 +9,11 @@ __device__ Matrix3x3 vec_hat(const Vector3 &v) {
         -v.y, v.x, 0.f
     };
 }
+
+__device__ Matrix3x3 mat3x3_com(const Matrix3x3 &m) {
+    return {glm::cross(m[1], m[2]), glm::cross(m[2], m[0]), glm::cross(m[0], m[1])};
+}
+
 // global device function
 __device__ scalar mat3x3_trace(const Matrix3x3 &m) {
     return m[0][0] + m[1][1] + m[2][2];

@@ -1,4 +1,4 @@
- #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
+#include "Dynamic/FEM/FEM_ContinuousMaterial.h"
 #include <vector>
 #include <iostream>
 
@@ -15,41 +15,43 @@ scalar M_Hooke::get_energy(const Matrix3x3 &F) {
 }
 
 // get all H_kl of dF_i**T H_kl dF_j
-void M_Hooke::get_sub_hessian(const Matrix3x3 &, std::vector<Matrix3x3>& H) {
+void M_Hooke::get_sub_hessian(const Matrix3x3 &, std::vector<Matrix3x3> &H) {
     H.resize(9, Matrix::Zero3x3());
-    const Matrix3x3 I_mu_lambda = (this->mu + this->lambda) * Matrix::Identity3x3();
+    const Matrix3x3 I_mu_lambda(this->mu + this->lambda);
     for (unsigned int i = 0; i <= 2; ++i)
         H[i * 4] = I_mu_lambda; // 0, 4, 8
 }
 
 Matrix3x3 M_StVK::get_pk1(const Matrix3x3 &F) {
-    const auto E = get_strain_tensor(F);
-    const auto trace = Matrix::Trace(E);
+    const Matrix3x3 E = get_strain_tensor(F);
+    const scalar trace = Matrix::Trace(E);
     return this->lambda * trace * F + 2.f * this->mu * F * E;
 }
 
 scalar M_StVK::get_energy(const Matrix3x3 &F) {
-    const auto E = get_strain_tensor(F);
-    const auto trace = Matrix::Trace(E);
+    const Matrix3x3 E = get_strain_tensor(F);
+    const scalar trace = Matrix::Trace(E);
     // Psi(F) = (lambda / 2) tr(E)� + mu tr(E^2)
     return 0.5f * this->lambda * trace * trace + this->mu * Matrix::SquaredNorm(E);
 }
 
-void M_StVK::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x3>& H) {
+void M_StVK::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x3> &H) {
     const auto FFt = F * glm::transpose(F);
     const auto FtF = glm::transpose(F) * F;
     const scalar g1 = 0.5f * lambda;
     const scalar H2 = mu;
-    const Matrix3x3 H1 = (0.5f * (this->lambda) * Matrix::Trace(FFt) - this->mu) * Matrix::Identity3x3();
+    const Matrix3x3 H1(0.5f * this->lambda * Matrix::Trace(FFt) - this->mu);
     const Matrix3x3 H2_A = H2 * FFt;
     const Matrix3x3 diag = H1 + H2_A;
     H.resize(9, Matrix::Zero3x3());
 
-    for(int i = 0; i <= 2; ++i) {
+    for (int i = 0; i <= 2; ++i) {
         H[i * 4] += diag; // 0, 4, 8
-        for(int j = i; j <= 2; ++j) { // 1, 2, 5
-            H[i * 4 + j] += (H2+g1) * glm::outerProduct(F[i],F[j]);
-            H[i*4+j] += Matrix::Identity3x3() * FtF[i][j];
+        for (int j = i; j <= 2; ++j) {
+            // 0, 1, 2, 4, 5, 8
+            H[i * 3 + j] += g1 * glm::outerProduct(F[i], F[j]);
+            H[i * 3 + j] += H2 * glm::outerProduct(F[j], F[i]);
+            H[i * 3 + j] += Matrix3x3(FtF[i][j]);
         }
     }
 
@@ -58,7 +60,6 @@ void M_StVK::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x3>& H) {
     H[6] = H[2];
     H[7] = H[5];
 }
-
 
 Matrix3x3 M_NeoHooke::get_pk1(const Matrix3x3 &F) {
     scalar I_3 = glm::determinant(F);
@@ -85,8 +86,7 @@ scalar M_Stable_NeoHooke::get_energy(const Matrix3x3 &F) {
     return 0.5f * this->mu * (I_2 - 3.f) + 0.5f * this->lambda * (I_3 - alpha) * (I_3 - alpha);
 }
 
-void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x3>& d2W_dF2)
-{
+void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x3> &d2W_dF2) {
     d2W_dF2.resize(9);
     Matrix3x3 comF = Matrix::Com(F);
     scalar detF = glm::determinant(F);
@@ -112,8 +112,7 @@ void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3& F, std::vector<Matrix3x
     // lambda vec(com F) * vec(com F)^T
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
-            d2W_dF2[i*3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
-
+            d2W_dF2[i * 3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 }
 
 
