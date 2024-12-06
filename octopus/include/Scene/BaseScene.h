@@ -71,21 +71,21 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.distribution = Shape;
         args.young = 1e7f;
-        args.poisson = 0.45;
+        args.poisson = 0.49;
         args.damping = 1e-5;
         args.iteration = 40;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
         const Vector3 size(2, 1, 1);
-        Vector3I cells(32, 16, 16);
+        Vector3I cells(16, 8, 8);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
         //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, false);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Tetra, args, true);
         //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Hexa27, args, false);
         args.iteration = 100;
         //build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.3,0.8,0.8,0.), Hexa27, args, false);
@@ -94,10 +94,8 @@ struct BaseScene final : Scene
         args.sub_iteration = 300;
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tdetra10, args, true);
         //build_fem_entity(Vector3(0,0,-1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
-        args.damping = 1e-5;
+        args.damping = 1e-7;
         build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.8,0.), Hexa, args, true);
-        args.material = StVK;
-        build_fem_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.8,0.), Hexa, args, true);
 
         //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
 

@@ -26,7 +26,7 @@ __global__ void kernel_velocity_update(int n, scalar dt, Vector3* prev_p, Vector
     //if(vid == 10) printf("v(%f %f %f)\n", v[vid].x, v[vid].y, v[vid].z);
 }
 
-__global__ void kernel_chebychev_acceleration(int n, int it, scalar omega, Vector3* prev_it_p, Vector3* prev_it2_p, Vector3* p) {
+__global__ void kernel_chebychev_acceleration(const int n, const int it, const scalar omega, Vector3* prev_it_p, Vector3* prev_it2_p, Vector3* p) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= n) return;
     if(it >= 2) {
@@ -40,7 +40,7 @@ __global__ void kernel_chebychev_acceleration(int n, int it, scalar omega, Vecto
 void GPU_VBD::step(const scalar dt) {
     const int n = nb_particles();
 
-    //scalar omega = 1;
+    scalar omega = 1;
     // integration / first guess
     kernel_integration<<<(n + 255)/256, 256>>>(n,dt,Dynamic::gravity(),
         buffer_position(),buffer_prev_position(),y->buffer, prev_it_p->buffer,
@@ -56,9 +56,9 @@ void GPU_VBD::step(const scalar dt) {
             constraint->step(this, dt);
 
         // Acceleration (Chebychev)
-        //if(j == 1) omega = 2.f / (2.f - r * r);
-        //else if(j > 1) omega = 4.f / (4.f - r * r * omega);
-        //kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(n, j, omega, prev_it_p->buffer, prev_it2_p->buffer, cb_position->buffer);
+        if(j == 1) omega = 2.f / (2.f - r * r);
+        else if(j > 1) omega = 4.f / (4.f - r * r * omega);
+        kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(n, j, omega, prev_it_p->buffer, prev_it2_p->buffer, buffer_position());
     }
     // velocity update
     kernel_velocity_update<<<(n + 255)/256, 256>>>(n,dt,

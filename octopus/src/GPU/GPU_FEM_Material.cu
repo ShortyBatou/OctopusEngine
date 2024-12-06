@@ -68,7 +68,7 @@ __device__ void stvk_hessian(const Matrix3x3 &F, const scalar lambda, const scal
 __device__ void snh_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
     Matrix3x3 comF = mat3x3_com(F);
     const scalar detF = glm::determinant(F);
-    const scalar alpha = 1.f + (mu / detF);
+    const scalar alpha = 1.f + (mu / lambda  );
     const scalar s = lambda * (detF - alpha);
     // lambda * (I3 - alpha) * H3
     d2W_dF2[0] = Matrix3x3(0);
