@@ -13,10 +13,10 @@ ParticleSystem * VBD_FEM_Dynamic::build_particle_system()
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
         if((e == Tetra10 || e==Hexa27) && this->entity()->id() == 1) {
-            vbd = new MG_VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, 0.93f);
+            vbd = new MG_VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
         }
         else {
-            vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, 0.93f);
+            vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
         }
         return vbd;
     }

@@ -39,7 +39,6 @@ __global__ void kernel_chebychev_acceleration(const int n, const int it, const s
 
 void GPU_VBD::step(const scalar dt) {
     const int n = nb_particles();
-
     scalar omega = 1;
     // integration / first guess
     kernel_integration<<<(n + 255)/256, 256>>>(n,dt,Dynamic::gravity(),
@@ -47,7 +46,6 @@ void GPU_VBD::step(const scalar dt) {
         buffer_velocity(),buffer_forces(), buffer_inv_mass());
 
     for(int j = 0; j < iteration; ++j) {
-        const scalar r = 0.8f;
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)
             dynamic->step(this, dt);
@@ -56,17 +54,12 @@ void GPU_VBD::step(const scalar dt) {
             constraint->step(this, dt);
 
         // Acceleration (Chebychev)
-        if(j == 1) omega = 2.f / (2.f - r * r);
-        else if(j > 1) omega = 4.f / (4.f - r * r * omega);
+        if(j == 1) omega = 2.f / (2.f - _rho * _rho);
+        else if(j > 1) omega = 4.f / (4.f - _rho * _rho * omega);
         kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(n, j, omega, prev_it_p->buffer, prev_it2_p->buffer, buffer_position());
     }
     // velocity update
     kernel_velocity_update<<<(n + 255)/256, 256>>>(n,dt,
         buffer_prev_position(), buffer_position(), buffer_velocity(), buffer_inv_mass());
-
-}
-
-GPU_VBD::~GPU_VBD()
-{
 
 }

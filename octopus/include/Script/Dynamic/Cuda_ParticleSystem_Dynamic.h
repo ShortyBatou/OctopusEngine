@@ -26,10 +26,11 @@ struct Cuda_ParticleSystem_Dynamics : Component
         const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
         for(int i = 0; i < _sub_iterations; i++)
             _gpu_ps->step(sub_dt);
-        scalar t = Time::Tac() * 1000.f;
+        cudaDeviceSynchronize();
         _gpu_ps->get_position(_mesh->geometry());
+        scalar t = Time::Tac() * 1000.f;
 
-        DebugUI::Begin("Entity " + std::to_string(entity()->id()));
+        DebugUI::Begin("Entity Time " + std::to_string(entity()->id()));
         DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t);
         DebugUI::Range("Range (" + std::to_string(entity()->id()) + ")", t);
         DebugUI::Value("Value (" + std::to_string(entity()->id()) + ")", t);

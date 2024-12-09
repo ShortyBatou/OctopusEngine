@@ -12,14 +12,14 @@
 
 GPU_ParticleSystem* Cuda_VBD_FEM_Dynamic::create_particle_system()
 {
-    return new GPU_VBD(_mesh->geometry(), get_fem_masses(), _iteration, _sub_iterations, _damping);
+    return new GPU_VBD(_mesh->geometry(), get_fem_masses(), _iteration, _sub_iterations, _rho);
 }
 
 void Cuda_VBD_FEM_Dynamic::build_dynamics()
 {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        _gpu_ps->add_dynamics(new GPU_VBD_FEM(e, topo, _mesh->geometry(), _young, _poisson, _damping));
+        _gpu_ps->add_dynamics(new GPU_VBD_FEM(e, topo, _mesh->geometry(), _material, _young, _poisson, _damping));
         break;
     }
 }

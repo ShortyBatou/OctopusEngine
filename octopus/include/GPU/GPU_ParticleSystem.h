@@ -43,6 +43,7 @@ struct GPU_ParticleSystem
 
         delete _integrator;
         for(GPU_Dynamic* dynamic: _dynamics) delete dynamic;
+        for(GPU_Dynamic* dynamic: _constraints) delete dynamic;
     }
 
 

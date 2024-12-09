@@ -72,44 +72,21 @@ struct BaseScene final : Scene
         args.distribution = Shape;
         args.young = 1e7f;
         args.poisson = 0.49;
-        args.damping = 1e-5;
-        args.iteration = 40;
+        args.damping = 1e-6;
+        args.iteration = 25;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(2, 1, 1);
-        Vector3I cells(16, 8, 8);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells(32, 8, 8);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
-        //build_xpbd_entity(Vector3(0,0,1.2),cells, size, Color(0.4,0.4,0.8,0.), Tetra10, args, true, false);
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Tetra, args, true);
-        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.3,0.8,0.3,0.), Hexa27, args, false);
-        args.iteration = 100;
-        //build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.3,0.8,0.8,0.), Hexa27, args, false);
-
-        args.damping = 5e-6;
-        args.sub_iteration = 300;
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Tdetra10, args, true);
-        //build_fem_entity(Vector3(0,0,-1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
-        args.damping = 1e-7;
-        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.8,0.), Hexa, args, true);
-
-        //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.8,0.8,0.), Hexa27, args, true);
-
-        args.sub_iteration = 50;
-        args.iteration = 1;
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
-        args.damping = 1e-6;
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, false);
-
-        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,0.3,0.8,0.), Hexa, args, true);
-        args.damping = 20;
-        args.sub_iteration = 100;
-        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.7,0.4,0.8,0.), Hexa, args, true, true);
-        //build_xpbd_entity(Vector3(0,0,-2.2),cells, size, Color(0.7,0.4,0.8,0.), Tetra, args, true, true);
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, 0.93, true);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, 0.93, true);
+        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa27, args, 0.93, true);
 
     }
 
@@ -191,18 +168,18 @@ struct BaseScene final : Scene
     }
 
 
-    void build_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
+    void build_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const float rho, bool gpu) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         if(gpu)
         {
-            e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping));
+            e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho));
             if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
             if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else
         {
-            e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping));
+            e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho));
             add_constraint(e, pos, size, args);
         }
 

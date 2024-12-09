@@ -1,4 +1,5 @@
 #pragma once
+#include <Dynamic/FEM/ContinuousMaterial.h>
 #include <Dynamic/FEM/FEM_Shape.h>
 #include <Mesh/Mesh.h>
 #include "Core/Base.h"
@@ -7,7 +8,7 @@
 #include "GPU/GPU_Dynamic.h"
 
 struct GPU_VBD_FEM final : GPU_Dynamic {
-    GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
+    GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry, const Material& material,
         const scalar& young, const scalar& poisson, const scalar& damping);
     void step(const GPU_ParticleSystem* ps, scalar dt) override;
     void build_graph_color(const Mesh::Topology &topology, int nb_vertices,
@@ -20,8 +21,9 @@ struct GPU_VBD_FEM final : GPU_Dynamic {
     int nb_color;      // color total
     int nb_element;    // element total
 
-    scalar lambda;
-    scalar mu;
+    scalar _lambda;
+    scalar _mu;
+    Material _material;
     scalar _damping;
 
     std::vector<int> c_block_size;

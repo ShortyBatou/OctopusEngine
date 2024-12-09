@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Base.h"
 
-class GPU_ParticleSystem;
+struct GPU_ParticleSystem;
 
 struct GPU_Dynamic {
     GPU_Dynamic() : active(true) {}

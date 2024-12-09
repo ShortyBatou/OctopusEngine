@@ -38,10 +38,10 @@ __device__ void print_vec(const Vector3 &v) {
 }
 
 __device__ void print_mat(const Matrix3x3 &m) {
-    printf("%f %f %f %f %f %f %f %f %f \n", m[0][0], m[1][0], m[2][0], m[0][1], m[1][1], m[2][1], m[0][2], m[1][2],
+    printf("|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n\n", m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1],
            m[2][2]);
 }
 
 __device__ void print_mat(const Matrix2x2 &m) {
-    printf("%f %f %f %f \n", m[0][0], m[1][0],m[0][1], m[1][1]);
+    printf("|%.3e  %.3e|\n|%.3e  %.3e|\n\n", m[0][0], m[1][0],m[0][1], m[1][1]);
 }

@@ -2,12 +2,12 @@
 #include <set>
 
 GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology, const Mesh::Geometry &geometry,
-                         const scalar &young, const scalar &poisson, const scalar& damping) {
+                         const Material& material, const scalar &young, const scalar &poisson, const scalar& damping) {
     const int nb_vertices = static_cast<int>(geometry.size());
     shape = get_fem_shape(element);
-
-    lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));
-    mu = young / (2.f * (1.f + poisson));
+    _material = material;
+    _lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));
+    _mu = young / (2.f * (1.f + poisson));
     _damping = damping;
 
     elem_nb_vert = elem_nb_vertices(element);
