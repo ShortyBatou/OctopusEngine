@@ -106,11 +106,6 @@ __global__ void kernel_solve(
     }
 
     if (threadIdx.x == 0) {
-        if(vid == 10) {
-            print_mat(d2W_dF2[1]);
-            print_mat(d2W_dF2[3]);
-        }
-
         H[0][0] = s_f_H[3]; H[0][1] = s_f_H[6]; H[0][2] = s_f_H[9];
         H[1][0] = s_f_H[4]; H[1][1] = s_f_H[7]; H[1][2] = s_f_H[10];
         H[2][0] = s_f_H[5]; H[2][1] = s_f_H[8]; H[2][2] = s_f_H[11];

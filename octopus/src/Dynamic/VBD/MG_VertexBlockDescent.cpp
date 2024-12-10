@@ -116,7 +116,7 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({15,10});
+    _max_it = std::vector<int>({10,15});
     _it_count = 0;
     _current_grid = 1;
     // init neighboors for each particle (same for each level)

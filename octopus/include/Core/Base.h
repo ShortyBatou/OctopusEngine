@@ -1,15 +1,16 @@
 #pragma once
 
+#include <ostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
 
 using scalar = float;
-const scalar min_limit = std::numeric_limits<scalar>::min();
-const scalar max_limit = std::numeric_limits<scalar>::max();
-const scalar eps = min_limit * static_cast<scalar>(1e5);
-const glm::precision precision = glm::precision::defaultp;
-
+constexpr scalar min_limit = std::numeric_limits<scalar>::min();
+constexpr scalar max_limit = std::numeric_limits<scalar>::max();
+constexpr scalar eps = min_limit * static_cast<scalar>(1e5);
+constexpr glm::precision precision = glm::precision::defaultp;
+const scalar PI = glm::pi<scalar>();
 
 typedef glm::vec<1, scalar, precision> Vector1;
 typedef glm::vec<2, scalar, precision> Vector2;
@@ -54,7 +55,41 @@ namespace Matrix
 
     Matrix3x3 Hat(const Vector3& v);
     Matrix3x3 Com(const Matrix3x3& m);
+    void PolarDecomposition(const Matrix3x3& m, Matrix3x3& R, Matrix3x3& S);
+    Vector3 SingularValues(const Matrix3x3& m);
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Vector2& v) {
+    os << "(x:" << v.x << " y:" << v.y << ')';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Vector3& v) {
+    os << "(x:" << v.x << " y:" << v.y << " z:" << v.z <<  ')';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Matrix2x2& m) {
+    os << '|' << m[0][0] << " " << m[0][1] << "|\n|"
+              << m[1][0] << " " << m[1][1] << '|';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Matrix3x3& m) {
+    os << '|' << m[0][0] << " " << m[0][1] << " " << m[0][2] << "'|'\n'|'"
+              << m[1][0] << " " << m[1][1] << " " << m[1][2] << "'|'\n'|'"
+              << m[2][0] << " " << m[2][1] << " " << m[2][2] << '|';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Matrix4x4& m) {
+    os << '|' << m[0][0] << " " << m[0][1] << " " << m[0][2] << " " << m[0][3] << "'|'\n'|'"
+              << m[1][0] << " " << m[1][1] << " " << m[1][2] << " " << m[1][3] << "'|'\n'|'"
+              << m[2][0] << " " << m[2][1] << " " << m[2][2] << " " << m[2][3] << "'|'\n'|'"
+              << m[3][0] << " " << m[3][1] << " " << m[3][2] << " " << m[3][3] << '|';
+    return os;
+}
+
 
 struct Unit3D
 {

@@ -70,23 +70,29 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e7f;
+        args.young = 1e6f;
         args.poisson = 0.49;
-        args.damping = 1e-6;
+        args.damping = 1e-5;
         args.iteration = 25;
         args.sub_iteration = 1;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
 
-        const Vector3 size(4, 1, 1);
-        Vector3I cells(32, 8, 8);
+        Matrix3x3 m(1,4,7,2,5,8,3,6,9);
+        Matrix3x3 R, S;
+        Matrix::PolarDecomposition(m, R, S);
+        std::cout << R << std::endl;
+        std::cout << S << std::endl;
+        const Vector3 size(3, 1, 1);
+        Vector3I cells(12, 4, 4);
         //(Vector3(0,0,0), cells,size, ColorBase::Red(), Hexa, args);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.8,0.3,0.), Tetra, args, false);
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, 0.93, true);
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, 0.93, true);
-        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa27, args, 0.93, true);
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,0.3,0.8,0.), Hexa27, args, 0.93, false);
+        args.sub_iteration = 300;
+        build_fem_entity(Vector3(0,0,1),cells, size, Color(0.8,0.3,0.8,0.), Hexa27, args, true);
 
     }
 
