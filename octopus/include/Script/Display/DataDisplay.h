@@ -27,5 +27,5 @@ struct FEM_DataDisplay : public Component {
 private:
     Mesh* _mesh{};
     GL_Graphic* _graphic{};
-    FEM_Dynamic* _fem_dynamic{};
+    FEM_Dynamic_Generic* _fem_dynamic{};
 };

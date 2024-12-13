@@ -57,7 +57,7 @@ void Mesh_VTK_Recorder::save() {
 }
 
 void FEM_VTK_Recorder::init(Entity *entity) {
-    _fem_dynamic = entity->get_component<FEM_Dynamic>();
+    _fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
     _mesh = entity->get_component<Mesh>();
     assert(_fem_dynamic && _mesh);
     _ps = _fem_dynamic->getParticleSystem();
@@ -136,7 +136,7 @@ void Graphic_VTK_Recorder::save() {
 
 
 void FEM_Flexion_error_recorder::init(Entity *entity) {
-    auto fem_dynamic = entity->get_component<FEM_Dynamic>();
+    auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
     assert(fem_dynamic != nullptr);
     _ps = fem_dynamic->getParticleSystem();
 
@@ -174,7 +174,7 @@ void FEM_Torsion_error_recorder::init(Entity *entity) { {
         auto fem_dynamic = entity->get_component<XPBD_FEM_Dynamic>();
         if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
     } {
-        auto fem_dynamic = entity->get_component<FEM_Dynamic>();
+        auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
         if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
     }
 

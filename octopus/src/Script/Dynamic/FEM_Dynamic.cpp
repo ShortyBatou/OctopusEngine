@@ -2,18 +2,18 @@
 #include "Manager/TimeManager.h"
 #include <iostream>
 
-void FEM_Dynamic::update() {
+void FEM_Dynamic_Generic::update() {
     this->_ps->step(Time::Fixed_DeltaTime());
     for (int i = 0; i < _mesh->nb_vertices(); ++i) {
         _mesh->geometry()[i] = this->_ps->get(i)->position;
     }
 }
 
-ParticleSystem *FEM_Dynamic::build_particle_system() {
+ParticleSystem *FEM_Dynamic_Generic::build_particle_system() {
     return new FEM_System(new EulerSemiExplicit(0.999f), _sub_iteration);
 }
 
-std::vector<FEM_Generic *> FEM_Dynamic::build_element(const std::vector<int> &ids, Element type, scalar &volume) {
+std::vector<FEM_Generic *> FEM_Dynamic_Generic::build_element(const std::vector<int> &ids, Element type, scalar &volume) {
     FEM_Generic_Force *fem = new FEM_Generic_Force(ids, get_fem_material(_material, _young, _poisson),
                                                    get_fem_shape(type));
     dynamic_cast<FEM_System *>(_ps)->add_fem(fem);
@@ -21,7 +21,7 @@ std::vector<FEM_Generic *> FEM_Dynamic::build_element(const std::vector<int> &id
     return std::vector<FEM_Generic *>(1, fem);
 }
 
-void FEM_Dynamic::get_fem_info(int &nb_elem, int &elem_vert, Element &elem) {
+void FEM_Dynamic_Generic::get_fem_info(int &nb_elem, int &elem_vert, Element &elem) {
     for (auto &topo: _mesh->topologies()) {
         if (topo.second.empty()) continue;
         elem = topo.first;
@@ -30,7 +30,7 @@ void FEM_Dynamic::get_fem_info(int &nb_elem, int &elem_vert, Element &elem) {
     }
 }
 
-std::map<Element, std::vector<scalar> > FEM_Dynamic::get_stress() {
+std::map<Element, std::vector<scalar> > FEM_Dynamic_Generic::get_stress() {
     std::map<Element, std::vector<scalar> > e_stress;
     for (auto &it: e_fems) {
         Element type = it.first;
@@ -52,7 +52,7 @@ std::map<Element, std::vector<scalar> > FEM_Dynamic::get_stress() {
     return e_stress;
 }
 
-std::map<Element, std::vector<scalar> > FEM_Dynamic::get_volume() {
+std::map<Element, std::vector<scalar> > FEM_Dynamic_Generic::get_volume() {
     std::map<Element, std::vector<scalar> > e_volume;
     for (auto &it: e_fems) {
         Element type = it.first;
@@ -75,7 +75,7 @@ std::map<Element, std::vector<scalar> > FEM_Dynamic::get_volume() {
     return e_volume;
 }
 
-std::map<Element, std::vector<scalar> > FEM_Dynamic::get_volume_diff() {
+std::map<Element, std::vector<scalar> > FEM_Dynamic_Generic::get_volume_diff() {
     std::map<Element, std::vector<scalar> > e_volume;
     for (auto &it: e_fems) {
         Element type = it.first;
@@ -99,7 +99,7 @@ std::map<Element, std::vector<scalar> > FEM_Dynamic::get_volume_diff() {
     return e_volume;
 }
 
-std::vector<scalar> FEM_Dynamic::get_masses() {
+std::vector<scalar> FEM_Dynamic_Generic::get_masses() {
     const int n = _ps->nb_particles();
     std::vector<scalar> masses(n);
     for (int i = 0; i < n; ++i) {
@@ -109,7 +109,7 @@ std::vector<scalar> FEM_Dynamic::get_masses() {
     return masses;
 }
 
-std::vector<scalar> FEM_Dynamic::get_massses_inv() {
+std::vector<scalar> FEM_Dynamic_Generic::get_massses_inv() {
     const int n = _ps->nb_particles();
     std::vector<scalar> inv_masses(n);
     for (int i = 0; i < n; ++i) {
@@ -119,7 +119,7 @@ std::vector<scalar> FEM_Dynamic::get_massses_inv() {
     return inv_masses;
 }
 
-std::vector<scalar> FEM_Dynamic::get_velocity_norm() {
+std::vector<scalar> FEM_Dynamic_Generic::get_velocity_norm() {
     const int n = _ps->nb_particles();
     std::vector<scalar> velocities(n);
     for (int i = 0; i < n; ++i) {
@@ -129,7 +129,7 @@ std::vector<scalar> FEM_Dynamic::get_velocity_norm() {
     return velocities;
 }
 
-std::vector<scalar> FEM_Dynamic::get_displacement_norm() {
+std::vector<scalar> FEM_Dynamic_Generic::get_displacement_norm() {
     const int n = _ps->nb_particles();
     std::vector<scalar> displacement(n);
     for (int i = 0; i < n; ++i) {
@@ -139,7 +139,7 @@ std::vector<scalar> FEM_Dynamic::get_displacement_norm() {
     return displacement;
 }
 
-std::vector<scalar> FEM_Dynamic::get_stress_vertices() {
+std::vector<scalar> FEM_Dynamic_Generic::get_stress_vertices() {
     std::vector<scalar> smooth_stress(_ps->nb_particles(), 0.);
     for (auto &it: e_fems) {
         Element type = it.first;
@@ -162,7 +162,7 @@ std::vector<scalar> FEM_Dynamic::get_stress_vertices() {
 }
 
 
-void FEM_Dynamic::build_dynamic() {
+void FEM_Dynamic_Generic::build_dynamic() {
     for (Particle *p: _ps->particles()) {
         p->mass = 0;
     }

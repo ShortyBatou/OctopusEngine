@@ -16,7 +16,7 @@ std::string FEM_DataDisplay::Type_To_Str(const Type mode) {
 }
 
 void FEM_DataDisplay::init() {
-    _fem_dynamic = entity()->get_component<FEM_Dynamic>();
+    _fem_dynamic = entity()->get_component<FEM_Dynamic_Generic>();
     _mesh = entity()->get_component<Mesh>();
     assert(_fem_dynamic);
 }

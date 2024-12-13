@@ -73,7 +73,7 @@ struct MG_VBD_FEM final : VBD_Object {
 
     void plot_residual(VertexBlockDescent *ps, Grid_Level* grid, scalar dt, int id) ;
     scalar compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const;
-    std::vector<Vector3> compute_forces(VertexBlockDescent *ps, Grid_Level* grid, scalar dt) const ;
+    std::vector<Vector3> compute_forces(VertexBlockDescent *ps, const Grid_Level* grid, scalar dt) const ;
 
     // int i = vertex index for ids
     void solve_vertex(VertexBlockDescent *ps, Grid_Level *grid, scalar dt, int i);

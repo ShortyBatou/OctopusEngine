@@ -13,8 +13,11 @@
 #include "Dynamic/FEM/FEM_Generic_Force.h"
 #include "Script/Dynamic/ParticleSystemDynamic.h"
 
-struct FEM_Dynamic : ParticleSystemDynamic {
-    FEM_Dynamic(const scalar density, const Mass_Distribution m_distrib, const scalar young,const scalar poisson,const Material material,const int sub_iteration = 30)
+
+
+
+struct FEM_Dynamic_Generic : ParticleSystemDynamic {
+    FEM_Dynamic_Generic(const scalar density, const Mass_Distribution m_distrib, const scalar young,const scalar poisson,const Material material,const int sub_iteration = 30)
         : ParticleSystemDynamic(density), _density(density),_m_distrib(m_distrib), _young(young), _poisson(poisson), _sub_iteration(sub_iteration), _material(material) {
     }
 

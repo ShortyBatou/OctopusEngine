@@ -5,7 +5,7 @@
 #include "Dynamic/PBD/PositionBasedDynamic.h"
 #include "Script/Dynamic/FEM_Dynamic.h"
 
-class XPBD_FEM_Dynamic : public FEM_Dynamic {
+class XPBD_FEM_Dynamic : public FEM_Dynamic_Generic {
 public:
     XPBD_FEM_Dynamic(const scalar density, Mass_Distribution m_distrib,
                      const scalar young, const scalar poisson,
@@ -13,7 +13,7 @@ public:
                      const int iteration = 1, const int sub_iteration = 30,
                      const scalar global_damping = 0, const bool coupled = false,
                      const PBDSolverType type = GaussSeidel)
-    : FEM_Dynamic(density, m_distrib, young, poisson, material, sub_iteration),
+    : FEM_Dynamic_Generic(density, m_distrib, young, poisson, material, sub_iteration),
     _global_damping(global_damping), _iteration(iteration), _type(type), _coupled_fem(coupled) {
     }
 

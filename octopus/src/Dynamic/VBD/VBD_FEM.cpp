@@ -71,21 +71,17 @@ void VBD_FEM::plot_residual(VertexBlockDescent *vbd, const scalar dt) {
     const scalar e = compute_energy(vbd);
     const std::vector<Vector3> forces = compute_forces(vbd, dt);
     scalar sum = 0;
-    scalar total = 0;
     for (int i = 0; i < nb_vertices; ++i) {
         const Particle *p = vbd->get(i);
         if (p->active) {
-            total++;
-            sum += glm::dot(forces[i], forces[i]);
-            //Debug::SetColor(ColorBase::Red());
-            //Debug::Line(p->position, p->position + forces[i]);
+            sum += glm::length(forces[i]);
         }
     }
-    sum /= total;
-    DebugUI::Begin("Energy");
-    DebugUI::Plot("energy", e, 200);
-    DebugUI::Range("range", e);
-    DebugUI::End();
+
+    //DebugUI::Begin("Energy");
+    //DebugUI::Plot("energy", e, 200);
+    //DebugUI::Range("range", e);
+    //DebugUI::End();
 
     DebugUI::Begin("Forces");
     DebugUI::Value("Forces val", sum);
@@ -116,7 +112,7 @@ scalar VBD_FEM::compute_energy(VertexBlockDescent *vbd) const {
 
 std::vector<Vector3> VBD_FEM::compute_forces(VertexBlockDescent *vbd, const scalar dt) const {
     std::vector forces(vbd->nb_particles(), Unit3D::Zero());
-    const int &nb_vert_elem = _shape->nb;
+    const int nb_vert_elem = _shape->nb;
     const int nb_quadrature = _shape->nb_quadratures();
     for (int e = 0; e < _topology.size(); e += _shape->nb) {
         const int eid = e / _shape->nb;
@@ -137,7 +133,7 @@ std::vector<Vector3> VBD_FEM::compute_forces(VertexBlockDescent *vbd, const scal
     }
     for (int i = 0; i < vbd->nb_particles(); ++i) {
         const Particle *p = vbd->get(i);
-        forces[i] += -p->mass / (dt * dt) * (p->position - _y[i]);
+        forces[i] -= p->mass / (dt * dt) * (p->position - _y[i]);
     }
     return forces;
 }

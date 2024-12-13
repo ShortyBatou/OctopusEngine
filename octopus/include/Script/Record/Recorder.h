@@ -73,7 +73,7 @@ public:
     }
 
     void init(Entity *entity) override {
-        fem_dynamic = entity->get_component<FEM_Dynamic>();
+        fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
     }
 
     void print() override {
@@ -86,7 +86,7 @@ public:
     void add_data_json(std::ofstream &json) override;
 
 private:
-    FEM_Dynamic *fem_dynamic;
+    FEM_Dynamic_Generic *fem_dynamic;
 };
 
 
@@ -159,7 +159,7 @@ public:
 protected:
     std::string _file_name;
     ParticleSystem *_ps;
-    FEM_Dynamic *_fem_dynamic;
+    FEM_Dynamic_Generic *_fem_dynamic;
     Mesh *_mesh;
 };
 

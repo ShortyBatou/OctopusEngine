@@ -116,7 +116,7 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({10,15});
+    _max_it = std::vector<int>({5,5});
     _it_count = 0;
     _current_grid = 1;
     // init neighboors for each particle (same for each level)
@@ -187,10 +187,14 @@ void MG_VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
 
 void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     _it_count++;
+    int last_grid = _current_grid;
     while(_it_count > _max_it[_current_grid]) {
         _it_count = 1;
-        interpolate(ps, dt);
         _current_grid = (_current_grid + 1) % static_cast<int>(_grids.size());
+    }
+
+    if(last_grid != _current_grid) {
+        interpolate(ps, dt);
     }
 
     Grid_Level *grid = _grids[_current_grid];
@@ -199,23 +203,20 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
     for (const int id: grid->_ids) {
         if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
     }
+
     interpolate(ps, dt);
     plot_residual(ps, _grids[0], dt, 0);
 }
 
 void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id) {
-    const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(ps, grid, dt);
     scalar sum = 0;
-    scalar total = 0;
-    for (int i = 0; i < nb_vertices; ++i) {
-        const Particle *p = ps->get(i);
-        if (p->active) {
-            total++;
-            sum += glm::dot(forces[i], forces[i]);
+    for (const int i : grid->_ids) {
+        if (const Particle *p = ps->get(i); p->active) {
+            sum += glm::length(forces[i]);
         }
     }
-    sum /= total;
+
     DebugUI::Begin(std::to_string(id) + " MG Forces ");
     DebugUI::Value(std::to_string(id) + " MG Forces val ", sum);
     DebugUI::Plot(std::to_string(id) + " MG Forces norm", sum, 200);
@@ -224,16 +225,14 @@ void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar
 }
 
 scalar MG_VBD_FEM::compute_energy(VertexBlockDescent *ps, Grid_Level* grid) const {
-    // can wait
     return 0;
 }
 
-std::vector<Vector3> MG_VBD_FEM::compute_forces(VertexBlockDescent *ps, Grid_Level* grid, scalar dt) const {
+std::vector<Vector3> MG_VBD_FEM::compute_forces(VertexBlockDescent *ps, const Grid_Level* grid, const scalar dt) const {
     std::vector forces(ps->nb_particles(), Unit3D::Zero());
     const int global_nb_vert_elem = _shape->nb; // global size
     const int nb_vert_elem = grid->_shape->nb;
     const int nb_quadrature = grid->_shape->nb_quadratures(); // nb quadrature for this grid
-
     for (int e = 0; e < _topology.size(); e += global_nb_vert_elem) {
         const int eid = e / global_nb_vert_elem; // element id
         for (int i = 0; i < nb_quadrature; ++i) {
@@ -251,9 +250,10 @@ std::vector<Vector3> MG_VBD_FEM::compute_forces(VertexBlockDescent *ps, Grid_Lev
             }
         }
     }
-    for (int i = 0; i < ps->nb_particles(); ++i) {
-        const Particle *p = ps->get(i);
-        forces[i] += -p->mass / (dt * dt) * (p->position - _y[i]);
+
+    for (const int id : grid->_ids) {
+        const Particle *p = ps->get(id);
+        forces[id] -= grid->_masses[id] / (dt * dt) * (p->position - _y[id]);
     }
     return forces;
 }
@@ -335,7 +335,6 @@ void MG_VBD_FEM::interpolate(VertexBlockDescent *ps, scalar dt) {
     if(_current_grid == 1) {
         _interpolation->prolongation(ps, _y);
     }
-
     // restriction is implicit (injection)
 }
 

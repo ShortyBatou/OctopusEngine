@@ -1,5 +1,7 @@
 #include "Dynamic/PBD/XPBD_FEM_Generic.h"
 
+#include <Manager/Input.h>
+
 void XPBD_FEM_Generic::init(const std::vector<Particle*>& particles) {
     build(get_particles(particles));
 }
