@@ -7,7 +7,11 @@ file(GLOB_RECURSE cuda_files "*.cu")
 file(GLOB_RECURSE cpp_files "*.cpp")
 add_executable(${OCTOPUS} main.cu ${cuda_files} ${cpp_files})
 
+set_property(TARGET ${OCTOPUS} PROPERTY CUDA_ARCHITECTURES native)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -dlto")
 set_target_properties(${OCTOPUS} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET ${OCTOPUS} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 target_compile_options(${OCTOPUS} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: --extended-lambda --default-stream per-thread>)
 
 target_compile_features(${OCTOPUS} PUBLIC cxx_std_17)

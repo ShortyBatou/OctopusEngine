@@ -1,5 +1,6 @@
 #include "GPU/GPU_FEM.h"
 #include <GPU/CUMatrix.h>
+#include "GPU/GPU_FEM_Material.h"
 
 __device__ Matrix3x3 get_strain_linear(const Matrix3x3& F) {
     return 0.5f * (glm::transpose(F) + F) - Matrix3x3(1.f);
@@ -10,22 +11,22 @@ __device__ Matrix3x3 get_strain(const Matrix3x3& F) {
     return 0.5f * (glm::transpose(F) * F - Matrix3x3(1.f));
 }
 
-__device__ void hooke_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 &P) {
+__device__ Matrix3x3 hooke_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu) {
     const Matrix3x3 E = get_strain_linear(F);
-    P =  Matrix3x3(lambda * mat3x3_trace(E)) + mu * E;
+    return  Matrix3x3(lambda * mat3x3_trace(E)) + mu * E;
 }
 
-__device__ void stvk_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 &P) {
+__device__ Matrix3x3 stvk_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu) {
     const Matrix3x3 E = get_strain(F);
     const scalar trace = mat3x3_trace(E);
-    P = lambda * trace * F + 2.f * mu * F * E;
+    return lambda * trace * F + 2.f * mu * F * E;
 }
 
-__device__ void snh_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 &P) {
+__device__ Matrix3x3 snh_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu) {
     const scalar I_3 = glm::determinant(F);
     const Matrix3x3 d_detF = mat3x3_com(F);
     const scalar alpha = 1.f + (mu / lambda);
-    P = lambda * (I_3 - alpha) * d_detF + mu * F;
+    return lambda * (I_3 - alpha) * d_detF + mu * F;
 }
 
 __device__ void hooke_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
@@ -94,13 +95,14 @@ __device__ void snh_hessian(const Matrix3x3 &F, const scalar lambda, const scala
             d2W_dF2[i * 3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 }
 
-__device__ void eval_stress(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 &P) {
+__device__ Matrix3x3 eval_stress(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F) {
     switch (material) {
-        case Hooke : hooke_stress(F, lambda, mu, P); break;
-        case StVK : stvk_stress(F, lambda, mu, P); break;
-        case NeoHooke : snh_stress(F, lambda, mu, P); break;
-        case Stable_NeoHooke : snh_stress(F, lambda, mu, P); break;
+        case Hooke : return hooke_stress(F, lambda, mu);
+        case StVK : return stvk_stress(F, lambda, mu);
+        case NeoHooke : return snh_stress(F, lambda, mu);
+        case Stable_NeoHooke : return snh_stress(F, lambda, mu);
     }
+    return Matrix3x3(0.f);
 }
 
 __device__ void eval_hessian(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 d2W_dF2[9]) {

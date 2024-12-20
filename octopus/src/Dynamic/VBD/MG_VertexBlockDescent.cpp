@@ -116,7 +116,7 @@ MG_VBD_FEM::MG_VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geo
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
     _topology = topology;
-    _max_it = std::vector<int>({5,5});
+    _max_it = std::vector<int>({15,15});
     _it_count = 0;
     _current_grid = 1;
     // init neighboors for each particle (same for each level)
@@ -204,8 +204,8 @@ void MG_VBD_FEM::solve(VertexBlockDescent *ps, const scalar dt) {
         if(ps->get(id)->active) solve_vertex(ps, grid, dt, id);
     }
 
-    interpolate(ps, dt);
-    plot_residual(ps, _grids[0], dt, 0);
+    //interpolate(ps, dt);
+    //plot_residual(ps, _grids[0], dt, 0);
 }
 
 void MG_VBD_FEM::plot_residual(VertexBlockDescent *ps, Grid_Level* grid,  scalar dt, const int id) {
@@ -347,6 +347,7 @@ void MG_VertexBlockDescent::step(const scalar dt) {
         scalar omega = 0;
         for (int j = 0; j < _iteration; ++j) {
             for(VBD_Object* obj : _objs) obj->solve(this, sub_dt);
+            for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
             chebyshev_acceleration(j, omega);
             //for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
         }

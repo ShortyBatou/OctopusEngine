@@ -2,7 +2,6 @@
 #include "GPU/GPU_FEM_Material.h"
 #include <GPU/CUMatrix.h>
 
-
 __global__ void kernel_solve(
     // nb_thread, nb quadrature per elements, nb vertices in element
     const int n, const int nb_quadrature, const int elem_nb_verts,
@@ -41,22 +40,22 @@ __global__ void kernel_solve(
     const int qv_off = qid * elem_nb_verts;
 
     Matrix3x3 Jx(0.f);
-    Matrix3x3 d2W_dF2[9];
-    Matrix3x3 P;
+    Vector3 fi(0.f);
 
     for (int i = 0; i < elem_nb_verts; ++i) {
         Jx += glm::outerProduct(p[topo[i]], dN[qv_off + i]);
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
 
-    eval_stress(material, lambda, mu, F, P);
-    eval_hessian(material, lambda, mu, F, d2W_dF2);
+    const Matrix3x3 P = eval_stress(material, lambda, mu, F);
 
     const Vector3 dF_dx = glm::transpose(JX_inv[qe_off]) * dN[qv_off + r_vid];
     // Compute force at vertex i
     Vector3 fi = -P * dF_dx * V[qe_off];
 
     // assemble hessian
+    Matrix3x3 d2W_dF2[9];
+    eval_hessian(material, lambda, mu, F, d2W_dF2);
     Matrix3x3 H;
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < 3; ++i) {
@@ -69,7 +68,8 @@ __global__ void kernel_solve(
             H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V[qe_off];
         }
     }
-    fi -= damping * H * v[vid];
+    //Matrix3x3 H2 = glm::outerProduct(fi, fi);
+    fi -= damping * H * v[vid];/**/
 
     // shared variable : f, H
     __shared__ Vector3 s_f_H[256]; // size = block_size * 12 * sizeof(float)

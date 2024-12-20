@@ -58,8 +58,7 @@ __global__ void kernel_solve(
         Jx += glm::outerProduct(p[topo[i]], dN[qv_off + i]);
     }
     const Matrix3x3 F = Jx * JX_inv[qe_off];
-    Matrix3x3 P;
-    eval_stress(material, lambda, mu, F, P);
+    Matrix3x3 P = eval_stress(material, lambda, mu, F);
     eval_hessian(material, lambda, mu, F, d2W_dF2);
 
 

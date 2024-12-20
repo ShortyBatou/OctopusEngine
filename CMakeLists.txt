@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.13)
 project (octopus-engine LANGUAGES CXX CUDA)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CUDA_STANDARD 17)
@@ -12,9 +12,6 @@ string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 #add_compile_options(-Wno-narrowing)
 
-# Options
-option(TOBANTEGAMING_TEMPLATE_OPENGL_EXAMPLES  "Build examples" ON)
-option(TOBANTEGAMING_TEMPLATE_OPENGL_TESTS     "Build unit tests" ON)
 
 # CMake setup
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
