@@ -22,11 +22,12 @@ void Cuda_XPBD_FEM_Dynamic::build_dynamics()
 {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        if(_coupled_fem)
-            _gpu_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson, _material);
-        else
-            _gpu_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
 
+        if(_coupled_fem)
+            _gpu_xpbd_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson, _material);
+        else
+           _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
+        _gpu_fems[e] = _gpu_xpbd_fems[e];
         // create CUDA PBD Gauss-Seidel
         _gpu_ps->add_dynamics(_gpu_fems[e]);
     }
@@ -38,14 +39,14 @@ void Cuda_XPBD_FEM_Dynamic::update() {
         // coloration
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
-            const int nb_color = static_cast<int>(_gpu_fems[e]->colors.size());
+            const int nb_color = static_cast<int>(_gpu_xpbd_fems[e]->colors.size());
             std::vector<Color> color_map(nb_color);
             for(auto & c : color_map) {
                 c = ColorBase::HSL2RGB(Random::Range(0.f,360.f), Random::Range(42.f,98.f), Random::Range(40.f,90.f));
             }
             _display_colors[e].resize(nb_color);
             for(int i = 0; i < nb_color; ++i) {
-                _display_colors[e][i] = color_map[_gpu_fems[e]->colors[i]];
+                _display_colors[e][i] = color_map[_gpu_xpbd_fems[e]->colors[i]];
             }
         }
     }

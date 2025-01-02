@@ -6,7 +6,7 @@
 class ConstantForce_Controller : public Component {
 public:
 	ConstantForce_Controller(const Vector3& pmin, const Vector3& pmax, const Vector3& force)
-	: _force(force), _pmin(pmin), _pmax(pmax), _multiplier(0.f),_fixation(nullptr), _cf(nullptr)  { }
+	: _force(force), _multiplier(0.f), _pmin(pmin), _pmax(pmax),_fixation(nullptr), _cf(nullptr)  { }
 
 	void late_init() override;
 

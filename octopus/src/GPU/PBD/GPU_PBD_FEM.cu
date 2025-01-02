@@ -1,11 +1,10 @@
 #include "GPU/PBD/GPU_PBD_FEM.h"
 #include <Manager/Debug.h>
 #include <GPU/PBD/GPU_PBD_FEM_Materials.h>
-#include <GPU/CUMatrix.h>
 #include <GPU/GPU_FEM.h>
 
 
-__device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, scalar* inv_mass, int* topology, Vector3* p, int* mask)
+__device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, const scalar* inv_mass, const int* topology, Vector3* p, const int* mask)
 {
     scalar sum_norm_grad = 0.f;
     for (int i = 0; i < nb_vert_elem; ++i) {
@@ -15,12 +14,14 @@ __device__ void xpbd_solve(const int nb_vert_elem, const scalar stiffness, const
     const scalar alpha = 1.f / (stiffness * dt * dt);
     const scalar dt_lambda = -C / (sum_norm_grad + alpha);
     for (int i = 0; i < nb_vert_elem; ++i) {
-        int vid = topology[i];
+        const int vid = topology[i];
         if(mask[vid] == 1) p[vid] += dt_lambda * inv_mass[vid] * grad_C[i];
     }
 }
 
-__device__ void xpbd_constraint_fem_eval(const Material material, const int m, const scalar lambda, const scalar mu, const int nb_vert_elem, const Matrix3x3& Jx_inv, const scalar& V, Vector3* dN, Vector3* p, int* topology, scalar& C, Vector3* grad_C)
+__device__ void xpbd_constraint_fem_eval(
+    const Material material, const int m, const scalar lambda, const scalar mu,
+    const int nb_vert_elem, const Matrix3x3& Jx_inv, const scalar& V, const Vector3* dN, const Vector3* p, const int* topology, scalar& C, Vector3* grad_C)
 {
 
     const Matrix3x3 Jx = compute_transform(nb_vert_elem, p, topology, dN);
@@ -49,53 +50,43 @@ __device__ void xpbd_convert_to_constraint(const int nb_vert_elem, scalar& C, Ve
 }
 
 __global__ void kernel_XPBD_V0(
-    const int n, const int nb_quadrature, const int nb_vert_elem, const scalar dt, // some global data
-    const scalar stiffness_1, const scalar stiffness_2, const Material material, // material
-    const int offset, // coloration
-    Vector3* cb_dN,
-    Vector3 *cb_p, int *cb_topology, // mesh
-    scalar *inv_mass, int* mask,
-    scalar *cb_V, Matrix3x3 *cb_JX_inv // element data (Volume * Weight, Inverse of initial jacobian)
-)
+    const int n, const int offset, const scalar dt, const int* eids,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps,
+    GPU_FEM_Pameters fem)
 {
 
     const int tid = blockIdx.x * blockDim.x + threadIdx.x; // thread it
     if (tid >= n) return;
-    const int eid = tid + offset / nb_vert_elem;
-    const int vid = tid * nb_vert_elem + offset; // first vertice id in topology
-    const int qid = eid * nb_quadrature;
-    int* topology = cb_topology+vid;
+    const int eid = eids[tid + offset];
+    const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
+    const int qid = eid * fem.nb_quadrature;
+    int* topology = fem.topology+vid;
     for(int m = 0; m < 2; ++m) // nb materials
     {
         Vector3 grad_C[32];
         scalar C = 0.f;
-        for (int j = 0; j < nb_vert_elem; ++j)
+        for (int j = 0; j < fem.elem_nb_vert; ++j)
             grad_C[j] = Vector3(0, 0, 0);
 
-        for (int q = 0; q < nb_quadrature; ++q) { // must be possible to do in parrallel
-            Matrix3x3 JX_inv = cb_JX_inv[qid + q];
-            scalar V = cb_V[qid + q];
-            Vector3* dN = cb_dN + q * nb_vert_elem;
-            xpbd_constraint_fem_eval(material, m, stiffness_1, stiffness_2, nb_vert_elem, JX_inv, V, dN, cb_p, topology, C, grad_C);
+        for (int q = 0; q < fem.nb_quadrature; ++q) { // must be possible to do in parrallel
+            Matrix3x3 JX_inv = fem.JX_inv[qid + q];
+            scalar V = fem.V[qid + q];
+            Vector3* dN = fem.dN + q * fem.elem_nb_vert;
+            xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, C, grad_C);
         }
 
-        xpbd_convert_to_constraint(nb_vert_elem, C, grad_C);
+        xpbd_convert_to_constraint(fem.elem_nb_vert, C, grad_C);
         if(C < 1e-12f) continue;
 
-        xpbd_solve(nb_vert_elem,(m==0)?stiffness_1:stiffness_2, dt, C, grad_C, inv_mass, topology, cb_p, mask);
+        xpbd_solve(fem.elem_nb_vert,(m==0)?mt.lambda:mt.mu, dt, C, grad_C, ps.w, topology, ps.p, ps.mask);
     }
 }
 
-void GPU_PBD_FEM::step(const GPU_ParticleSystem* ps, const scalar dt) {
-    for (int j = 0; j < c_offsets.size(); ++j) {
-        kernel_XPBD_V0<<<c_nb_elem[j],nb_quadrature>>>(c_nb_elem[j], nb_quadrature, elem_nb_vert, dt,
-                                                       lambda, mu, _material,
-                                                      c_offsets[j],
-                                                      cb_dN->buffer,
-                                                      ps->buffer_position(), cb_topology->buffer,
-                                                      ps->buffer_inv_mass(), ps->buffer_mask(),
-                                                      cb_V->buffer, cb_JX_inv->buffer);
-
-
+void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
+    for (int j = 0; j < d_thread->nb_kernel; ++j) {
+        kernel_XPBD_V0<<<d_thread->grid_size[j], d_thread->block_size[j]>>>(
+            d_thread->nb_threads[j], d_thread->offsets[j], dt,
+            cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters());
     }
 }

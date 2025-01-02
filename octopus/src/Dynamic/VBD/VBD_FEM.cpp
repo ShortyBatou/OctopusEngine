@@ -1,5 +1,8 @@
 #pragma once
 #include <random>
+#include <set>
+#include <Dynamic/FEM/FEM_Generic.h>
+
 #include "Core/Base.h"
 #include "Dynamic/Base/ParticleSystem.h"
 #include "Dynamic/FEM/FEM_ContinuousMaterial.h"
@@ -14,44 +17,31 @@ void VBD_FEM::compute_inertia(VertexBlockDescent* vbd, const scalar dt) {
     }
 }
 
-VBD_FEM::VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, FEM_Shape *shape,
-                 FEM_ContinuousMaterial *material, const scalar k_damp) : _k_damp(k_damp), _topology(topology), _material(material), _shape(shape) {
+VBD_FEM::VBD_FEM(const Mesh::Topology &topology, const Mesh::Geometry &geometry, const Element e,
+                 FEM_ContinuousMaterial *material, const scalar k_damp) : _k_damp(k_damp), _material(material) {
     _owners.resize(geometry.size());
     _ref_id.resize(geometry.size());
-    build_fem_const(topology, geometry);
+    data = build_data(topology, geometry, e);
     build_neighboors(topology);
     _y = geometry;
 }
 
 void VBD_FEM::build_neighboors(const Mesh::Topology &topology) {
-    for (int i = 0; i < topology.size(); i += _shape->nb) {
-        for (int j = 0; j < _shape->nb; ++j) {
-            _owners[topology[i + j]].push_back(i / _shape->nb);
+    for (int i = 0; i < topology.size(); i += data->shape->nb) {
+        for (int j = 0; j <  data->shape->nb; ++j) {
+            _owners[topology[i + j]].push_back(i /  data->shape->nb);
             _ref_id[topology[i + j]].push_back(j);
         }
     }
 }
 
-void VBD_FEM::build_fem_const(const Mesh::Topology &topology, const Mesh::Geometry &geometry) {
-    const int nb_quadrature = _shape->nb_quadratures();
-    const int nb_element = static_cast<int>(topology.size()) / _shape->nb;
-
-    JX_inv.resize(nb_element);
-    V.resize(nb_element);
-
-    for (int i = 0; i < nb_element; i++) {
-        const int id = i * _shape->nb;
-        V[i].resize(nb_quadrature);
-        JX_inv[i].resize(nb_quadrature);
-        for (int j = 0; j < nb_quadrature; ++j) {
-            Matrix3x3 J = Matrix::Zero3x3();
-            for (int k = 0; k < _shape->nb; ++k) {
-                J += glm::outerProduct(geometry[topology[id + k]], _shape->dN[j][k]);
-            }
-            V[i][j] = abs(glm::determinant(J)) * _shape->weights[j];
-            JX_inv[i][j] = glm::inverse(J);
-        }
-    }
+VBD_FEM_Data* VBD_FEM::build_data(const Mesh::Topology &topology, const Mesh::Geometry &geometry, const Element e) {
+    std::vector<std::vector<Matrix3x3>> JX_inv;
+    std::vector<std::vector<scalar>> V;
+    get_fem_const(e, geometry,topology, JX_inv, V);
+    std::set<int> s_ids(topology.begin(), topology.end());
+    const std::vector<int> ids(s_ids.begin(), s_ids.end());
+    return new VBD_FEM_Data(get_fem_shape(e), topology, JX_inv, V, ids);
 }
 
 void VBD_FEM::solve(VertexBlockDescent *vbd, const scalar dt) {
@@ -60,85 +50,14 @@ void VBD_FEM::solve(VertexBlockDescent *vbd, const scalar dt) {
     std::iota(ids.begin(), ids.end(), 0);
     //std::shuffle(ids.begin(), ids.end(), std::mt19937());
     for (int i = 0; i < nb_vertices; ++i) {
-        if (vbd->get(ids[i])->active) solve_vertex(vbd, dt, ids[i]);
+        Particle* p = vbd->get(i);
+        if (p->active) solve_vertex(vbd, dt, ids[i], p->mass);
     }
     plot_residual(vbd, dt);
 }
 
-void VBD_FEM::plot_residual(VertexBlockDescent *vbd, const scalar dt) {
-    // compute error
-    const int nb_vertices = static_cast<int>(_owners.size());
-    const scalar e = compute_energy(vbd);
-    const std::vector<Vector3> forces = compute_forces(vbd, dt);
-    scalar sum = 0;
-    for (int i = 0; i < nb_vertices; ++i) {
-        const Particle *p = vbd->get(i);
-        if (p->active) {
-            sum += glm::length(forces[i]);
-        }
-    }
 
-    //DebugUI::Begin("Energy");
-    //DebugUI::Plot("energy", e, 200);
-    //DebugUI::Range("range", e);
-    //DebugUI::End();
-
-    DebugUI::Begin("Forces");
-    DebugUI::Value("Forces val", sum);
-    DebugUI::Plot("Forces norm", sum, 200);
-    DebugUI::Range("Forces range", sum);
-    DebugUI::End();
-}
-
-scalar VBD_FEM::compute_energy(VertexBlockDescent *vbd) const {
-    scalar energy = 0;
-    const int &nb_vert_elem = _shape->nb;
-    const int nb_quadrature = _shape->nb_quadratures();
-    for (int e = 0; e < _topology.size(); e += _shape->nb) {
-        const int eid = e / _shape->nb;
-        for (int i = 0; i < nb_quadrature; ++i) {
-            Matrix3x3 Jx = Matrix::Zero3x3();
-            for (int j = 0; j < nb_vert_elem; ++j) {
-                const int vid = _topology[eid * nb_vert_elem + j];
-                Jx += glm::outerProduct(vbd->get(vid)->position, _shape->dN[i][j]);
-            }
-
-            Matrix3x3 F = Jx * JX_inv[eid][i];
-            energy += _material->get_energy(F) * V[eid][i];
-        }
-    }
-    return energy;
-}
-
-std::vector<Vector3> VBD_FEM::compute_forces(VertexBlockDescent *vbd, const scalar dt) const {
-    std::vector forces(vbd->nb_particles(), Unit3D::Zero());
-    const int nb_vert_elem = _shape->nb;
-    const int nb_quadrature = _shape->nb_quadratures();
-    for (int e = 0; e < _topology.size(); e += _shape->nb) {
-        const int eid = e / _shape->nb;
-        for (int i = 0; i < nb_quadrature; ++i) {
-            Matrix3x3 Jx = Matrix::Zero3x3();
-            for (int j = 0; j < nb_vert_elem; ++j) {
-                const int vid = _topology[eid * nb_vert_elem + j];
-                Jx += glm::outerProduct(vbd->get(vid)->position, _shape->dN[i][j]);
-            }
-
-            Matrix3x3 F = Jx * JX_inv[eid][i];
-            Matrix3x3 P = _material->get_pk1(F) * glm::transpose(JX_inv[eid][i]) * V[eid][i];
-            for (int j = 0; j < nb_vert_elem; ++j) {
-                const int vid = _topology[eid * nb_vert_elem + j];
-                forces[vid] -= P * _shape->dN[i][j];
-            }
-        }
-    }
-    for (int i = 0; i < vbd->nb_particles(); ++i) {
-        const Particle *p = vbd->get(i);
-        forces[i] -= p->mass / (dt * dt) * (p->position - _y[i]);
-    }
-    return forces;
-}
-
-void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int vid) {
+void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int vid, scalar mass) {
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
@@ -156,8 +75,8 @@ void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int v
     H_i += _k_damp / dt * H_i;
 
     // Inertia
-    f_i -= p->mass / (dt * dt) * (p->position - _y[vid]);
-    H_i += Matrix3x3(p->mass / (dt * dt));
+    f_i -= mass / (dt * dt) * (p->position - _y[vid]);
+    H_i += Matrix3x3(mass / (dt * dt));
 
     const scalar detH = abs(glm::determinant(H_i));
     const Vector3 dx = detH > eps ? glm::inverse(H_i) * f_i : Unit3D::Zero();
@@ -165,26 +84,132 @@ void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int v
 }
 
 void VBD_FEM::solve_element(VertexBlockDescent *ps, const int eid, const int ref_id, Vector3 &f_i, Matrix3x3 &H_i) {
-    const int nb_quadrature = _shape->nb_quadratures();
-    const int nb_vert_elem = _shape->nb;
+    const int nb_quadrature = data->shape->nb_quadratures();
+    const int nb_vert_elem = data->shape->nb;
     std::vector<Matrix3x3> d2Psi_dF2(9);
     for (int i = 0; i < nb_quadrature; ++i) {
         Matrix3x3 Jx = Matrix::Zero3x3();
         for (int j = 0; j < nb_vert_elem; ++j) {
-            const int vid = _topology[eid * nb_vert_elem + j];
-            Jx += glm::outerProduct(ps->get(vid)->position, _shape->dN[i][j]);
+            const int vid = data->topology[eid * nb_vert_elem + j];
+            Jx += glm::outerProduct(ps->get(vid)->position, data->shape->dN[i][j]);
         }
 
-        Matrix3x3 F = Jx * JX_inv[eid][i];
-        Vector3 dF_dx = glm::transpose(JX_inv[eid][i]) * _shape->dN[i][ref_id];
+        Matrix3x3 F = Jx * data->JX_inv[eid][i];
+        Vector3 dF_dx = glm::transpose(data->JX_inv[eid][i]) * data->shape->dN[i][ref_id];
 
         // compute force
         Matrix3x3 P = _material->get_pk1(F);
-        f_i -= P * dF_dx * V[eid][i];
+        f_i -= P * dF_dx * data->V[eid][i];
 
         _material->get_sub_hessian(F, d2Psi_dF2);
-        H_i += assemble_hessian(d2Psi_dF2, dF_dx) * V[eid][i];
+        H_i += assemble_hessian(d2Psi_dF2, dF_dx) * data->V[eid][i];
     }
+}
+
+
+void VBD_FEM::plot_residual(VertexBlockDescent *vbd, const scalar dt) {
+    // compute error
+    const int nb_vertices = static_cast<int>(_owners.size());
+    const std::vector<Vector3> forces = compute_forces(vbd, dt);
+    scalar sum = 0;
+    for (int i = 0; i < nb_vertices; ++i) {
+        const Particle *p = vbd->get(i);
+        if (p->active) {
+            sum += glm::length(forces[i]);
+        }
+    }
+
+    DebugUI::Begin("Forces");
+    DebugUI::Value("Forces val", sum);
+    DebugUI::Plot("Forces norm", sum, 200);
+    DebugUI::Range("Forces range", sum);
+    DebugUI::End();
+}
+
+std::vector<Vector3> VBD_FEM::compute_forces(VertexBlockDescent *vbd, const scalar dt) const {
+    std::vector forces(vbd->nb_particles(), Unit3D::Zero());
+    const int nb_vert_elem = data->shape->nb;
+    const int nb_quadrature = data->shape->nb_quadratures();
+    for (int e = 0; e < data->topology.size(); e += nb_vert_elem) {
+        const int eid = e / nb_vert_elem;
+        for (int i = 0; i < nb_quadrature; ++i) {
+            Matrix3x3 Jx = Matrix::Zero3x3();
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                const int vid = data->topology[eid * nb_vert_elem + j];
+                Jx += glm::outerProduct(vbd->get(vid)->position, data->shape->dN[i][j]);
+            }
+
+            Matrix3x3 F = Jx * data->JX_inv[eid][i];
+            Matrix3x3 P = _material->get_pk1(F) * glm::transpose(data->JX_inv[eid][i]) * data->V[eid][i];
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                const int vid = data->topology[eid * nb_vert_elem + j];
+                forces[vid] -= P * data->shape->dN[i][j];
+            }
+        }
+    }
+    for (int i = 0; i < vbd->nb_particles(); ++i) {
+        const Particle *p = vbd->get(i);
+        forces[i] -= p->mass / (dt * dt) * (p->position - _y[i]);
+    }
+    return forces;
+}
+
+std::vector<scalar> VBD_FEM::compute_stress(VertexBlockDescent *vbd) const
+{
+    const int nb_element = static_cast<int>(data->JX_inv.size());
+    std::vector<scalar> stress(nb_element,0);
+    const int nb_quadrature = data->shape->nb_quadratures();
+    const int nb_vert_elem = data->shape->nb;
+    for(int eid = 0; eid < nb_element; ++eid)
+    {
+        for (int i = 0; i < nb_quadrature; ++i) {
+            Matrix3x3 Jx = Matrix::Zero3x3();
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                const int vid = data->topology[eid * nb_vert_elem + j];
+                Jx += glm::outerProduct(vbd->get(vid)->position, data->shape->dN[i][j]);
+            }
+            Matrix3x3 F = Jx * data->JX_inv[eid][i];
+            // compute force
+            Matrix3x3 P = _material->get_pk1(F);
+            P = ContinuousMaterial::pk1_to_chauchy_stress(F, P);
+            stress[eid] += ContinuousMaterial::von_mises_stress(P) * data->V[eid][i];
+        }
+    }
+    return stress;
+}
+
+std::vector<scalar> VBD_FEM::compute_volume(VertexBlockDescent *vbd) const
+{
+    const int nb_element = static_cast<int>(data->JX_inv.size());
+    std::vector<scalar> volume(nb_element,0);
+    const int nb_quadrature = data->shape->nb_quadratures();
+    const int nb_vert_elem = data->shape->nb;
+    for(int eid = 0; eid < nb_element; ++eid)
+    {
+        for (int i = 0; i < nb_quadrature; ++i) {
+            Matrix3x3 Jx = Matrix::Zero3x3();
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                const int vid = data->topology[eid * nb_vert_elem + j];
+                Jx += glm::outerProduct(vbd->get(vid)->position, data->shape->dN[i][j]);
+            }
+            volume[eid] += abs(glm::determinant(Jx)) * data->shape->weights[i];
+        }
+    }
+    return volume;
+}
+
+std::vector<scalar> VBD_FEM::compute_colume_diff(VertexBlockDescent *vbd) const
+{
+    std::vector<scalar> volume_diff = compute_volume(vbd);
+    const int nb_element = static_cast<int>(data->JX_inv.size());
+    const int nb_quadrature = data->shape->nb_quadratures();
+    for(int eid = 0; eid < nb_element; ++eid)
+    {
+        for (int i = 0; i < nb_quadrature; ++i) {
+            volume_diff[eid] -= data->V[eid][i];
+        }
+    }
+    return volume_diff;
 }
 
 Matrix3x3 VBD_FEM::assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, const Vector3 dF_dx) {

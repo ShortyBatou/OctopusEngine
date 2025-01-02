@@ -2,7 +2,6 @@
 #include "Core/Base.h"
 
 
-
 // global device function
 __device__ scalar mat3x3_trace(const Matrix3x3 &m);
 __device__ Matrix3x3 mat3x3_com(const Matrix3x3 &m);

@@ -22,5 +22,4 @@ struct GPU_PBD final : GPU_ParticleSystem
     ~GPU_PBD() override = default;
 };
 
-__global__ void kernel_velocity_update(int n, float dt, scalar global_damping, Vector3* p, Vector3* prev_p,
-                                       scalar* inv_mass, Vector3* v);
+__global__ void kernel_velocity_update(int n, float dt, scalar global_damping, GPU_ParticleSystem_Parameters ps);

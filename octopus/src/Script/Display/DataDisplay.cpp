@@ -16,9 +16,11 @@ std::string FEM_DataDisplay::Type_To_Str(const Type mode) {
 }
 
 void FEM_DataDisplay::init() {
-    _fem_dynamic = entity()->get_component<FEM_Dynamic_Generic>();
+    _ps_dynamic = entity()->get_component<ParticleSystemDynamics_Getters>();
+    _fem_dynamic = entity()->get_component<FEM_Dynamic_Getters>();
     _mesh = entity()->get_component<Mesh>();
     assert(_fem_dynamic);
+    assert(_ps_dynamic);
 }
 
 
@@ -50,22 +52,22 @@ void FEM_DataDisplay::update() {
     } else if (_mode == Displacement) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _fem_dynamic->get_displacement_norm();
+        std::vector<scalar> data = _ps_dynamic->get_displacement_norm();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Mass) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _fem_dynamic->get_masses();
+        std::vector<scalar> data = _ps_dynamic->get_masses();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Inv_Mass) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _fem_dynamic->get_massses_inv();
+        std::vector<scalar> data = _ps_dynamic->get_massses_inv();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Velocity) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _fem_dynamic->get_velocity_norm();
+        std::vector<scalar> data = _ps_dynamic->get_velocity_norm();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Stress) {
         _graphic->set_multi_color(true);

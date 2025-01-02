@@ -4,22 +4,17 @@
 #include <GPU/GPU_ParticleSystem.h>
 #include <Manager/Dynamic.h>
 
-__global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, const Vector3 g, Vector3 *p,
-                                               Vector3 *prev_p, Vector3 *v, Vector3 *f, scalar *w) {
+__global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
-    prev_p[i] = p[i];
-    v[i] += (g + f[i] * w[i]) * dt;
-    p[i] += v[i] * dt;
-    f[i] *= 0;
+    ps.last_p[i] = ps.p[i];
+    ps.v[i] += (g + ps.f[i] * ps.w[i]) * dt;
+    ps.p[i] += ps.v[i] * dt;
+    ps.f[i] *= 0;
 }
 
 
-void GPU_SemiExplicit::step(const GPU_ParticleSystem *ps, const scalar dt) {
+void GPU_SemiExplicit::step(GPU_ParticleSystem *ps, const scalar dt) {
     const int n = ps->nb_particles();
-    kenerl_semi_exicit_integration<<<(n+255) / 256, 256>>>(n, dt, Dynamic::gravity(),
-                                                     ps->buffer_position(), ps->buffer_prev_position(),
-                                                     ps->buffer_velocity(), ps->buffer_forces(),
-                                                     ps->buffer_inv_mass()
-    );
+    kenerl_semi_exicit_integration<<<(n+31) / 32, 32>>>(n, dt, Dynamic::gravity(), ps->get_parameters());
 }

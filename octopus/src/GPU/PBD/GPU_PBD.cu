@@ -4,15 +4,15 @@
 #include <Manager/Input.h>
 
 // global device function
-__global__ void kernel_velocity_update(const int n, const float dt, const scalar global_damping, Vector3 *p, Vector3 *prev_p, scalar* inv_mass, Vector3 *v) {
+__global__ void kernel_velocity_update(const int n, const float dt, const scalar global_damping, GPU_ParticleSystem_Parameters ps) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
-    v[i] = (p[i] - prev_p[i]) / dt;
-    scalar norm_v = glm::length(v[i]);
+    ps.v[i] = (ps.p[i] - ps.last_p[i]) / dt;
+    scalar norm_v = glm::length(ps.v[i]);
     if (norm_v > 1e-12) {
-        const scalar coef = global_damping * dt * inv_mass[i];
+        const scalar coef = global_damping * dt * ps.w[i];
         const scalar damping = -norm_v * (coef > 1.f ? 1.f : coef);
-        v[i] += glm::normalize(v[i]) * damping;
+        ps.v[i] += glm::normalize(ps.v[i]) * damping;
     }
 }
 
@@ -27,7 +27,6 @@ void GPU_PBD::step(const scalar dt)  {
             constraint->step(this, dt);
     }
 
-    kernel_velocity_update<<<(_nb_particles + 255) / 256, 256>>>(_nb_particles, dt, _global_damping,
-                                                               buffer_position(), buffer_prev_position(), buffer_inv_mass(), buffer_velocity());
+    kernel_velocity_update<<<(_data->_nb_particles + 255) / 256, 256>>>(_data->_nb_particles, dt, _global_damping, get_parameters());
 
 }

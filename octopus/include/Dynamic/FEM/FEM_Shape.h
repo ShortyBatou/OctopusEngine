@@ -674,6 +674,7 @@ struct Hexa_27 final : FEM_Shape {
 
 
 FEM_Shape *get_fem_shape(Element type);
+void get_fem_const(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, std::vector<std::vector<Matrix3x3>>& JX_inv, std::vector<std::vector<scalar>>& V);
 
 
 enum Mass_Distribution

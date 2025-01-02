@@ -15,26 +15,31 @@ GPU_Plane_Fix::GPU_Plane_Fix(const Mesh::Geometry& positions, const Vector3& o, 
         }
     }
     com /= count;
+    all = false;
 }
 
 
 GPU_FEM::GPU_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
-                 const scalar young, const scalar poisson, const Material material)
+                 const scalar young, const scalar poisson, const Material material) : d_material(nullptr), d_fem(nullptr)
 {
-    _material = material;
-    shape = get_fem_shape(element);
+    d_thread = new Thread_Data();
+    d_material = new Material_Data();
+    d_material->material = material;
+    d_material->lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));
+    d_material->mu = young / (2.f * (1.f + poisson));
 
-    lambda = young * poisson / ((1.f + poisson) * (1.f - 2.f * poisson));
-    mu = young / (2.f * (1.f + poisson));
-
-    elem_nb_vert = elem_nb_vertices(element);
-    nb_quadrature = static_cast<int>(shape->weights.size());
-    nb_element = static_cast<int>(topology.size()) / elem_nb_vert;
+    cb_elem_data = new Cuda_Buffer(std::vector<scalar>(static_cast<int>(topology.size()) / elem_nb_vertices(element)));
     // rebuild constant for FEM simulation
-    GPU_FEM::build_fem_const(geometry, topology);
-}
+    d_fem = GPU_FEM::build_fem_const(element, geometry, topology);
 
-void GPU_FEM::build_fem_const(const Mesh::Geometry &geometry, const Mesh::Topology& topology) {
+}
+GPU_FEM_Data* GPU_FEM::build_fem_const(const Element& element, const Mesh::Geometry &geometry, const Mesh::Topology& topology) {
+
+    const FEM_Shape* shape = get_fem_shape(element);
+    const int elem_nb_vert = elem_nb_vertices(element);
+    const int nb_element = static_cast<int>(topology.size()) / elem_nb_vert;
+    const int nb_quadrature = static_cast<int>(shape->weights.size());;
+
     std::vector<Vector3> dN;
     std::vector<Matrix3x3> JX_inv(nb_quadrature * nb_element);
     std::vector<scalar> V(nb_quadrature * nb_element);
@@ -54,7 +59,18 @@ void GPU_FEM::build_fem_const(const Mesh::Geometry &geometry, const Mesh::Topolo
         }
     }
 
-    cb_dN = new Cuda_Buffer(dN);
-    cb_V = new Cuda_Buffer(V);
-    cb_JX_inv = new Cuda_Buffer(JX_inv);
+    GPU_FEM_Data* data_fem = new GPU_FEM_Data();
+    data_fem->elem_nb_vert = elem_nb_vertices(element);
+    data_fem->nb_quadrature = nb_quadrature;
+    data_fem->nb_element = nb_element;
+    data_fem->cb_weights = new Cuda_Buffer(shape->weights);
+    data_fem->cb_topology = new Cuda_Buffer(topology);
+    data_fem->cb_dN = new Cuda_Buffer(dN);
+    data_fem->cb_V = new Cuda_Buffer(V);
+    data_fem->cb_JX_inv = new Cuda_Buffer(JX_inv);
+
+
+
+    delete shape;
+    return data_fem;
 }

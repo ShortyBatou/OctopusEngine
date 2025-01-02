@@ -25,6 +25,6 @@ struct Cuda_XPBD_FEM_Dynamic final : Cuda_FEM_Dynamic
 
 private:
     std::map<Element, std::vector<Color>> _display_colors;
-    std::map<Element, GPU_PBD_FEM*> _gpu_fems;
+    std::map<Element, GPU_PBD_FEM*> _gpu_xpbd_fems;
     bool _coupled_fem;
 };

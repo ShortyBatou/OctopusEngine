@@ -7,42 +7,28 @@
 #include<vector> // for vector
 #include <Dynamic/Base/ParticleSystem.h>
 #include <Manager/Debug.h>
+#include "ParticleSystemDynamic.h"
 
-struct Cuda_ParticleSystem_Dynamics : Component
+struct Cuda_ParticleSystem_Dynamics : Component, ParticleSystemDynamics_Getters
 {
     Cuda_ParticleSystem_Dynamics(const int sub_iterations, const scalar density)
         : _density(density), _sub_iterations(sub_iterations), _gpu_ps(nullptr), _mesh(nullptr) { }
 
-    void init() override
-    {
-        _mesh = this->entity()->get_component<Mesh>();
-        _gpu_ps = create_particle_system();
-        build_dynamics();
-    }
+    void init() override;
+    void update() override;
 
-    void update() override
-    {
-        Time::Tic();
-        const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
-        for(int i = 0; i < _sub_iterations; i++)
-            _gpu_ps->step(sub_dt);
-        cudaDeviceSynchronize();
-        _gpu_ps->get_position(_mesh->geometry());
-        scalar t = Time::Tac() * 1000.f;
-
-        DebugUI::Begin("Entity Time " + std::to_string(entity()->id()));
-        DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t);
-        DebugUI::Range("Range (" + std::to_string(entity()->id()) + ")", t);
-        DebugUI::Value("Value (" + std::to_string(entity()->id()) + ")", t);
-        DebugUI::End();
-    }
-
-    [[nodiscard]] GPU_ParticleSystem* get_particle_system() const
-    {
-        return _gpu_ps;
-    }
+    [[nodiscard]] GPU_ParticleSystem* get_particle_system() const { return _gpu_ps;}
 
     ~Cuda_ParticleSystem_Dynamics() override { delete _gpu_ps; }
+
+    [[nodiscard]] std::vector<Vector3> get_positions() override;
+    [[nodiscard]] std::vector<Vector3> get_init_positions() override;
+    [[nodiscard]] std::vector<Vector3> get_displacement() override;
+    [[nodiscard]] std::vector<Vector3> get_velocity() override;
+    [[nodiscard]] std::vector<scalar> get_masses() override;
+    [[nodiscard]] std::vector<scalar> get_massses_inv() override;
+    [[nodiscard]] std::vector<scalar> get_displacement_norm() override;
+    [[nodiscard]] std::vector<scalar> get_velocity_norm() override;
 
 protected:
     virtual GPU_ParticleSystem* create_particle_system()

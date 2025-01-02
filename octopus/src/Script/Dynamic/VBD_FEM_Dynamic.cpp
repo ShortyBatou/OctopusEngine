@@ -12,14 +12,10 @@ ParticleSystem * VBD_FEM_Dynamic::build_particle_system()
 {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        if((e == Tetra10 || e==Hexa27) && this->entity()->id() == 1) {
-            vbd = new MG_VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
-        }
-        else {
-            vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
-        }
+        vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
         return vbd;
     }
+    return nullptr;
 }
 
 void VBD_FEM_Dynamic::build_dynamic()
@@ -32,13 +28,8 @@ void VBD_FEM_Dynamic::build_dynamic()
             _ps->get(i)->mass = masses[i];
             _ps->get(i)->inv_mass = 1.f / masses[i];
         }
-        if( (e == Tetra10 || e==Hexa27) && this->entity()->id() == 1) {
-            auto* mg_vbd = dynamic_cast<MG_VertexBlockDescent*>(vbd);
-            mg_vbd->add_fem(new MG_VBD_FEM(topo, _mesh->geometry(), e, get_fem_material(_material, _young, _poisson), _damping, _density));
-        }
-        else {
-            vbd->add(new VBD_FEM(topo, _mesh->geometry(), get_fem_shape(e), get_fem_material(_material, _young, _poisson), _damping));
-        }
+        fem = new VBD_FEM(topo, _mesh->geometry(), e, get_fem_material(_material, _young, _poisson), _damping);
+        vbd->add(fem);
         break;
     }
 }
@@ -46,4 +37,40 @@ void VBD_FEM_Dynamic::build_dynamic()
 void VBD_FEM_Dynamic::update() {
     vbd->step(Time::Fixed_DeltaTime());
     update_mesh();
+}
+
+std::map<Element, std::vector<scalar>> VBD_FEM_Dynamic::get_stress()
+{
+    std::map<Element, std::vector<scalar>> stresses;
+    for(auto&[e, topo] : _mesh->topologies())
+    {
+        if(topo.empty()) continue;
+        stresses[e] = fem->compute_stress(vbd);
+        break;
+    }
+    return stresses;
+}
+
+std::map<Element, std::vector<scalar>> VBD_FEM_Dynamic::get_volume()
+{
+    std::map<Element, std::vector<scalar>> volumes;
+    for(auto&[e, topo] : _mesh->topologies())
+    {
+        if(topo.empty()) continue;
+        volumes[e] = fem->compute_volume(vbd);
+        break;
+    }
+    return volumes;
+}
+
+std::map<Element, std::vector<scalar>> VBD_FEM_Dynamic::get_volume_diff()
+{
+    std::map<Element, std::vector<scalar>> volumes_diff;
+    for(auto&[e, topo] : _mesh->topologies())
+    {
+        if(topo.empty()) continue;
+        volumes_diff[e] = fem->compute_colume_diff(vbd);
+        break;
+    }
+    return volumes_diff;
 }

@@ -95,7 +95,7 @@ __device__ void snh_hessian(const Matrix3x3 &F, const scalar lambda, const scala
             d2W_dF2[i * 3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
 }
 
-__device__ Matrix3x3 eval_stress(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F) {
+__device__ Matrix3x3 eval_pk1_stress(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F) {
     switch (material) {
         case Hooke : return hooke_stress(F, lambda, mu);
         case StVK : return stvk_stress(F, lambda, mu);
@@ -103,6 +103,19 @@ __device__ Matrix3x3 eval_stress(const Material material, const scalar lambda, c
         case Stable_NeoHooke : return snh_stress(F, lambda, mu);
     }
     return Matrix3x3(0.f);
+}
+
+__device__ Matrix3x3 pk1_to_cauchy_stress(const Matrix3x3 &F, const Matrix3x3 &P) {
+    return P * glm::transpose(F) * (1.f / glm::determinant(F));
+}
+
+__device__ scalar von_mises_stress(const Matrix3x3 &C) {
+    const scalar s0_1 = C[0][0] - C[1][1];
+    const scalar s1_2 = C[1][1] - C[2][2];
+    const scalar s0_2 = C[0][0] - C[2][2];
+    scalar s = 0.5f * (s0_1 * s0_1 + s1_2 * s1_2 + s0_2 * s0_2);
+    s += 3.f * (C[0][1] * C[0][1] + C[1][2] * C[1][2] + C[0][2] * C[0][2]);
+    return sqrt(s);
 }
 
 __device__ void eval_hessian(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 d2W_dF2[9]) {

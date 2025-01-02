@@ -140,8 +140,9 @@ private:
 
 class FEM_VTK_Recorder final : public Recorder {
 public:
-    explicit FEM_VTK_Recorder(const std::string &file_name) : _file_name(file_name), _mesh(nullptr), _ps(nullptr) {
-    }
+    explicit FEM_VTK_Recorder(std::string file_name)
+       : _file_name(std::move(file_name)), _fem_dynamic(nullptr), _ps_dynamic(nullptr), _mesh(nullptr)
+    { }
 
     void init(Entity *entity) override;
 
@@ -158,14 +159,15 @@ public:
 
 protected:
     std::string _file_name;
-    ParticleSystem *_ps;
-    FEM_Dynamic_Generic *_fem_dynamic;
+    FEM_Dynamic_Getters* _fem_dynamic;
+    ParticleSystemDynamics_Getters* _ps_dynamic;
+
     Mesh *_mesh;
 };
 
 class Graphic_VTK_Recorder final : public Recorder {
 public:
-    explicit Graphic_VTK_Recorder(const std::string &file_name) : _file_name(file_name), _graphic(nullptr) {
+    explicit Graphic_VTK_Recorder(std::string file_name) : _file_name(std::move(file_name)), _graphic(nullptr) {
     }
 
     void init(Entity *entity) override {

@@ -40,10 +40,18 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer = 0;
     }
 
-    if (Input::Down(Key::NUM_9) || _mode == 9) {
+    if(Input::Up(Key::NUM_9))
+    {
         _mode = 0;
-        //rgn_crush();
+        _fixation->set_for_all(false);
     }
+
+    if (Input::Down(Key::NUM_9)) {
+        _mode = 9;
+        _fixation->set_for_all(true);
+    }
+
+
 
     if (_mode == 1) {
         Matrix4x4 rot = _fixation->rot;
@@ -98,5 +106,6 @@ void Cuda_Constraint_Rigid_Controller::update() {
             _timer = 0;
         }
     }
+
     Debug::Line(_fixation->com, _fixation->com + _fixation->normal);
 }

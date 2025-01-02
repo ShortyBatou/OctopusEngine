@@ -6,9 +6,9 @@ class ParticleSystem;
 
 struct GPU_Integrator : GPU_Dynamic {
     ~GPU_Integrator() override = default;
-    void step(const GPU_ParticleSystem* ps, scalar dt) override = 0;
+    void step(GPU_ParticleSystem* ps, scalar dt) override = 0;
 };
 
 struct GPU_SemiExplicit final : GPU_Integrator {
-    void step(const GPU_ParticleSystem* ps, scalar dt) override;
+    void step(GPU_ParticleSystem* ps, scalar dt) override;
 };

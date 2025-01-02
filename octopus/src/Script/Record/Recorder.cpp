@@ -57,10 +57,10 @@ void Mesh_VTK_Recorder::save() {
 }
 
 void FEM_VTK_Recorder::init(Entity *entity) {
-    _fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
+    _fem_dynamic = entity->get_component<FEM_Dynamic_Getters>();
+    _ps_dynamic = entity->get_component<ParticleSystemDynamics_Getters>();
     _mesh = entity->get_component<Mesh>();
-    assert(_fem_dynamic && _mesh);
-    _ps = _fem_dynamic->getParticleSystem();
+    assert(_fem_dynamic && _ps_dynamic && _mesh);
 }
 
 void FEM_VTK_Recorder::add_data_json(std::ofstream &json) {
@@ -69,16 +69,9 @@ void FEM_VTK_Recorder::add_data_json(std::ofstream &json) {
 
 void FEM_VTK_Recorder::save() {
     // get particle saved data
-    int nb = _ps->nb_particles();
-    std::vector<Vector3> displacements(nb);
-    std::vector<Vector3> init_pos(nb);
-    std::vector<scalar> massses(nb);
-    for (int i = 0; i < nb; ++i) {
-        Particle *p = _ps->get(i);
-        init_pos[i] = p->init_position;
-        displacements[i] = p->position - p->init_position;
-        massses[i] = p->mass;
-    }
+    std::vector<Vector3> displacements = _ps_dynamic->get_displacement();
+    std::vector<Vector3> init_pos = _ps_dynamic->get_init_positions();
+    std::vector<scalar> massses = _ps_dynamic->get_masses();
 
     // get element saved data
     std::map<Element, std::vector<scalar> > e_stress = _fem_dynamic->get_stress();

@@ -1,11 +1,11 @@
 #pragma once
-#include <GPU/GPU_Explicit.h>
+#include <GPU/Explicit/GPU_Explicit.h>
 
 #include "Core/Base.h"
 #include "Cuda_ParticleSystem_Dynamic.h"
+#include "Script/Dynamic/FEM_Dynamic.h"
 
-
-struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
+struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynamic_Getters
 {
     explicit Cuda_FEM_Dynamic(int sub_it,
         const scalar density, const Mass_Distribution m_distrib,
@@ -24,7 +24,9 @@ struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
             // create CUDA FEM Explicit
-            _gpu_ps->add_dynamics(new GPU_Explicit_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, _damping));
+            auto* fem = new GPU_Explicit_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, _damping);
+            _gpu_fems[e] = fem;
+            _gpu_ps->add_dynamics(fem);
         }
     }
 
@@ -40,8 +42,64 @@ struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics
         return masses;
     }
 
+
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_stress() override
+    {
+        std::map<Element, std::vector<scalar>> stresses;
+        for(auto&[e, topo] : _mesh->topologies())
+        {
+            if(topo.empty()) continue;
+            stresses[e] = _gpu_fems[e]->get_stress(_gpu_ps);
+        }
+        return stresses;
+    }
+
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume() override
+    {
+        std::map<Element, std::vector<scalar>> volumes;
+        for(auto&[e, topo] : _mesh->topologies())
+        {
+            if(topo.empty()) continue;
+            volumes[e] = _gpu_fems[e]->get_volume(_gpu_ps);
+        }
+        return volumes;
+    }
+
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume_diff() override
+    {
+        std::map<Element, std::vector<scalar>> volumes;
+        for(auto&[e, topo] : _mesh->topologies())
+        {
+            if(topo.empty()) continue;
+            volumes[e] = _gpu_fems[e]->get_volume_diff(_gpu_ps);
+        }
+        return volumes;
+    }
+
+    [[nodiscard]] std::vector<scalar> get_stress_vertices() override
+    {
+        std::vector<scalar> stresses(_gpu_ps->nb_particles(),0);
+        for(auto&[e, topo] : _mesh->topologies())
+        {
+            if(topo.empty()) continue;
+            std::vector<scalar> stress = _gpu_fems[e]->get_stress(_gpu_ps);
+            const int nb_vert_elem = elem_nb_vertices(e);
+            const int nb_elem = static_cast<int>(topo.size()) / nb_vert_elem;
+            for(int i = 0; i < nb_elem; i++)
+            {
+                const int eid = i * nb_vert_elem;
+                for(int j = 0; j < nb_vert_elem; j++)
+                    stresses[topo[eid+j]] += stress[i];
+            }
+        }
+        return stresses;
+    }
+
+    std::map<Element, GPU_FEM*> _gpu_fems;
+
     Mass_Distribution _m_distrib;
     scalar _young, _poisson;
     scalar _damping;
     Material _material;
+
 };
