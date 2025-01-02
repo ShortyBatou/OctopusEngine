@@ -3,11 +3,12 @@
 #include <Manager/Debug.h>
 #include <Manager/Dynamic.h>
 
-__global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps) {
+__global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, scalar* w_max) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n || ps.mask[i] == 0) return;
     Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
-    if(glm::length2(dt_v) >= 10)
+    scalar dt_limit = 0.75f / sqrtf(w_max[i]);
+    if(glm::length(dt_v) > 10) // 0.75 is supposed to be equal to 2, its a magic number
     {
         dt_v = Vector3(0);
     }
@@ -15,7 +16,6 @@ __global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, co
     ps.p[i] += ps.v[i] * dt;
     ps.f[i] *= 0;
 }
-
 
 __global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y, Vector3* prev_it_p) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,7 +25,6 @@ __global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSys
     const Vector3 a_ext = g + ps.f[i] * ps.w[i];
     y[i] = ps.p[i] + (ps.v[i] + a_ext * dt) * dt;
 }
-
 
 void GPU_Mixed_VBD::step(const scalar dt) {
     const int n = nb_particles();
@@ -38,10 +37,10 @@ void GPU_Mixed_VBD::step(const scalar dt) {
     {
         // eval forces
         for(const GPU_Mixed_VBD_FEM* fem : _fems)
-            fem->explicit_step(this, dt_exp);
+            fem->explicit_step(this, w_max, dt_exp);
 
         // integrations
-        kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters());
+        kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);
         for(GPU_Dynamic * constraint : _constraints)
             constraint->step(this, dt_exp);
     }

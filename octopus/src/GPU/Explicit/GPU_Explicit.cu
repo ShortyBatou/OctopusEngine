@@ -59,6 +59,9 @@ __global__ void kernel_explicit_fem_eval_force(
             H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * fem.V[qe_off];
         }
     }
+
+
+
     //Matrix3x3 H2 = glm::outerProduct(fi, fi);
     fi -= damping * H * ps.v[vid];/**/
 

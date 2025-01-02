@@ -35,6 +35,7 @@ struct SimulationArgs {
     scalar poisson;
     scalar damping;
     Material material;
+    FEM_DataDisplay::Type display;
     int iteration;
     int sub_iteration;
     int scenario_1;
@@ -71,43 +72,50 @@ struct BaseScene final : Scene
 
     // build scene's entities
     void build_entities() override
-    {  
+    {
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
         args.young = 1e6;
         args.poisson = 0.49;
-        args.damping = 5e-6;
+        args.damping = 5e-7;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
+        args.display = FEM_DataDisplay::Type::Stress;
 
 
-
-        const Vector3 size(4, 1, 1);
+        const Vector3 size(2, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(12, 4, 4);
+        cells = Vector3I(32, 16, 16);
         //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.9, 0.5);
         //build_vbd_entity(Vector3(0,0,1.2), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.93, true);
-        args.iteration = 3;
-        args.sub_iteration = 40;
-        //build_mixed_vbd_entity(Vector3(0,0,-1), cells, size, Color(0.2,0.,0.,0.), Tetra, args, 5);
-        build_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., true);
-        args.iteration = 3;
-        args.sub_iteration = 40;
-        build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
-        //build_xpbd_entity(Vector3(0,0,2),cells, size, Color(0.,0.,0.,0.), Tetra10, args, true, true);
+        args.iteration = 8;
+        args.sub_iteration = 25;
+        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, true);
+        args.iteration = 2;
+        args.sub_iteration = 100;
+        build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Hexa, args, 0., true);
+
+        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, false);
+        //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., true);
+        args.iteration = 2;
+        args.sub_iteration = 20;
+        build_mixed_vbd_entity(Vector3(0,0,2), cells, size, Color(0.2,0.,0.,0.), Hexa, args, 10);
+
+        //uild_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
+        //args.damping = 5;
+        args.sub_iteration = 100;
+        build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Hexa, args, true, true);
 
         //cells = Vector3I(8, 2, 2);
         args.sub_iteration = 300;
-        args.damping = 1e-6;
-        cells = Vector3I(64, 16, 16);
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.,2.,0.,0.), Hexa, args, true);
-
+        args.damping = 5e-7;
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.,2.,0.,0.), Hexa, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -196,7 +204,7 @@ struct BaseScene final : Scene
         }
 
         e->add_component(build_data_recorder(cells, size, element));
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }
@@ -229,7 +237,7 @@ struct BaseScene final : Scene
         }
 
         e->add_component(build_data_recorder(cells, size, element));
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }
@@ -251,7 +259,7 @@ struct BaseScene final : Scene
         }
 
         e->add_component(build_data_recorder(cells, size, element));
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }
@@ -264,7 +272,7 @@ struct BaseScene final : Scene
         if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
 
         e->add_component(build_data_recorder(cells, size, element));
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }
@@ -284,7 +292,7 @@ struct BaseScene final : Scene
         }
 
         e->add_component(build_data_recorder(cells, size, element));
-        e->add_component(new FEM_DataDisplay(FEM_DataDisplay::Type::Displacement, ColorMap::Viridis));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }

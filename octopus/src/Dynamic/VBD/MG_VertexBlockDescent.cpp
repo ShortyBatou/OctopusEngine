@@ -26,7 +26,8 @@ P1_to_P2::P1_to_P2(const Mesh::Topology& topology)
             {
                 ids.push_back(topology[i + j]);
                 const int a = ref_edges[j - nb_P1].first, b = ref_edges[j - nb_P1].second;
-                edges.emplace_back(topology[i + a], topology[i + b]);
+                edges.push_back(topology[i + a]);
+                edges.push_back(topology[i + b]);
                 visited.insert(vid);
             }
         }
@@ -125,7 +126,7 @@ Q1_to_Q2::Q1_to_Q2(const Mesh::Topology& topology)
         ids_volumes.push_back(topology[i + nb_Q1 + n]);
         for (int j = 0; j < 8; j++)
         {
-            volume.push_back(topology[i*8 + j]);
+            volume.push_back(topology[i + j]);
         }
     }
 }
@@ -223,14 +224,15 @@ void MG_VertexBlockDescent::step(const scalar dt)
         for (int j = 0; j < _iteration; ++j)
         {
             for (VBD_Object* obj : _objs) obj->solve(this, sub_dt);
+            step_effects(sub_dt);
+            step_constraint(sub_dt);
             for (const MG_VBD_FEM* obj : _fems) obj->interpolate(this);
-            chebyshev_acceleration(j, omega);
+            //chebyshev_acceleration(j, omega);
             //for(MG_VBD_FEM* obj : _fems) obj->interpolate(this, sub_dt);
             ch_it++;
         }
-        step_effects(sub_dt);
-        step_constraint(sub_dt);
-        for (MG_VBD_FEM* obj : _fems) obj->interpolate(this);
+
+        //for (MG_VBD_FEM* obj : _fems) obj->interpolate(this);
         update_velocity(sub_dt);
     }
     reset_external_forces();

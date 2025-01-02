@@ -11,6 +11,7 @@
 
 struct GPU_MG_Interpolation_Parameters
 {
+    int nb_ids;
     int nb_vert_primitives;
     scalar weight;
     int* ids;
@@ -20,6 +21,17 @@ struct GPU_MG_Interpolation_Parameters
 
 struct GPU_MG_Interpolation
 {
+    GPU_MG_Interpolation() = default;
+    GPU_MG_Interpolation(const int nb_vert, const scalar w, const std::vector<int>& ids, const std::vector<int>& primitives)
+    {
+        nb_ids = static_cast<int>(ids.size());
+        cb_ids = new Cuda_Buffer<int>(ids);
+        cb_primitives = new Cuda_Buffer<int>(primitives);
+        nb_vert_primitives = nb_vert;
+        weight = w;
+    }
+
+    int nb_ids;
     int nb_vert_primitives;
     scalar weight;
     Cuda_Buffer<int>* cb_ids; // vertices that will be interpolated
@@ -37,13 +49,16 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
     GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                    const Material& material, const scalar& young, const scalar& poisson,
                    const scalar& damping,
-                   const scalar& linear, const int& nb_iteration);
+                   const scalar& linear, const int& nb_iteration,
+                   const scalar& density, const Mass_Distribution& mass_distrib,
+                   GPU_ParticleSystem* ps);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
     [[nodiscard]] GPU_MG_Interpolation_Parameters get_interpolation_parameters(const int& i) const
     {
         GPU_MG_Interpolation_Parameters params{};
+        params.nb_ids = interpolations[i]->nb_ids;
         params.nb_vert_primitives = interpolations[i]->nb_vert_primitives;
         params.weight = interpolations[i]->weight;
         params.ids = interpolations[i]->cb_ids->buffer;
@@ -55,9 +70,11 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
     int it_count;
     int level;
 
+    std::vector<Cuda_Buffer<scalar>*> masses;
     std::vector<GPU_MG_Interpolation*> interpolations;
     std::vector<Thread_Data*> l_threads;
     std::vector<GPU_FEM_Data*> l_fems;
+    std::vector<GPU_Owners_Data*> l_owners;
 };
 
 

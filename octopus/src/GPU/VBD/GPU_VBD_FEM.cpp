@@ -11,11 +11,11 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
 
     std::vector<std::vector<int>> e_owners;
     std::vector<std::vector<int>> e_ref_id;
-    build_graph_color(topology, nb_vertices, colors,e_owners,e_ref_id);
-    sort_by_color(nb_vertices, e_owners, e_ref_id);
+    build_graph_color(topology, nb_vertices, _colors,e_owners,e_ref_id);
+    sort_by_color(nb_vertices, _colors, e_owners, e_ref_id);
 }
 
-void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<std::vector<int>>& e_owners, const std::vector<std::vector<int>>& e_ref_id) const
+void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners, const std::vector<std::vector<int>>& e_ref_id) const
 {
     // sort by color
     std::vector<int> ref_id;

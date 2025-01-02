@@ -49,7 +49,7 @@ struct GPU_VBD_FEM : GPU_FEM
         std::vector<std::vector<int>>& e_neighbors,
         std::vector<std::vector<int>>& ref_id) const;
 
-    void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<std::vector<int>>& e_owners,
+    void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners,
                                             const std::vector<std::vector<int>>& e_ref_id) const;
 
     [[nodiscard]] GPU_Owners_Parameters get_owners_parameters() const
@@ -65,5 +65,11 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_Owners_Data* d_owners;
     scalar _damping;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solver
-    std::vector<int> colors; // mesh coloration (used for debug)
+    std::vector<int> _colors; // mesh coloration (used for debug)
 };
+
+__global__ void kernel_vbd_solve(
+    int n, scalar damping, scalar dt, int offset,const Vector3* y,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
+);

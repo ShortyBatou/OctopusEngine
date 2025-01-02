@@ -7,7 +7,9 @@
 
 GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                                const Material& material, const scalar& young, const scalar& poisson,
-                               const scalar& damping, const scalar& linear, const int& nb_iteration) :
+                               const scalar& damping, const scalar& linear, const int& nb_iteration,
+                               const scalar& density, const Mass_Distribution& mass_distrib,
+                               GPU_ParticleSystem* ps) :
     GPU_VBD_FEM(element, topology, geometry, material, young, poisson, damping)
 {
     assert(element == Tetra10 || element == Hexa27);
@@ -25,63 +27,63 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     // get linear topology (could be nice to have that in a global function)
     const Element lin_elem = element == Tetra10 ? Tetra : Hexa;
     const int lin_nb_vert_elem = elem_nb_vertices(lin_elem);
+    std::set<int> vids;
     std::vector<int> lin_topo(nb_elem * lin_nb_vert_elem);
     for (int i = 0; i < nb_elem; i++)
+    {
         for (int j = 0; j < lin_nb_vert_elem; ++j)
-            lin_topo[i * lin_nb_vert_elem + j] = lin_topo[i * nb_vert_elem + j];
+        {
+            int vid = topology[i * nb_vert_elem + j];
+            lin_topo[i * lin_nb_vert_elem + j] = vid;
+            vids.insert(vid);
+        }
+
+    }
+    int lin_nb_vertices = static_cast<int>(vids.size());
+
 
     // fem data of quadratic and linear element
     l_fems.push_back(d_fem);
-    l_fems.push_back(GPU_FEM::build_fem_const(lin_elem, geometry, topology));
+    l_fems.push_back(GPU_FEM::build_fem_const(lin_elem, geometry, lin_topo));
 
     // thread data
     l_threads.push_back(d_thread);
     l_threads.push_back(new Thread_Data());
 
+    l_owners.push_back(d_owners);
+    l_owners.push_back(new GPU_Owners_Data());
     // prepare FEM to build new thread data for linear fem
     d_thread = l_threads.back();
     d_fem = l_fems.back();
+    d_owners = l_owners.back();
 
     std::vector<std::vector<int>> e_neighbors;
     std::vector<std::vector<int>> e_ref_id;
-    build_graph_color(topology, nb_vertices, colors, e_neighbors, e_ref_id);
-    sort_by_color(nb_vertices, e_neighbors, e_ref_id);
+    std::vector<int> colors;
+    build_graph_color(lin_topo, lin_nb_vertices, colors, e_neighbors, e_ref_id);
+    sort_by_color(lin_nb_vertices, colors, e_neighbors, e_ref_id);
+
+    masses.push_back(ps->_data->_cb_mass);
+    std::vector<scalar> lin_masses = compute_fem_mass(lin_elem, geometry, lin_topo, density, mass_distrib);
+    masses.push_back(new Cuda_Buffer<scalar>(lin_masses));
 
     // build interpolations
     if(element == Tetra10)
     {
-        P1_to_P2 interpolation(topology);
-        GPU_MG_Interpolation* i_mid_edge = new GPU_MG_Interpolation();
-        i_mid_edge->cb_ids = new Cuda_Buffer<int>(interpolation.ids);
-        i_mid_edge->cb_primitives = new Cuda_Buffer<int>(interpolation.edges);
-        i_mid_edge->nb_vert_primitives = 2;
-        i_mid_edge->weight = 0.5;
+        P1_to_P2 inter(topology);
+        auto* i_mid_edge = new GPU_MG_Interpolation(2,0.5, inter.ids, inter.edges);
         interpolations.push_back(i_mid_edge);
     }
     else
     {
-        Q1_to_Q2 interpolation(topology);
-        GPU_MG_Interpolation* i_mid_edge = new GPU_MG_Interpolation();
-        i_mid_edge->cb_ids = new Cuda_Buffer<int>(interpolation.ids_edges);
-        i_mid_edge->cb_primitives = new Cuda_Buffer<int>(interpolation.edges);
-        i_mid_edge->nb_vert_primitives = 2;
-        i_mid_edge->weight = 0.5;
+        Q1_to_Q2 inter(topology);
+        auto* i_mid_edge = new GPU_MG_Interpolation(2,0.5, inter.ids_edges, inter.edges);
         interpolations.push_back(i_mid_edge);
 
-        GPU_MG_Interpolation* i_mid_face = new GPU_MG_Interpolation();
-        i_mid_face->cb_ids = new Cuda_Buffer<int>(interpolation.ids_faces);
-        i_mid_face->cb_primitives = new Cuda_Buffer<int>(interpolation.faces);
-        i_mid_face->nb_vert_primitives = 4;
-        i_mid_face->weight = 0.25;
+        auto* i_mid_face = new GPU_MG_Interpolation(4,0.25,inter.ids_faces, inter.faces);
         interpolations.push_back(i_mid_face);
 
-        GPU_MG_Interpolation* i_mid_volume = new GPU_MG_Interpolation();
-        i_mid_volume->cb_ids = new Cuda_Buffer<int>(interpolation.ids_volumes);
-        i_mid_volume->cb_primitives = new Cuda_Buffer<int>(interpolation.faces);
-        i_mid_volume->nb_vert_primitives = 8;
-        i_mid_volume->weight = 0.125;
+        auto* i_mid_volume = new GPU_MG_Interpolation(8,0.125,inter.ids_volumes, inter.volume);
         interpolations.push_back(i_mid_volume);
     }
-
-
 }

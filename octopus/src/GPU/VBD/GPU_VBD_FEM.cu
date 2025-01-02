@@ -8,7 +8,7 @@
 #include <GPU/GPU_FEM_Material.h>
 #include <GPU/GPU_ParticleSystem.h>
 
-__global__ void kernel_solve(
+__global__ void kernel_vbd_solve(
     const int n,
     const scalar damping,
     const scalar dt,
@@ -125,7 +125,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937());
 
     for(const int c : kernels) {
-        kernel_solve<<<d_thread->grid_size[c], d_thread->block_size[c]>>>(
+        kernel_vbd_solve<<<d_thread->grid_size[c], d_thread->block_size[c]>>>(
             d_thread->nb_threads[c], _damping, dt, d_thread->offsets[c],
              y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );

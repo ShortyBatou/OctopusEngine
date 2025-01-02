@@ -82,9 +82,8 @@ struct GPU_ParticleSystem
         for(const GPU_Dynamic* dynamic: _constraints) delete dynamic;
     }
 
-public:
+
     int _sub_iteration;
-protected:
     GPU_Integrator* _integrator;
     std::vector<GPU_Dynamic*> _dynamics;
     std::vector<GPU_Dynamic*> _constraints;
