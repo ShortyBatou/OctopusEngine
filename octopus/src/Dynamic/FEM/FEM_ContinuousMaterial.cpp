@@ -112,7 +112,7 @@ void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x
     // lambda vec(com F) * vec(com F)^T
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
-            d2W_dF2[i * 3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
+            d2W_dF2[i * 3 + j] += glm::outerProduct(comF[j], comF[i]) * lambda;
 }
 
 

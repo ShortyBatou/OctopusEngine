@@ -22,6 +22,7 @@ GPU_Plane_Fix::GPU_Plane_Fix(const Mesh::Geometry& positions, const Vector3& o, 
 GPU_FEM::GPU_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
                  const scalar young, const scalar poisson, const Material material) : d_material(nullptr), d_fem(nullptr)
 {
+    std::cout << "GPU FEM : NB ELEMENT = " << topology.size() / elem_nb_vertices(element) << std::endl;
     d_thread = new Thread_Data();
     d_material = new Material_Data();
     d_material->material = material;

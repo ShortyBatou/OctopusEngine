@@ -56,12 +56,13 @@ void VBD_FEM::solve(VertexBlockDescent *vbd, const scalar dt) {
     plot_residual(vbd, dt);
 }
 
+static int test_id = 0;
 
 void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int vid, scalar mass) {
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
-
+    test_id = vid;
     Particle *p = vbd->get(vid);
     // sum all owner participation to force and hessian
     for (int i = 0; i < nb_owners; ++i) {
@@ -102,6 +103,8 @@ void VBD_FEM::solve_element(VertexBlockDescent *ps, const int eid, const int ref
         f_i -= P * dF_dx * data->V[eid][i];
 
         _material->get_sub_hessian(F, d2Psi_dF2);
+        //if(test_id == 100 && i == 0) std::cout << d2Psi_dF2[1] << std::endl;
+
         H_i += assemble_hessian(d2Psi_dF2, dF_dx) * data->V[eid][i];
     }
 }

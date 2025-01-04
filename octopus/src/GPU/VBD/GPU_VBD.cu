@@ -39,7 +39,7 @@ void GPU_VBD::step(const scalar dt) {
     const int n = nb_particles();
     scalar omega = 1;
     // integration / first guess
-    kernel_integration<<<(n + 255)/256, 256>>>(dt,Dynamic::gravity(),
+    kernel_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
         get_parameters(),y->buffer, prev_it_p->buffer);
 
     for(int j = 0; j < iteration; ++j) {

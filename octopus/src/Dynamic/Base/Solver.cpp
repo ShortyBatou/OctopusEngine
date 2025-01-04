@@ -20,8 +20,8 @@ void EulerSemiExplicit::integrate(Particle *p, const scalar dt) {
 
 void AdaptiveEulerSemiExplicit::integrate(Particle *p, const scalar dt) {
     if (p->mass <= eps) return;
-    Vector3 a = (p->velocity - p->last_velocity) / dt;
-    Vector3 a_ext = ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity());
+    const Vector3 a = (p->velocity - p->last_velocity) / dt;
+    const Vector3 a_ext = ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity());
     scalar n_a_ext = glm::length(a_ext);
     scalar s = 1.;
     if (n_a_ext > eps) {

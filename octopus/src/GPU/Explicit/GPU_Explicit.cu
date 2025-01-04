@@ -45,28 +45,15 @@ __global__ void kernel_explicit_fem_eval_force(
     Vector3 fi = -P * dF_dx * fem.V[qe_off];
 
     // assemble hessian
-    Matrix3x3 d2W_dF2[9];
+    Matrix3x3 d2W_dF2[6];
     eval_hessian(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
-    Matrix3x3 H;
-    for (int j = 0; j < 3; ++j) {
-        for (int i = 0; i < 3; ++i) {
-            Matrix3x3 H_kl;
-            for(int l = 0; l < 3; ++l) {
-                for(int k = 0; k < 3; ++k) {
-                    H_kl[k][l] = d2W_dF2[k+l*3][i][j];
-                }
-            }
-            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * fem.V[qe_off];
-        }
-    }
-
-
+    const Matrix3x3 H = assemble_sub_hessian(dF_dx, fem.V[qe_off], d2W_dF2);
 
     //Matrix3x3 H2 = glm::outerProduct(fi, fi);
     fi -= damping * H * ps.v[vid];/**/
 
     // shared variable : f, H
-    __shared__ Vector3 s_f_H[256]; // size = block_size * 12 * sizeof(float)
+    __shared__ Vector3 s_f_H[256]; // size = block_size * 3 * sizeof(float)
     s_f_H[tid] = fi;
 
     __syncthreads();

@@ -8,14 +8,37 @@ __global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, co
     if (i >= n || ps.mask[i] == 0) return;
     Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
     scalar dt_limit = 0.75f / sqrtf(w_max[i]);
-    if(glm::length(dt_v) > 10) // 0.75 is supposed to be equal to 2, its a magic number
+    if(dt < dt_limit || ps.mask[i] == 2) // 0.75 is supposed to be equal to 2, its a magic number
     {
+        ps.mask[i] = 2;
         dt_v = Vector3(0);
     }
     ps.v[i] += g * dt + dt_v;
     ps.p[i] += ps.v[i] * dt;
     ps.f[i] *= 0;
 }
+
+__global__ void kernel_reset_mask(const int n, GPU_ParticleSystem_Parameters ps)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n || ps.mask[i] == 0) return;
+    ps.mask[i] = 1;
+}
+
+__global__ void kenerl_semi_exicit_integration3(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n || ps.mask[i] == 0) return;
+    Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
+    if(glm::length(dt_v) > 10 || ps.mask[i] == 2) // 0.75 is supposed to be equal to 2, its a magic number
+    {
+        ps.mask[i] = 2;
+        dt_v = Vector3(0);
+    }
+    ps.v[i] += g * dt + dt_v;
+    ps.p[i] += ps.v[i] * dt;
+    ps.f[i] *= 0;
+}
+
 
 __global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y, Vector3* prev_it_p) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -40,10 +63,13 @@ void GPU_Mixed_VBD::step(const scalar dt) {
             fem->explicit_step(this, w_max, dt_exp);
 
         // integrations
-        kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);
+        //kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);
+        kenerl_semi_exicit_integration3<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters());
+
         for(GPU_Dynamic * constraint : _constraints)
             constraint->step(this, dt_exp);
     }
+    kernel_reset_mask<<<(n+31) / 32, 32>>>(n, get_parameters());
 
     scalar omega = 1;
     for(int j = 0; j < iteration; ++j) {

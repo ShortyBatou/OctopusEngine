@@ -12,7 +12,7 @@ ParticleSystem * VBD_FEM_Dynamic::build_particle_system()
 {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f - _damping), _iteration, _sub_iteration, _rho);
+        vbd = new VertexBlockDescent(new EulerSemiExplicit(1.f), _iteration, _sub_iteration, _rho);
         return vbd;
     }
     return nullptr;
