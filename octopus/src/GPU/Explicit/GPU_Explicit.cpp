@@ -43,7 +43,7 @@ GPU_Explicit_FEM::GPU_Explicit_FEM(const Element element, const Mesh::Geometry& 
     d_thread->nb_threads.push_back(nb_vertices * d_thread->block_size[0]);
     d_thread->grid_size.push_back(nb_vertices);
     d_thread->offsets.push_back(0);
-
+    std::cout << "EXPLICIT NB THREAD = " << nb_vertices * d_thread->block_size[0] << std::endl;
     d_owners = new GPU_Owners_Data();
     d_owners->cb_nb = new Cuda_Buffer(nb_owners);
     d_owners->cb_eids = new Cuda_Buffer(owners);

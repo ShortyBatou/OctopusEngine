@@ -22,7 +22,7 @@ public:
 	scalar _move_speed;
 	scalar _rot_speed;
 	int _smooth_iterations;
-	
+
 protected:
 	int _smooth_step;
 	scalar _timer;

@@ -12,6 +12,8 @@ struct GPU_Mixed_VBD_FEM final : public GPU_VBD_FEM
     void explicit_step(GPU_ParticleSystem* ps, Cuda_Buffer<scalar>* w_max, scalar dt) const;
     Thread_Data* d_exp_thread;
 
+    Cuda_Buffer<Vector3>* p_forces;
+
     ~GPU_Mixed_VBD_FEM() override
     {
         delete d_exp_thread;

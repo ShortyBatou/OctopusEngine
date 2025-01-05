@@ -107,5 +107,5 @@ void Cuda_Constraint_Rigid_Controller::update() {
         }
     }
 
-    Debug::Line(_fixation->com, _fixation->com + _fixation->normal);
+    Debug::Line(_fixation->com + _fixation->offset, _fixation->com + _fixation->offset + _fixation->normal);
 }

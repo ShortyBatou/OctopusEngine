@@ -76,39 +76,40 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e6;
+        args.young = 1e7;
         args.poisson = 0.45;
-        args.damping = 1e-6;
+        args.damping = 1e-7;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
-        args.dir = Unit3D::up();
+        args.scenario_2 = -1;
+        args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Stress;
 
 
-        const Vector3 size(1, 1, 1);
+        const Vector3 size(4, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(10, 10, 10);
+        cells = Vector3I(64, 16, 16);
         //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.9, 0.5);
         //build_vbd_entity(Vector3(0,0,1.2), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.93, true);
         args.iteration = 8;
         args.sub_iteration = 25;
         //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, true);
 
-        args.iteration = 4;
-        args.sub_iteration = 25;
-        build_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa, args, 0., true);
-        //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,0.,0.), Tetra, args, 0., true);
+        args.iteration = 3;
+        args.sub_iteration = 250;
+        args.damping = 5e-7;
+        //uild_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa, args, 0., true);
+        build_vbd_entity(Vector3(0,0,2), cells, size, Color(0.,0.,0.,0.), Tetra, args, 0., true);
 
-        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, false);
+        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, false);s
         //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., true);
         args.iteration = 1;
-        args.damping = 5e-6;
-        args.sub_iteration = 25;
-        build_mixed_vbd_entity(Vector3(0,0,1), cells, size, Color(0.2,0.,0.,0.), Hexa, args, 6);
+        args.damping = 5e-7;
+        args.sub_iteration = 50;
+        build_mixed_vbd_entity(Vector3(0,0,1), cells, size, Color(0.2,0.,0.,0.), Tetra, args, 8);
 
         //uild_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
         //args.damping = 5;
@@ -116,9 +117,9 @@ struct BaseScene final : Scene
         //build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra, args, true, false);
 
         //cells = Vector3I(8, 2, 2);
-        args.sub_iteration = 250;
-        args.damping = 1e-6;
-        //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.,2.,0.,0.), Tetra, args, true);
+        args.sub_iteration = 500;
+        args.damping = 5e-7;
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.,2.,0.,0.), Tetra, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -162,21 +163,40 @@ struct BaseScene final : Scene
 
 
 
-    void add_constraint(Entity* e, const Vector3& pos, const Vector3& size, const SimulationArgs& args) {
+    void add_constraint(Entity* e, const Vector3& pos, const Vector3& size, const SimulationArgs& args, bool gpu) {
         // constraint for Particle system
-        if (args.scenario_1 != -1) {
-            const auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero() + args.dir*0.01f, -args.dir, args.scenario_1);
-            e->add_component(rd_constraint_1);
-            rd_constraint_1->_rot_speed = 90;
-            rd_constraint_1->_move_speed = 1.;
+        if(gpu)
+        {
+            if(args.scenario_1!=-1)
+            {
+                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(Unit3D::Zero() + args.dir*0.01f, -args.dir, args.scenario_1);
+                rd_constraint_1->_smooth_iterations = 3;
+                e->add_component(rd_constraint_1);
+            }
+            if(args.scenario_2!=-1)
+            {
+                const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 );
+                rd_constraint_2->_smooth_iterations = 3;
+                e->add_component(rd_constraint_2);
+            }
+        }
+        else
+        {
+            if (args.scenario_1 != -1) {
+                const auto rd_constraint_1 = new Constraint_Rigid_Controller(Unit3D::Zero() + args.dir*0.01f, -args.dir, args.scenario_1);
+                e->add_component(rd_constraint_1);
+                rd_constraint_1->_rot_speed = 90;
+                rd_constraint_1->_move_speed = 1.;
+            }
+
+            if (args.scenario_2 != -1) {
+                auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, args.dir, args.scenario_2);
+                rd_constraint_2->_rot_speed = 90;
+                rd_constraint_2->_move_speed = 1.;
+                e->add_component(rd_constraint_2);
+            }
         }
 
-        if (args.scenario_2 != -1) {
-            auto rd_constraint_2 = new Constraint_Rigid_Controller(pos + size, args.dir, args.scenario_2);
-            rd_constraint_2->_rot_speed = 90;
-            rd_constraint_2->_move_speed = 1.;
-            e->add_component(rd_constraint_2);
-        }
     }
 
     DataRecorder* build_data_recorder(const Vector3I& cells, const Vector3& size, const Element element) {
@@ -197,15 +217,13 @@ struct BaseScene final : Scene
         if(gpu)
         {
             e->add_component(new Cuda_FEM_Dynamic(std::max(args.iteration, args.sub_iteration), args.density, args.distribution, args.young, args.poisson, args.material, args.damping));
-            if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-            if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else
         {
             e->add_component(new FEM_Dynamic_Generic(args.density, args.distribution, args.young, args.poisson, args.material, std::max(args.iteration, args.sub_iteration)));
-            add_constraint(e, pos, size, args);
-        }
 
+        }
+        add_constraint(e, pos, size, args, gpu);
         e->add_component(build_data_recorder(cells, size, element));
         e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
@@ -230,15 +248,13 @@ struct BaseScene final : Scene
         if(gpu)
         {
             e->add_component(new Cuda_MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho, linear));
-            if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-            if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else
         {
             e->add_component(new MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho, linear));
-            add_constraint(e, pos, size, args);
         }
 
+        add_constraint(e, pos, size, args,gpu);
         e->add_component(build_data_recorder(cells, size, element));
         e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
@@ -252,14 +268,13 @@ struct BaseScene final : Scene
         if(gpu)
         {
             e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho));
-            if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-            if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else
         {
             e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho));
-            add_constraint(e, pos, size, args);
         }
+
+        add_constraint(e, pos, size, args, gpu);
 
         e->add_component(build_data_recorder(cells, size, element));
         e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
@@ -271,9 +286,7 @@ struct BaseScene final : Scene
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         e->add_component(new Cuda_Mixed_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, exp_it, args.damping));
-        if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-        if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
-
+        add_constraint(e, pos, size, args, true);
         e->add_component(build_data_recorder(cells, size, element));
         e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
@@ -286,14 +299,12 @@ struct BaseScene final : Scene
         //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
         if(gpu) {
             e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material,std::max(args.iteration, args.sub_iteration), args.damping, coupled));
-            if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-            if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
         }
         else {
             e->add_component(new XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping, coupled));
-            add_constraint(e, pos, size, args);
         }
 
+        add_constraint(e, pos, size, args, true);
         e->add_component(build_data_recorder(cells, size, element));
         e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
         e->add_component(build_graphic(color));
