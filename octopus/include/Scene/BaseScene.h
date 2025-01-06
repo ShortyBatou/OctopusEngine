@@ -63,7 +63,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -76,8 +76,8 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.49;
         args.damping = 1e-7;
         args.iteration = 5;
         args.sub_iteration = 5;
@@ -91,35 +91,37 @@ struct BaseScene final : Scene
         const Vector3 size(4, 1, 1);
         Vector3I cells;
 
-        cells = Vector3I(64, 16, 16);
+        cells = Vector3I(16, 4, 4);
         //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.9, 0.5);
-        //build_vbd_entity(Vector3(0,0,1.2), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.93, true);
         args.iteration = 8;
         args.sub_iteration = 25;
-        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, true);
+        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Hexa27, args, 0., 0.5, true);
 
-        args.iteration = 3;
-        args.sub_iteration = 250;
-        args.damping = 5e-7;
-        //uild_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa, args, 0., true);
-        build_vbd_entity(Vector3(0,0,2), cells, size, Color(0.,0.,0.,0.), Tetra, args, 0., true);
-
-        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., 0.5, false);s
-        //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., true);
         args.iteration = 1;
-        args.damping = 5e-7;
-        args.sub_iteration = 50;
-        build_mixed_vbd_entity(Vector3(0,0,1), cells, size, Color(0.2,0.,0.,0.), Tetra, args, 8);
+        args.sub_iteration = 120;
+        args.damping = 1e-6;
+        //uild_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa, args, 0., true);
+        //build_vbd_entity(Vector3(0,0,0), cells, size, Color(0.65,0.4,0.4,0.), Tetra, args, 0., true);
+
+        //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., true);
+        args.iteration = 2;
+        args.damping = 1e-6;
+        args.sub_iteration = 60;
+        //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.4,0.65,0.4,0.), Hexa27, args, 0., 0.5, true);
+        //build_mixed_vbd_entity(Vector3(0,0,1), cells, size, Color(0.2,0.,0.,0.), Tetra10, args, 4);
 
         //uild_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
-        //args.damping = 5;
+        args.damping = 2;
         args.sub_iteration = 100;
-        //build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra, args, true, false);
+        build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra10, args, true, false);
 
         //cells = Vector3I(8, 2, 2);
         args.sub_iteration = 500;
-        args.damping = 5e-7;
-        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.,2.,0.,0.), Tetra, args, true);
+        args.damping = 5e-6;
+        //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
+        args.damping = 1e-6;
+        //build_fem_entity(Vector3(0,0,2),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, true);
+
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
