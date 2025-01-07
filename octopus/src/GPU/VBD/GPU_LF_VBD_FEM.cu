@@ -7,25 +7,25 @@
 #include <GPU/Explicit/GPU_Explicit.h>
 #include <Manager/TimeManager.h>
 
-__device__ Matrix3x3 snh_lf_stress(const Matrix3x3 &F, const scalar lambda, const scalar mu) {
-    return mu * (F - mat3x3_com(F));
+__device__ Matrix3x3 snh_lf_stress(const Matrix3x3 &F, const scalar l, const scalar mu) {
+    return mu * (F - mat3x3_com(F)) - 0.25f * l * mat3x3_com(F);
 }
 
-__device__ Matrix3x3 snh_lf_volume(const Matrix3x3 &F, Matrix3x3& P, scalar& C) {
+__device__ void snh_lf_volume(const Matrix3x3 &F, Matrix3x3& P, scalar& C) {
     C = glm::determinant(F) - 1;
     P = mat3x3_com(F);
 }
 
-__device__ void snh_lf_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 d2W_dF2[6]) {
-    // -mu * I3
-    d2W_dF2[1] = vec_hat(F[2]) * -mu;
-    d2W_dF2[2] = -vec_hat(F[1]) * -mu;
-    d2W_dF2[4] = vec_hat(F[0]) * -mu;
+__device__ void snh_lf_hessian(const Matrix3x3 &F, const scalar l, const scalar mu, Matrix3x3 d2W_dF2[6]) {
+    // (0.25l - mu) * (d^2_I3 / dx^2)
+    d2W_dF2[1] = vec_hat(F[2])  * (-0.25f * l - mu);
+    d2W_dF2[2] = -vec_hat(F[1]) * (-0.25f * l - mu);
+    d2W_dF2[4] = vec_hat(F[0])  * (-0.25f * l - mu);
 
     // mu/2 * H2 = mu * I_9x9x
-    d2W_dF2[0] = Matrix3x3(-mu);
-    d2W_dF2[3] = Matrix3x3(-mu);
-    d2W_dF2[5] = Matrix3x3(-mu);
+    d2W_dF2[0] = Matrix3x3(mu);
+    d2W_dF2[3] = Matrix3x3(mu);
+    d2W_dF2[5] = Matrix3x3(mu);
 }
 
 
@@ -36,6 +36,7 @@ __global__ void kernel_lf_vbd_solve(
     const int offset,
     const Vector3* y,
     scalar* l,
+    const scalar* Vi,
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps,
     GPU_FEM_Pameters fem,
@@ -75,11 +76,11 @@ __global__ void kernel_lf_vbd_solve(
 
     // Compute force at vertex i
     //Matrix3x3 P = eval_pk1_stress(mt.material, mt.lambda, mt.mu, F);
-    Matrix3x3 P = snh_lf_stress(F, mt.lambda, mt.mu);
+    Matrix3x3 P = snh_lf_stress(F, l[vid], mt.mu);
     Vector3 fi = -P * dF_dx * fem.V[qe_off];
 
     // Compute hessian
-    snh_lf_hessian(F, mt.lambda, mt.mu, d2W_dF2);
+    snh_lf_hessian(F, l[vid], mt.mu, d2W_dF2);
     Matrix3x3 K = assemble_sub_hessian(dF_dx, fem.V[qe_off], d2W_dF2);
 
     // damping (velocity)
@@ -93,7 +94,7 @@ __global__ void kernel_lf_vbd_solve(
 
     scalar C = 0;
     snh_lf_volume(F, P, C);
-    Vector4 gradC(  P  * dF_dx, C);
+    Vector4 gradC(  P * dF_dx, C);
     gradC *= 0.25 * fem.V[qe_off];
 
     // shared variable : f, H
@@ -127,7 +128,7 @@ __global__ void kernel_lf_vbd_solve(
         A[1][0] = s_f_H[8]; A[1][1] = s_f_H[10];
         A[2][0] = s_f_H[9]; A[2][1] = s_f_H[11]; A[2][2] = s_f_H[12];
         A[3][0] = s_f_H[3]; A[3][1] = s_f_H[4]; A[3][2] = s_f_H[5];
-        A[3][3] = -1.f / mt.lambda;
+        A[3][3] = -Vi[vid] / mt.lambda;
 
         // symmetry
         A[0][1] = A[1][0]; A[1][2] = A[2][1]; A[0][2] = A[2][0];
@@ -166,7 +167,7 @@ void GPU_LF_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     for(const int c : kernels) {
         kernel_lf_vbd_solve<<<d_thread->grid_size[c], d_thread->block_size[c]>>>(
              d_thread->nb_threads[c], _damping, dt, d_thread->offsets[c],
-             y->buffer, l->buffer, *d_material,
+             y->buffer, l->buffer, Vi->buffer, *d_material,
              ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );
     }

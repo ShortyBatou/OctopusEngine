@@ -13,5 +13,6 @@ struct GPU_LF_VBD_FEM final : public GPU_VBD_FEM
     void start(GPU_ParticleSystem* ps, scalar dt) override;
     void step(GPU_ParticleSystem* ps, scalar dt) override;
     Cuda_Buffer<scalar>* l;
+    Cuda_Buffer<scalar>* Vi;
     ~GPU_LF_VBD_FEM() override = default;
 };
