@@ -38,6 +38,10 @@ __global__ void kernel_chebychev_acceleration(const int it, const scalar omega, 
 void GPU_VBD::step(const scalar dt) {
     const int n = nb_particles();
     scalar omega = 1;
+
+    for(GPU_Dynamic* dynamic : _dynamics)
+        dynamic->start(this, dt);
+
     // integration / first guess
     kernel_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
         get_parameters(),y->buffer, prev_it_p->buffer);

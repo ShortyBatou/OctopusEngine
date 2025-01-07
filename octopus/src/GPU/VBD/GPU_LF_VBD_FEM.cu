@@ -11,8 +11,9 @@ __device__ Matrix3x3 snh_lf_stress(const Matrix3x3 &F, const scalar lambda, cons
     return mu * (F - mat3x3_com(F));
 }
 
-__device__ Matrix3x3 snh_lf_volume(const Matrix3x3 &F, const scalar lambda, const scalar mu) {
-    return mat3x3_com(F);
+__device__ Matrix3x3 snh_lf_volume(const Matrix3x3 &F, Matrix3x3& P, scalar& C) {
+    C = glm::determinant(F) - 1;
+    P = mat3x3_com(F);
 }
 
 __device__ void snh_lf_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 d2W_dF2[6]) {
@@ -22,9 +23,9 @@ __device__ void snh_lf_hessian(const Matrix3x3 &F, const scalar lambda, const sc
     d2W_dF2[4] = vec_hat(F[0]) * -mu;
 
     // mu/2 * H2 = mu * I_9x9x
-    d2W_dF2[0] = Matrix3x3(mu);
-    d2W_dF2[3] = Matrix3x3(mu);
-    d2W_dF2[5] = Matrix3x3(mu);
+    d2W_dF2[0] = Matrix3x3(-mu);
+    d2W_dF2[3] = Matrix3x3(-mu);
+    d2W_dF2[5] = Matrix3x3(-mu);
 }
 
 
@@ -73,7 +74,8 @@ __global__ void kernel_lf_vbd_solve(
     const Vector3 dF_dx = glm::transpose(fem.JX_inv[qe_off]) * fem.dN[qv_off + r_vid];
 
     // Compute force at vertex i
-    const Matrix3x3 P = snh_lf_stress(F, mt.lambda, mt.mu);
+    //Matrix3x3 P = eval_pk1_stress(mt.material, mt.lambda, mt.mu, F);
+    Matrix3x3 P = snh_lf_stress(F, mt.lambda, mt.mu);
     Vector3 fi = -P * dF_dx * fem.V[qe_off];
 
     // Compute hessian
@@ -81,66 +83,80 @@ __global__ void kernel_lf_vbd_solve(
     Matrix3x3 K = assemble_sub_hessian(dF_dx, fem.V[qe_off], d2W_dF2);
 
     // damping (velocity)
-    fi -= damping / dt * K * (ps.p[vid] - ps.last_p[vid]) * (1.f / scalar(owners.nb[cid]));
-    K  += damping / dt * K * (1.f / scalar(owners.nb[cid]));
+    fi -= damping / (dt*size_of_block) * K * (ps.p[vid] - ps.last_p[vid]);
+    K  += damping / (dt*size_of_block) * K;
 
     // intertia (accellearation)
-    scalar mh2 = ps.m[vid] / (dt*dt) * (1.f / scalar(owners.nb[cid]));
+    scalar mh2 = ps.m[vid] / (dt*dt*size_of_block);
     fi -= mh2 * (ps.p[vid] - y[vid]);
     K[0][0] += mh2; K[1][1] += mh2; K[2][2] += mh2;
 
-    Vector3 gradC = snh_lf_stress(F, mt.lambda, mt.mu) * dF_dx * fem.V[qe_off];
+    scalar C = 0;
+    snh_lf_volume(F, P, C);
+    Vector4 gradC(  P  * dF_dx, C);
+    gradC *= 0.25 * fem.V[qe_off];
 
     // shared variable : f, H
     __shared__ scalar s_f_H[2592]; // size = block_size * 12 * sizeof(float)
-    int k = 0;
-    for(int j = 0; j < 3; ++j) {
-        s_f_H[tid * 12 + j] = fi[j];
-        s_f_H[tid * 12 + 3 + j] = gradC[j];
+    s_f_H[tid * 13 + 6] = gradC.w;
+    for(int k = 0, j = 0; j < 3; ++j) {
+        s_f_H[tid * 13 + j] = fi[j];
+        s_f_H[tid * 13 + 3 + j] = gradC[j];
         for(int i = j; i < 3; ++i) {
-            s_f_H[tid * 12 + 6 + k] = K[i][j];
+            s_f_H[tid * 13 + 7 + k] = K[i][j];
             ++k;
         }
     }
 
     __syncthreads();
     int t = size_of_block;
-    int i,j;
-    for(i=t/2, j=(t+1)/2; i > 0; j=(j+1)/2, i/=2) {
+    for(int i=t/2, k=(t+1)/2; i > 0; k=(k+1)/2, i/=2) {
         if(tid < i) {
-            for(int j = 0; j < 12; ++j) {
-                s_f_H[tid*12+j] += s_f_H[(tid+j)*12+j];
+            for(int j = 0; j < 13; ++j) {
+                s_f_H[tid*13+j] += s_f_H[(tid+k)*13+j];
             }
             __syncthreads();
         }
-        i = (j>i) ? j : i;
+        i = (k>i) ? k : i;
     }
 
     if (threadIdx.x == 0) {
-        Matrix4x4 A;
-        Vector4 b;
-        b.x = s_f_H[0]; b.y = s_f_H[1]; b.z = s_f_H[2];
-        b.w = l[vid];
-
-        A[0][0] = s_f_H[6];
-        A[1][0] = s_f_H[7]; A[1][1] = s_f_H[8];
-        A[2][0] = s_f_H[9]; A[2][1] = s_f_H[10];  A[2][2] = s_f_H[11];
-
+        Matrix4x4 A(1.);
+        Vector4 b(s_f_H[0], s_f_H[1], s_f_H[2], s_f_H[6]);
+        A[0][0] = s_f_H[7];
+        A[1][0] = s_f_H[8]; A[1][1] = s_f_H[10];
+        A[2][0] = s_f_H[9]; A[2][1] = s_f_H[11]; A[2][2] = s_f_H[12];
         A[3][0] = s_f_H[3]; A[3][1] = s_f_H[4]; A[3][2] = s_f_H[5];
         A[3][3] = -1.f / mt.lambda;
 
         // symmetry
         A[0][1] = A[1][0]; A[1][2] = A[2][1]; A[0][2] = A[2][0];
+
         A[0][3] = A[3][0]; A[1][3] = A[3][1]; A[2][3] = A[3][2];
 
         //scalar detH = glm::determinant(s_H);
         scalar detH = abs(glm::determinant(A));
         Vector4 dx = detH > 1e-6f ? glm::inverse(A) * b : Vector4(0.f);
-        ps.p[vid] += Vector3(dx.x, dx.y, dx.z);
-        l[vid] += dx.w;
+        ps.p[vid] += Vector3(dx[0], dx[1], dx[2]);
+        l[vid] += dx[3];
     }
 }
 
+
+__global__ void kernel_reset(int n, scalar* l)
+{
+    const int gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(gid >= n) return;
+    l[gid] = 0.f;
+}
+
+void GPU_LF_VBD_FEM::start(GPU_ParticleSystem* ps, scalar dt)
+{
+    int nb_thread = ps->nb_particles();
+    int block_size = 32;
+    int grid_size = (nb_thread + block_size-1) / block_size;
+    kernel_reset<<<grid_size, block_size>>>(nb_thread, l->buffer);
+}
 
 void GPU_LF_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::vector<int> kernels(d_thread->nb_kernel);

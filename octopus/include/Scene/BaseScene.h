@@ -1,6 +1,7 @@
 #pragma once
 #include <Mesh/Converter/MeshLoader.h>
 #include <Script/Dynamic/Cuda_Constraint_Rigid_Controller.h>
+#include <Script/Dynamic/Cuda_LF_VBD_FEM_Dynamic.h>
 #include <Script/Dynamic/Cuda_MG_VBD_FEM_Dynamic.h>
 #include <Script/Dynamic/Cuda_VBD_FEM_Dynamic.h>
 #include <Script/Dynamic/MG_VBD_FEM_Dynamic.h>
@@ -95,7 +96,7 @@ struct BaseScene final : Scene
         //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Tetra10, args, 0.9, 0.5);
         args.iteration = 8;
         args.sub_iteration = 25;
-        //build_mg_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Hexa27, args, 0., 0.5, true);
+        build_lf_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0.);
 
         args.iteration = 1;
         args.sub_iteration = 120;
@@ -113,7 +114,7 @@ struct BaseScene final : Scene
         //uild_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
         args.damping = 2;
         args.sub_iteration = 100;
-        build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra10, args, true, false);
+        //build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra10, args, true, false);
 
         //cells = Vector3I(8, 2, 2);
         args.sub_iteration = 500;
@@ -295,7 +296,18 @@ struct BaseScene final : Scene
         e->add_component(build_display());
     }
 
-    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const bool gpu, bool coupled) {
+    void build_lf_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const scalar rho) {
+        Entity* e = Engine::CreateEnity();
+        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        e->add_component(new Cuda_LF_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration,  args.damping, rho));
+        add_constraint(e, pos, size, args, true);
+        e->add_component(build_data_recorder(cells, size, element));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
+        e->add_component(build_graphic(color));
+        e->add_component(build_display());
+    }
+
+    void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const bool gpu, const bool coupled) {
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
