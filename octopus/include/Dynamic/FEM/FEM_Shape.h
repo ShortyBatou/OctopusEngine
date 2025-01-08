@@ -519,20 +519,30 @@ struct Hexa_27 final : FEM_Shape {
     [[nodiscard]] Mesh::Geometry get_vertices() const override {
         return {
             // corner
-            Vector3(-1,-1,-1),Vector3(1,-1,-1),Vector3(1,1,-1),Vector3(-1,1,-1),
-            Vector3(-1,-1,1),Vector3(1,-1,1),Vector3(1,1,1),Vector3(-1,1,1),
+            Vector3(-1,-1,-1)/*0*/, Vector3(1,-1,-1)/*1*/,  Vector3(1,1,-1)/*2*/,
+            Vector3(-1,1,-1)/*3*/, Vector3(-1,-1,1)/*4*/, Vector3(1,-1,1)/*5*/,
+            Vector3(1,1,1)/*6*/, Vector3(-1,1,1)/*7*/,
 
             //edge
-            Vector3(0,-1,-1),Vector3(1,0,-1),Vector3(0,1,-1),Vector3(-1,0,-1),
-            Vector3(-1,-1,0),Vector3(1,-1,0),Vector3(1,1,0),Vector3(-1,1,0),
-            Vector3(0,-1,1),Vector3(1,0,1),Vector3(0,1,1),Vector3(-1,0,1),
+            Vector3(0,-1,-1)/*8*/, Vector3(1,0,-1)/*9*/, Vector3(0,1,-1)/*10*/,
+            Vector3(-1,0,-1)/*11*/,
+
+            Vector3(-1,-1,0)/*12*/, Vector3(1,-1,0)/*13*/, Vector3(1,1,0)/*14*/,
+            Vector3(-1,1,0)/*15*/,
+
+            Vector3(0,-1,1)/*16*/, Vector3(1,0,1)/*17*/, Vector3(0,1,1)/*18*/,
+            Vector3(-1,0,1)/*19*/,
 
             //face
-            Vector3(0,0,-1),Vector3(0,-1,0),Vector3(1,0,0),
-            Vector3(0,1,0),Vector3(-1,0,0),Vector3(0,0,1),
+            Vector3(0,0,-1),    /*20*/
+            Vector3(0,-1,0),    /*21*/
+            Vector3(1,0,0),     /*22*/
+            Vector3(0,1,0),     /*23*/
+            Vector3(-1,0,0),    /*24*/
+            Vector3(0,0,1),     /*25*/
 
             //Volume
-            Vector3(0,0,0)
+            Vector3(0,0,0)  /*26*/
         };
     }
 

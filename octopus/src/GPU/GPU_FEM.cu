@@ -26,7 +26,6 @@ __global__ void kernel_constraint_plane(const Vector3 origin, const Vector3 norm
     {
         const Vector3 target = offset + com + rot * (ps.init_p[i] - com);
         ps.p[i] = target;
-
         ps.v[i] = Vector3(0, 0, 0);
         ps.f[i] = Vector3(0, 0, 0);
         ps.mask[i] = 0;
@@ -40,7 +39,7 @@ __global__ void kernel_constraint_plane_crush(const Vector3 origin, const Vector
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= ps.nb_particles) return;
     const Vector3 p_init = com + rot * (ps.init_p[i] - com);
-    ps.p[i] = p_init - glm::dot(p_init - origin, normal) * normal + offset;
+    ps.p[i].y = 0; //p_init - glm::dot(p_init - origin, normal) * normal + offset;
     ps.last_p[i] = ps.p[i];
     ps.v[i] = Vector3(0, 0, 0);
     ps.f[i] = Vector3(0, 0, 0);

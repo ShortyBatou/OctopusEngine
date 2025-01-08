@@ -16,16 +16,16 @@ VTK_Formater& VTK_Formater::save_mesh(Mesh::Geometry& geometry, std::map<Element
 	// POINTS n dataType
 	file << "POINTS " << geometry.size() << " float\n";
 	// p0x p0y p0z
-	for (Vector3& v : geometry) {
+	for (const Vector3& v : geometry) {
 		file << v.x << " " << v.y << " " << v.z << "\n";
 	}
 	file << "\n";
 
 	nb_cells = 0;
 	int nb_indices = 0;
-	for (auto& topo : topologies) {
-		nb_cells += static_cast<int>(topo.second.size()) / elem_nb_vertices(topo.first);
-		nb_indices += static_cast<int>(topo.second.size());
+	for (const auto&[e, topo] : topologies) {
+		nb_cells += static_cast<int>(topo.size()) / elem_nb_vertices(e);
+		nb_indices += static_cast<int>(topo.size());
 	}
 
 	// CELLS n size
@@ -33,10 +33,10 @@ VTK_Formater& VTK_Formater::save_mesh(Mesh::Geometry& geometry, std::map<Element
 	file << "OFFSETS vtktypeint64\n";
 
 	int offset = 0;
-	for (auto& topo : topologies) {
-		if (static_cast<int>(topo.second.size()) == 0) continue;
-		int element_size = elem_nb_vertices(topo.first);
-		for (int i = 0; i <= topo.second.size(); i += element_size) {
+	for (const auto&[e, topo] : topologies) {
+		if (static_cast<int>(topo.size()) == 0) continue;
+		const int element_size = elem_nb_vertices(e);
+		for (int i = 0; i <= topo.size(); i += element_size) {
 			file << offset << " ";
 			offset += element_size;
 		}
@@ -46,14 +46,52 @@ VTK_Formater& VTK_Formater::save_mesh(Mesh::Geometry& geometry, std::map<Element
 	file << "CONNECTIVITY vtktypeint64\n";
 
 	// numPoints0 i0 j0 k0 �
-	for (auto& topo : topologies) {
-		int element_size = elem_nb_vertices(topo.first);
-		for (int i = 0; i < topo.second.size(); i += element_size) {
+	for (auto&[e, topo] : topologies) {
+		const int element_size = elem_nb_vertices(e);
+		for (int i = 0; i < topo.size(); i += element_size) {
 			for (int j = 0; j < element_size; ++j)
 			{
-				file << topo.second[i + j] << " ";
+				if(e == Hexa27 && j == 20) {
+					file << topo[i + 24] << " ";
+				}
+				else if(e == Hexa27 && j == 21) {
+					file << topo[i + 22] << " ";
+				}
+				else if(e == Hexa27 && j == 22) {
+					file << topo[i + 21] << " ";
+				}
+				else if(e == Hexa27 && j == 24) {
+					file << topo[i + 20] << " ";
+				}
+				else if(e == Hexa27 && j == 16) {
+					file << topo[i + 12] << " ";
+				}
+				else if(e == Hexa27 && j == 12) {
+					file << topo[i + 16] << " ";
+				}
+				else if(e == Hexa27 && j == 17) {
+					file << topo[i + 13] << " ";
+				}
+				else if(e == Hexa27 && j == 13) {
+					file << topo[i + 17] << " ";
+				}
+				else if(e == Hexa27 && j == 18) {
+					file << topo[i + 14] << " ";
+				}
+				else if(e == Hexa27 && j == 14) {
+					file << topo[i + 18] << " ";
+				}
+				else if(e == Hexa27 && j == 19) {
+					file << topo[i + 15] << " ";
+				}
+				else if(e == Hexa27 && j == 15) {
+					file << topo[i + 19] << " ";
+				}
+				else {
+					file << topo[i + j] << " ";
+				}
 			}
-			if (!topo.second.empty()) file << "\n";
+			if (!topo.empty()) file << "\n";
 		}
 	}
 
@@ -122,6 +160,7 @@ int VTK_Formater::get_cell_type(Element e) {
 	case Hexa: return 12;
 	case Tetra10:return 24;
 	case Tetra20:return 71;
+	case Hexa27: return 29;
 	default:
 		return 0;
 	}

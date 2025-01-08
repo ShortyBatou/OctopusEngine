@@ -1,0 +1,1 @@
+{"Time" : {"frame" : 1201,"time" : 50.7901,"dt" : 0.0471031,"fixed_Time" : 60.0494,"fixed_dt" : 0.05},"mesh" : {"Hexa" : 256,"vertices" : 425},"vtk_file" : "assets/5_Hexa_16_4_4_4x1x1_1201.vtk","vtk_graphic" : "assets/5_Hexa_16_4_4_4x1x1_Graphic_1201.vtk"}
