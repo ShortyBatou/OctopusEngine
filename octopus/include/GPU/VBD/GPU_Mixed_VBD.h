@@ -11,6 +11,9 @@ struct GPU_Mixed_VBD final : GPU_VBD {
     {
         explicit_it = exp_it;
         w_max = new Cuda_Buffer<scalar>(std::vector<scalar>(positions.size()));
+        l = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size() * 4));
+        k = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size() * 4));
+        last_v = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size()));
     }
 
     void step(scalar dt) override;
@@ -23,10 +26,16 @@ struct GPU_Mixed_VBD final : GPU_VBD {
 
     std::vector<GPU_Mixed_VBD_FEM*> _fems;
     Cuda_Buffer<scalar>* w_max;
+    Cuda_Buffer<Vector3>* l;
+    Cuda_Buffer<Vector3>* k;
+    Cuda_Buffer<Vector3>* last_v;
 
     int explicit_it;
     ~GPU_Mixed_VBD() override
     {
+        delete l;
+        delete k;
+        delete last_v;
         delete w_max;
     }
 };

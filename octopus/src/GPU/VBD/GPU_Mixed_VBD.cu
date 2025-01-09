@@ -1,7 +1,35 @@
 #include "GPU/VBD/GPU_Mixed_VBD.h"
 #include <glm/detail/func_matrix_simd.inl>
+#include <GPU/CUMatrix.h>
 #include <Manager/Debug.h>
 #include <Manager/Dynamic.h>
+
+// ULTRA damped, don't know why
+__global__ void kernel_rk4(
+    const int n, scalar dt, const Vector3 g, const int step,
+    GPU_ParticleSystem_Parameters ps, Vector3* l, Vector3* k)
+{
+    const int vid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vid >= n || ps.mask[vid] == 0) return;
+    const int i = vid * 4 + step;
+
+    k[i] = ps.v[vid] + (step == 0 ? Vector3(0.) : 0.5f * dt * l[i-1]); // velocity
+    l[i] = ps.f[vid] * ps.w[vid] + g; // acceleration
+
+    if(step == 3) {
+        Vector3 dt_p = (dt/6.f) * (k[vid * 4] + 2.f * k[vid*4+1] + 2.f * k[vid*4+2] + k[vid*4+3]);
+        Vector3 dt_v = (dt/6.f) * (l[vid * 4] + 2.f * l[vid*4+1] + 2.f * l[vid*4+2] + l[vid*4+3]);
+        if(glm::length(dt_v) > 0.1f) {
+            dt_v = g*dt;
+            dt_p = dt_v * dt;
+        }
+        ps.v[vid] = ps.v[vid]    + dt_v;
+        ps.p[vid] = ps.last_p[vid] + dt_p;
+    } else {
+        ps.p[vid] = ps.last_p[vid] + k[i] * dt * 0.5f;
+    }
+    ps.f[vid] *= 0;
+}
 
 __global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, scalar* w_max) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -25,27 +53,27 @@ __global__ void kernel_reset_mask(const int n, GPU_ParticleSystem_Parameters ps)
     ps.mask[i] = 1;
 }
 
-__global__ void kenerl_semi_exicit_integration3(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps) {
+__global__ void kenerl_semi_exicit_integration3(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, const Vector3* last_v) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n || ps.mask[i] == 0) return;
-    Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
-    if(glm::length(dt_v) > 10 || ps.mask[i] == 2) // 0.75 is supposed to be equal to 2, its a magic number
+    const Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
+    if(glm::length(dt_v) > 10 && ps.mask[i] != 2) // 0.75 is supposed to be equal to 2, its a magic number
     {
         ps.mask[i] = 2;
-        dt_v = Vector3(0);
+        ps.v[i] = last_v[i];
     }
-    ps.v[i] += g * dt + dt_v;
+    ps.v[i] += g * dt + (ps.mask[i] == 2 ? Vector3(0.f) : dt_v);
     ps.p[i] += ps.v[i] * dt;
     ps.f[i] *= 0;
 }
 
 
-__global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y, Vector3* prev_it_p) {
+__global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y, Vector3* last_v) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= ps.nb_particles) return;
     ps.last_p[i] = ps.p[i]; // x^t-1 = x^t
-    prev_it_p[i] = ps.p[i];
     const Vector3 a_ext = g + ps.f[i] * ps.w[i];
+    last_v[i] = ps.v[i] + a_ext * dt;
     y[i] = ps.p[i] + (ps.v[i] + a_ext * dt) * dt;
 }
 
@@ -53,25 +81,26 @@ void GPU_Mixed_VBD::step(const scalar dt) {
     const int n = nb_particles();
 
     // Compute inertia and save last_p (doesn't change v or p nor f)
-    kernel_inertia<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(), get_parameters(),y->buffer, prev_it_p->buffer);
+    kernel_inertia<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(), get_parameters(),y->buffer, last_v->buffer);
 
     const scalar dt_exp = dt / static_cast<scalar>(explicit_it);
     for(int i = 0; i < explicit_it; ++i)
     {
         // eval forces
-        for(const GPU_Mixed_VBD_FEM* fem : _fems)
-            fem->explicit_step(this, w_max, dt_exp);
+        // integrations Euler semi-implicit
+        for(const GPU_Mixed_VBD_FEM* fem : _fems) fem->explicit_step(this, w_max, dt_exp);
+        //kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);/**/
+        kenerl_semi_exicit_integration3<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), last_v->buffer);/**/
 
-        // integrations
-        //kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);
-        kenerl_semi_exicit_integration3<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters());
-
-        for(GPU_Dynamic * constraint : _constraints)
-            constraint->step(this, dt_exp);
+        // integration Runge-Kutta
+        /*for(int j = 0; j < 4; ++j) {
+            for(const GPU_Mixed_VBD_FEM* fem : _fems)
+                fem->explicit_step(this, w_max, dt_exp);
+            kernel_rk4<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), j, get_parameters(), l->buffer, k->buffer);
+        }/**/
     }
     kernel_reset_mask<<<(n+31) / 32, 32>>>(n, get_parameters());
 
-    scalar omega = 1;
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)
@@ -79,11 +108,6 @@ void GPU_Mixed_VBD::step(const scalar dt) {
 
         for(GPU_Dynamic * constraint : _constraints)
             constraint->step(this, dt);
-
-        // Acceleration (Chebychev)
-        if(j == 1) omega = 2.f / (2.f - _rho * _rho);
-        else if(j > 1) omega = 4.f / (4.f - _rho * _rho * omega);
-        //Skernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(j, omega, get_parameters(), prev_it_p->buffer, prev_it2_p->buffer);
     }
 
     // velocity update

@@ -258,12 +258,12 @@ __global__ void kernel_explicit_fem_sum_partial_forces(const int n, GPU_Particle
 void GPU_Mixed_VBD_FEM::explicit_step(GPU_ParticleSystem* ps, Cuda_Buffer<scalar>* w_max, scalar dt) const
 {
     if(d_fem->elem_nb_vert == 4) {
-        kernel_explicit_fem_eval_force_2<<<d_exp_thread->grid_size[0], d_exp_thread->block_size[0]>>>(
-            d_exp_thread->nb_threads[0], _damping, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), w_max->buffer
-        );
-
         // if we use w_max has filter
-        /*kernel_explicit_fem_eval_force_3<<<d_exp_thread->grid_size[0], d_exp_thread->block_size[0]>>>(
+        /*kernel_explicit_fem_eval_force_2<<<d_exp_thread->grid_size[0], d_exp_thread->block_size[0]>>>(
+            d_exp_thread->nb_threads[0], _damping, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), w_max->buffer
+        );*/
+
+        kernel_explicit_fem_eval_force_3<<<d_exp_thread->grid_size[0], d_exp_thread->block_size[0]>>>(
             d_exp_thread->nb_threads[0], *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );/**/
     }/**/
