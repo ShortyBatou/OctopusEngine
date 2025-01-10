@@ -41,6 +41,7 @@ struct SimulationArgs {
     int sub_iteration;
     int scenario_1;
     int scenario_2;
+    std::string mesh_file;
     Vector3 dir;
 };
 
@@ -79,31 +80,28 @@ struct BaseScene final : Scene
         args.distribution = Shape;
         args.young = 1e7;
         args.poisson = 0.49;
-        args.damping = 1e-7;
+        args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Stress;
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
 
-        const Vector3 size(1, 1, 1);
-        Vector3I cells;
-
-        cells = Vector3I(32, 8, 8);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(8, 2, 2);
         //
-        args.iteration = 8;
-        args.sub_iteration = 25;
-        //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0.);
+        //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.3,0.3,0.7,0.), Tetra, args, 0.);
         //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa27, args, 0., 0.5, true);
 
-        args.iteration = 1;
-        args.sub_iteration = 150;
-        args.damping = 1e-6;
+        args.iteration = 2;
+        args.sub_iteration = 50;
         //uild_vbd_entity(Vector3(0,0,0), cells, size, Color(0.,0.,0.,0.), Hexa, args, 0., true);
-        cells = Vector3I(16, 16, 16);
-        build_vbd_entity(Vector3(0,0,0.), cells, size, Color(0.65,0.4,0.4,0.), Hexa, args, 0.93, true);
+        cells = Vector3I(32, 8, 8);
+        args.iteration = 2;
+        args.sub_iteration = 50;
         /*cells = Vector3I(8, 2, 2);
         build_vbd_entity(Vector3(0,0,1.1), cells, size, Color(0.65,0.4,0.4,0.), Tetra, args, 0.93, true);
         args.damping = 1e-6;
@@ -113,11 +111,10 @@ struct BaseScene final : Scene
         build_vbd_entity(Vector3(0,0,3.3), cells, size, Color(0.65,0.4,0.4,0.), Tetra, args, 0.93, true);
 
         //build_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra10, args, 0., true);*/
-        args.iteration = 2;
-        args.damping = 5e-6;
-        args.sub_iteration = 25;
-        //build_mg_vbd_entity(Vector3(0,0,0), cells, size, Color(0.4,0.65,0.4,0.), Hexa27, args, 0., 0.5, true);
-        build_mixed_vbd_entity(Vector3(0,0,1.1), cells, size, Color(0.2,0.,0.,0.), Hexa, args, 10);
+        args.iteration = 1;
+        args.sub_iteration = 10;
+        //build_mg_vbd_entity(Vector3(0,0,-1), cells, size, Color(0.4,0.65,0.4,0.), Hexa27, args, 0., 0.5, true);
+        build_mixed_vbd_entity(Vector3(0,0,1), cells, size, Color(0.2,0.,0.,0.), Hexa, args, 10);
 
         //uild_vbd_entity(Vector3(0,0,1), cells, size, Color(0.,0.,2.,0.), Tetra, args, 0., false);
         args.damping = 2;
@@ -125,12 +122,15 @@ struct BaseScene final : Scene
         //build_xpbd_entity(Vector3(0,0,3),cells, size, Color(0.,0.,0.,0.), Tetra10, args, true, false);
 
         //cells = Vector3I(8, 2, 2);
-        args.sub_iteration = 300;
-        args.damping = 5e-6;
-
-        //build_fem_entity(Vector3(0,0,1),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
-        args.damping = 1e-6;
-        build_fem_entity(Vector3(0,0,-1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
+        args.sub_iteration = 400;
+        args.damping = 5e-7;
+        cells = Vector3I(32, 8, 8);
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
+       /* build_fem_entity(Vector3(0,0,2.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
+        args.damping = 5e-7;
+        cells = Vector3I(32, 8, 8);
+        build_fem_entity(Vector3(0,0,0.7),cells, size, Color(0.3,.3,0.7,0.), Tetra10, args, true);
+        build_fem_entity(Vector3(0,0,3.4),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, true);*/
 
     }
 
@@ -173,8 +173,6 @@ struct BaseScene final : Scene
         return display;
     }
 
-
-
     void add_constraint(Entity* e, const Vector3& pos, const Vector3& size, const SimulationArgs& args, bool gpu) {
         // constraint for Particle system
         if(gpu)
@@ -211,6 +209,14 @@ struct BaseScene final : Scene
 
     }
 
+    void add_fem_base(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
+        add_constraint(e, pos, size, args, gpu);
+        e->add_component(build_data_recorder(cells, size, element, e->id()));
+        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
+        e->add_component(build_graphic(color));
+        e->add_component(build_display());
+    }
+
     DataRecorder* build_data_recorder(const Vector3I& cells, const Vector3& size, const Element element, const int id) {
         const std::string file_name = std::to_string(id) + "_" +  std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z)
             + "_" + std::to_string(static_cast<int>(size.x)) + "x" + std::to_string(static_cast<int>(size.y)) + "x" + std::to_string(static_cast<int>(size.z));
@@ -220,26 +226,6 @@ struct BaseScene final : Scene
         data_recorder->add(new FEM_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
         return data_recorder;
-    }
-
-    void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
-        Entity* e = Engine::CreateEnity();
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
-        if(gpu)
-        {
-            e->add_component(new Cuda_FEM_Dynamic(std::max(args.iteration, args.sub_iteration), args.density, args.distribution, args.young, args.poisson, args.material, args.damping));
-        }
-        else
-        {
-            e->add_component(new FEM_Dynamic_Generic(args.density, args.distribution, args.young, args.poisson, args.material, std::max(args.iteration, args.sub_iteration)));
-
-        }
-        add_constraint(e, pos, size, args, gpu);
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
     }
 
     Mesh* build_vtk_mesh(const Vector3& pos, const std::string& file, const Element element) {
@@ -253,85 +239,57 @@ struct BaseScene final : Scene
         return mesh;
     }
 
+    void add_fem_mesh(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const SimulationArgs& args) {
+        if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        else e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
+    }
+
+    void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
+        Entity* e = Engine::CreateEnity();
+        add_fem_mesh(e, pos, cells, size, element, args);
+        if(gpu) e->add_component(new Cuda_FEM_Dynamic(std::max(args.iteration, args.sub_iteration), args.density, args.distribution, args.young, args.poisson, args.material, args.damping));
+        else e->add_component(new FEM_Dynamic_Generic(args.density, args.distribution, args.young, args.poisson, args.material, std::max(args.iteration, args.sub_iteration)));
+        add_fem_base(e, pos, cells, size, color, element, args, gpu);
+    }
+
     void build_mg_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const scalar rho, const scalar linear, const bool gpu) {
         Entity* e = Engine::CreateEnity();
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
-        if(gpu)
-        {
-            e->add_component(new Cuda_MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho, linear));
-        }
-        else
-        {
-            e->add_component(new MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho, linear));
-        }
-
-        add_constraint(e, pos, size, args,gpu);
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
+        add_fem_mesh(e, pos, cells, size, element, args);
+        if(gpu) e->add_component(new Cuda_MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho, linear));
+        else e->add_component(new MG_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho, linear));
+        add_fem_base(e, pos, cells, size, color, element, args, gpu);
     }
 
     void build_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const float rho, bool gpu) {
         Entity* e = Engine::CreateEnity();
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
-        if(gpu)
-        {
-            e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho));
-        }
-        else
-        {
-            e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho));
-        }
-
-        add_constraint(e, pos, size, args, gpu);
-
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
+        add_fem_mesh(e, pos, cells, size, element, args);
+        if(gpu) e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho));
+        else e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho));
+        add_fem_base(e, pos, cells, size, color, element, args, gpu);
     }
 
     void build_mixed_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const int exp_it) {
         Entity* e = Engine::CreateEnity();
+        add_fem_mesh(e, pos, cells, size, element, args);
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         e->add_component(new Cuda_Mixed_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, exp_it, args.damping));
-        add_constraint(e, pos, size, args, true);
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
+        add_fem_base(e, pos, cells, size, color, element, args, true);
     }
 
     void build_lf_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const scalar rho) {
         Entity* e = Engine::CreateEnity();
+        add_fem_mesh(e, pos, cells, size, element, args);
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         e->add_component(new Cuda_LF_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration,  args.damping, rho));
-        add_constraint(e, pos, size, args, true);
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
+        add_fem_base(e, pos, cells, size, color, element, args, true);
     }
 
     void build_xpbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const bool gpu, const bool coupled) {
         Entity* e = Engine::CreateEnity();
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        //e->add_behaviour(build_vtk_mesh(pos, "mesh/vtk/beam-s-3-1-1-n-9-3-3-tetra.vtk", element));
-        if(gpu) {
-            e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material,std::max(args.iteration, args.sub_iteration), args.damping, coupled));
-        }
-        else {
-            e->add_component(new XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping, coupled));
-        }
-
-        add_constraint(e, pos, size, args, true);
-        e->add_component(build_data_recorder(cells, size, element, e->id()));
-        e->add_component(new FEM_DataDisplay(args.display, ColorMap::Viridis));
-        e->add_component(build_graphic(color));
-        e->add_component(build_display());
+        add_fem_mesh(e, pos, cells, size, element, args);
+        if(gpu) e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material,std::max(args.iteration, args.sub_iteration), args.damping, coupled));
+        else e->add_component(new XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping, coupled));
+        add_fem_base(e, pos, cells, size, color, element, args, true);
     }
 
 

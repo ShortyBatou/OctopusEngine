@@ -14,6 +14,7 @@ struct GPU_Mixed_VBD final : GPU_VBD {
         l = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size() * 4));
         k = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size() * 4));
         last_v = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size()));
+        rk4_last_p = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size()));
     }
 
     void step(scalar dt) override;
@@ -29,6 +30,7 @@ struct GPU_Mixed_VBD final : GPU_VBD {
     Cuda_Buffer<Vector3>* l;
     Cuda_Buffer<Vector3>* k;
     Cuda_Buffer<Vector3>* last_v;
+    Cuda_Buffer<Vector3>* rk4_last_p;
 
     int explicit_it;
     ~GPU_Mixed_VBD() override
