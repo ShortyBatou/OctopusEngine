@@ -38,8 +38,9 @@ __global__ void kernel_constraint_plane_crush(const Vector3 origin, const Vector
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= ps.nb_particles) return;
-    const Vector3 p_init = com + rot * (ps.init_p[i] - com);
-    ps.p[i].y = 0; //p_init - glm::dot(p_init - origin, normal) * normal + offset;
+    //const Vector3 p_init = com + rot * (ps.p[i] - com);
+    //ps.p[i] = p_init - glm::dot(p_init - origin, normal) * normal + offset;
+    ps.p[i].y = 0;
     ps.last_p[i] = ps.p[i];
     ps.v[i] = Vector3(0, 0, 0);
     ps.f[i] = Vector3(0, 0, 0);
@@ -150,7 +151,7 @@ std::vector<scalar> GPU_FEM::get_volume_diff(GPU_ParticleSystem* ps) const
 void GPU_Plane_Fix::step(GPU_ParticleSystem* ps, const scalar dt)
 {
 
-    if(all) kernel_constraint_plane_crush<<<(ps->nb_particles() + 255) / 256, 256>>>(origin, normal, com, offset, rot, ps->get_parameters());
-    else kernel_constraint_plane<<<(ps->nb_particles() + 255) / 256, 256>>>(origin, normal, com, offset, rot, ps->get_parameters());
+    if(all) kernel_constraint_plane_crush<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
+    else kernel_constraint_plane<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
 
 }

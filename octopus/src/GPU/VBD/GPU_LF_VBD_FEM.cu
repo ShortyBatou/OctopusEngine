@@ -8,7 +8,7 @@
 #include <Manager/TimeManager.h>
 
 __device__ Matrix3x3 snh_lf_stress(const Matrix3x3 &F, const scalar l, const scalar mu) {
-    return mu * (F - mat3x3_com(F)) - 0.25f * l * mat3x3_com(F);
+    return mu * (F) + 0.25f * l * mat3x3_com(F);
 }
 
 __device__ void snh_lf_volume(const Matrix3x3 &F, Matrix3x3& P, scalar& C) {
@@ -18,9 +18,9 @@ __device__ void snh_lf_volume(const Matrix3x3 &F, Matrix3x3& P, scalar& C) {
 
 __device__ void snh_lf_hessian(const Matrix3x3 &F, const scalar l, const scalar mu, Matrix3x3 d2W_dF2[6]) {
     // (0.25l - mu) * (d^2_I3 / dx^2)
-    d2W_dF2[1] = vec_hat(F[2])  * (-0.25f * l - mu);
-    d2W_dF2[2] = -vec_hat(F[1]) * (-0.25f * l - mu);
-    d2W_dF2[4] = vec_hat(F[0])  * (-0.25f * l - mu);
+    d2W_dF2[1] = vec_hat(F[2])  * (0.25f * l );
+    d2W_dF2[2] = -vec_hat(F[1]) * (0.25f * l );
+    d2W_dF2[4] = vec_hat(F[0])  * (0.25f * l );
 
     // mu/2 * H2 = mu * I_9x9x
     d2W_dF2[0] = Matrix3x3(mu);
@@ -95,8 +95,8 @@ __global__ void kernel_lf_vbd_solve(
     scalar C = 0;
     snh_lf_volume(F, P, C);
     Vector4 gradC(  P * dF_dx, C);
-    gradC *= 0.25 * fem.V[qe_off];
-
+    gradC *= 0.25f * fem.V[qe_off];
+    C *= 0.25f * fem.V[qe_off];
     // shared variable : f, H
     __shared__ scalar s_f_H[2592]; // size = block_size * 12 * sizeof(float)
     s_f_H[tid * 13 + 6] = gradC.w;
@@ -132,7 +132,6 @@ __global__ void kernel_lf_vbd_solve(
 
         // symmetry
         A[0][1] = A[1][0]; A[1][2] = A[2][1]; A[0][2] = A[2][0];
-
         A[0][3] = A[3][0]; A[1][3] = A[3][1]; A[2][3] = A[3][2];
 
         //scalar detH = glm::determinant(s_H);
@@ -140,6 +139,22 @@ __global__ void kernel_lf_vbd_solve(
         Vector4 dx = detH > 1e-6f ? glm::inverse(A) * b : Vector4(0.f);
         ps.p[vid] += Vector3(dx[0], dx[1], dx[2]);
         l[vid] += dx[3];
+
+        /*Matrix3x3 K_inv;
+        K_inv[0][0] = s_f_H[7];
+        K_inv[1][0] = s_f_H[8]; K_inv[1][1] = s_f_H[10];
+        K_inv[2][0] = s_f_H[9]; K_inv[2][1] = s_f_H[11]; K_inv[2][2] = s_f_H[12];
+        K_inv[0][1] = K_inv[1][0]; K_inv[1][2] = K_inv[2][1]; K_inv[0][2] = K_inv[2][0];
+
+        K_inv = glm::inverse(K_inv);
+
+        Vector3 G(s_f_H[3], s_f_H[4], s_f_H[5]);
+        Vector3 f(s_f_H[0], s_f_H[1], s_f_H[2]);
+
+        scalar dt_l = (-s_f_H[6] + glm::dot(G, K_inv*f)) / (Vi[vid] / mt.lambda + glm::dot(G, K_inv * G));
+        Vector3 dt_p = K_inv * G * dt_l;
+        ps.p[vid] += dt_p;
+        l[vid] += dt_l;*/
     }
 }
 

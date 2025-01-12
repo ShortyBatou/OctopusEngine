@@ -6,7 +6,6 @@ GPU_LF_VBD_FEM::GPU_LF_VBD_FEM(const Element &element, const Mesh::Topology &top
     GPU_VBD_FEM(element, topology, geometry, material, young, poisson, damping)
 {
     l = new Cuda_Buffer<scalar>(std::vector<scalar>(geometry.size(), 0.f));
-    d_material->lambda = young / (2.f*(1.f+poisson)*(1.f-2.f*poisson));
 
     const FEM_Shape* shape = get_fem_shape(element);
     const int elem_nb_vert = elem_nb_vertices(element);
