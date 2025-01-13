@@ -229,21 +229,24 @@ void UI_Cuda_Constraint_Rigid_Controller::draw(Entity* entity) {
 	const std::vector<Cuda_Constraint_Rigid_Controller*> components = entity->get_components<Cuda_Constraint_Rigid_Controller>();
 	if (components.empty()) return;
 
-	Cuda_Constraint_Rigid_Controller* rc = components[0];
-	if (ImGui::InputInt("Mode", &rc->_mode)
-		|| ImGui::InputFloat("Event Rate", &rc->_event_rate)
-		|| ImGui::SliderInt("Smoothing Itetrations", &rc->_smooth_iterations, 1, 30)
-		|| ImGui::InputFloat("Move Speed", &rc->_move_speed)
-		|| ImGui::InputFloat("Rotation Speed", &rc->_rot_speed))
-	{
-		for (unsigned int i = 1; i < components.size(); ++i) {
-			std::cout << "CHANGE  " << std::endl;
-			components[i]->_mode = rc->_mode;
-			components[i]->_move_speed = rc->_move_speed;
-			components[i]->_rot_speed = rc->_rot_speed;
-			components[i]->_smooth_iterations = rc->_smooth_iterations;
-			components[i]->_event_rate = rc->_event_rate;
+	for (unsigned int i = 0; i < components.size(); ++i) {
+		std::string name = "Cosntraint " + std::to_string(i);
+		if (ImGui::CollapsingHeader(name.c_str())) {
+			Cuda_Constraint_Rigid_Controller* rc = components[i];
+			if (ImGui::InputInt("Mode", &rc->_mode)
+			|| ImGui::InputFloat("Event Rate", &rc->_event_rate)
+			|| ImGui::SliderInt("Smoothing Itetrations", &rc->_smooth_iterations, 1, 30)
+			|| ImGui::InputFloat("Move Speed", &rc->_move_speed)
+			|| ImGui::InputFloat("Rotation Speed", &rc->_rot_speed))
+			{
+				components[i]->_mode = rc->_mode;
+				components[i]->_move_speed = rc->_move_speed;
+				components[i]->_rot_speed = rc->_rot_speed;
+				components[i]->_smooth_iterations = rc->_smooth_iterations;
+				components[i]->_event_rate = rc->_event_rate;
+			}
 		}
 	}
+
 }
 
