@@ -2,7 +2,7 @@
 #include <set>
 
 // MUST BE ELSEWERE
-void GPU_PBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vert, std::vector<int>& colors) {
+void GPU_PBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vert, std::vector<int>& colors) const {
     d_thread->nb_kernel = 1;
     std::vector<std::set<int> > owners(nb_vert);
     // for each vertice get elements that own this vertice
@@ -17,7 +17,7 @@ void GPU_PBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
     for (int i = 0; i < topology.size(); i += d_fem->elem_nb_vert) {
         // for all vertices, check the neighbor elements colors
         for (int j = 0; j < d_fem->elem_nb_vert; ++j) {
-            for (int n: owners[topology[i + j]]) {
+            for (const int& n: owners[topology[i + j]]) {
                 if (colors[n] != -1) available[colors[n]] = false;
             }
         }

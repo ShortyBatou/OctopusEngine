@@ -3,8 +3,8 @@
 #include "Manager/DebugManager.h"
 #include "Manager/Debug.h"
 
-DebugManager::DebugManager(bool default_draw) : _default_color(ColorBase::Grey(0.8f)), _pause(false),
-                                                _default_draw(default_draw) {
+DebugManager::DebugManager(const bool default_draw) : _default_draw(default_draw), _pause(false),
+                                                _default_color(ColorBase::Grey(0.8f)) {
     _graphic = new GL_Graphic();
     _graphic->set_multi_color(true);
 
@@ -31,7 +31,7 @@ void DebugManager::update() {
     if (!_pause && _default_draw) {
         Debug::Axis(Unit3D::up() * 0.005f, 1.f);
         Debug::SetColor(ColorBase::Red());
-        Debug::Cube(Vector3(0.05f), scalar(0.1f));
+        Debug::Cube(Vector3(0.05f), 0.1f);
         Debug::SetColor(_default_color);
         Debug::UnitGrid(5);
     }

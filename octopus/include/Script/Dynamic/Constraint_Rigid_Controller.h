@@ -13,7 +13,7 @@ public:
 
 	void update() override;
 
-	void rgn_crush();
+	void rgn_crush() const;
 
 	int _mode;
 	scalar _event_rate;

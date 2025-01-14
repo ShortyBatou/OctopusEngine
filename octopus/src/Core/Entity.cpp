@@ -7,7 +7,7 @@ Entity::Entity(const int id) : _id(id) {
     _name = "Entity_" + std::to_string(id);
 }
 
-Entity::Entity(const std::string &name, int id) : _name(name), _id(id) {
+Entity::Entity(const std::string &name, const int id) : _id(id), _name(name) {
 }
 
 void Entity::init() {
@@ -24,14 +24,14 @@ void Entity::late_init() {
 }
 
 void Entity::update() {
-    for(int i = 0; i < _components.size(); ++i) {
-        if (_components[i]->active()) _components[i]->update();
+    for(auto* _component : _components) {
+        if (_component->active()) _component->update();
     }
 }
 
 void Entity::late_update() {
-    for(int i = 0; i < _components.size(); ++i) {
-        if (_components[i]->active()) _components[i]->late_update();
+    for(auto* _component : _components) {
+        if (_component->active()) _component->late_update();
     }
 }
 
@@ -50,7 +50,7 @@ void Entity::remove_component(Component *component) {
 }
 
 Entity::~Entity() {
-    for (auto &_component: _components) {
+    for (const auto* _component: _components) {
         delete _component;
     }
     _components.clear();

@@ -62,8 +62,8 @@ void M_StVK::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x3> &H) {
 }
 
 Matrix3x3 M_NeoHooke::get_pk1(const Matrix3x3 &F) {
-    scalar I_3 = glm::determinant(F);
-    Matrix3x3 d_detF = Matrix::Com(F);
+    const scalar I_3 = glm::determinant(F);
+    const Matrix3x3 d_detF = Matrix::Com(F);
     return this->lambda * (I_3 - 1.f) * d_detF + this->mu * F;
 }
 
@@ -76,7 +76,7 @@ scalar M_NeoHooke::get_energy(const Matrix3x3 &F) {
 
 Matrix3x3 M_Stable_NeoHooke::get_pk1(const Matrix3x3 &F) {
     const scalar I_3 = glm::determinant(F);
-    Matrix3x3 d_detF = Matrix::Com(F);
+    const Matrix3x3 d_detF = Matrix::Com(F);
     return this->lambda * (I_3 - alpha) * d_detF + this->mu * F;
 }
 
@@ -88,9 +88,9 @@ scalar M_Stable_NeoHooke::get_energy(const Matrix3x3 &F) {
 
 void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x3> &d2W_dF2) {
     d2W_dF2.resize(9);
-    Matrix3x3 comF = Matrix::Com(F);
-    scalar detF = glm::determinant(F);
-    scalar s = lambda * (detF - alpha);
+    const Matrix3x3 comF = Matrix::Com(F);
+    const scalar detF = glm::determinant(F);
+    const scalar s = lambda * (detF - alpha);
     // lambda * (I3 - alpha) * H3
     d2W_dF2[0] = Matrix3x3(0);
     d2W_dF2[1] = Matrix::Hat(F[2]) * s;

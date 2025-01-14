@@ -20,7 +20,7 @@ public:
 
 	VTK_Formater& open(const std::string& name);
 
-	VTK_Formater& save_mesh(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies);
+	VTK_Formater& save_mesh(const Mesh::Geometry& geometry, const std::map<Element, Mesh::Topology>& topologies);
 
 	VTK_Formater& start_point_data();
 

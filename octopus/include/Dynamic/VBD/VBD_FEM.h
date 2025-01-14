@@ -34,7 +34,7 @@ struct VBD_FEM : VBD_Object {
 
     void solve(VertexBlockDescent *vbd, scalar dt) override;
 
-    void plot_residual(VertexBlockDescent *vbd, scalar dt);
+    void plot_residual(VertexBlockDescent *vbd, scalar dt) const;
 
     std::vector<scalar> compute_stress(VertexBlockDescent *vbd) const;
     std::vector<scalar> compute_volume(VertexBlockDescent *vbd) const;

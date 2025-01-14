@@ -21,7 +21,7 @@ struct ColorBase {
 };
 
 struct ColorMap {
-    enum Type { Default, Rainbow, Viridis, BnW };
+    enum Type { Default, Rainbow, Viridis, BnW, R2G };
 
     static std::string Type_To_Str(Type type);
 

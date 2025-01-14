@@ -1,7 +1,7 @@
 #include "Dynamic/FEM/ContinuousMaterial.h"
 #include <string>
 
-std::string get_material_name(Material material) {
+std::string get_material_name(const Material material) {
     switch (material) {
         case Hooke: return "Hooke";
         case StVK: return "SaintVenant";
@@ -21,21 +21,21 @@ Matrix3x3 ContinuousMaterial::get_strain_tensor(const Matrix3x3 &F) {
 }
 
 
-Matrix3x3 ContinuousMaterial::pk1_to_chauchy_stress(Matrix3x3 &F, Matrix3x3 &P) {
+Matrix3x3 ContinuousMaterial::pk1_to_chauchy_stress(const Matrix3x3 &F, const Matrix3x3 &P) {
     return P * glm::transpose(F) * (1.f / glm::determinant(F));
 }
 
-Matrix3x3 ContinuousMaterial::chauchy_to_PK1_stress(Matrix3x3 &F, Matrix3x3 &C) {
+Matrix3x3 ContinuousMaterial::chauchy_to_PK1_stress(const Matrix3x3 &F, const Matrix3x3 &C) {
     return glm::determinant(F) * C * glm::transpose(glm::inverse(F));
 }
 
-Matrix3x3 ContinuousMaterial::chauchy_to_PK2_stress(Matrix3x3 &F, Matrix3x3 &C) {
+Matrix3x3 ContinuousMaterial::chauchy_to_PK2_stress(const Matrix3x3 &F, const Matrix3x3 &C) {
     const Matrix3x3 F_inv = glm::inverse(F);
     return glm::determinant(F) * F_inv * C * glm::transpose(F_inv);
 }
 
 // general von misses stress
-scalar ContinuousMaterial::von_mises_stress(Matrix3x3 &C) {
+scalar ContinuousMaterial::von_mises_stress(const Matrix3x3 &C) {
     const scalar s0_1 = C[0][0] - C[1][1];
     const scalar s1_2 = C[1][1] - C[2][2];
     const scalar s0_2 = C[0][0] - C[2][2];

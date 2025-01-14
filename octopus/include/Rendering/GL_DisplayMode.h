@@ -44,7 +44,7 @@ public:
 protected:
     void set_shaders_path(std::vector<std::string> &paths) override;
 
-    void draw_vertices(GL_Buffer<Vector3> *b_vertices) const;
+    void draw_vertices(const GL_Buffer<Vector3> *b_vertices) const;
 
     void draw_line(GL_Buffer<int> *b_line) const;
 

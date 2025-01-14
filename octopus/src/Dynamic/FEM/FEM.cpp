@@ -1,7 +1,7 @@
 #include "Dynamic/FEM/FEM.h"
 
 void FEM_System::step(const scalar dt) {
-    scalar h = dt / (scalar) _nb_substep;
+    const scalar h = dt / static_cast<scalar>(_nb_substep);
     this->step_effects(dt);
     for (unsigned int i = 0; i < _nb_substep; i++) {
         this->step_force(h);
@@ -15,7 +15,7 @@ FEM_System::~FEM_System() {
 }
 
 void FEM_System::clear_fem() {
-    for (Constraint *c: _fems) delete c;
+    for (const Constraint *c: _fems) delete c;
     _fems.clear();
 }
 

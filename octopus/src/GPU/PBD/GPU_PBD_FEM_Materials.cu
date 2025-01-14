@@ -29,7 +29,7 @@ __device__ void hooke_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
 }
 
 
-__device__ void snh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C, scalar alpha) {
+__device__ void snh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C, const scalar alpha) {
     const scalar I_3 = glm::determinant(F);
     const scalar detF = I_3 - alpha;
     C = (detF) * (detF);
@@ -46,8 +46,8 @@ __device__ void snh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
 }
 
 __device__ void dsnh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
-    scalar I_3 = glm::determinant(F);
-    scalar detF = I_3 - 1;
+    const scalar I_3 = glm::determinant(F);
+    const scalar detF = I_3 - 1;
     C = (detF) * (detF);
     Matrix3x3 d_detF; // derivative of det(F) by F
     d_detF[0] = glm::cross(F[1], F[2]);
@@ -57,7 +57,7 @@ __device__ void dsnh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
 }
 
 __device__ void dsnh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
-    scalar I_3 = glm::determinant(F);
+    const scalar I_3 = glm::determinant(F);
     C = squared_norm(F) - 3.f - 2.f * (I_3 - 1.f);
     Matrix3x3 d_detF; // derivative of det(F) by F
     d_detF[0] = glm::cross(F[1], F[2]);

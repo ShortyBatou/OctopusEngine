@@ -50,7 +50,7 @@ void XPBD_FEM_Generic_Coupled::init(const std::vector<Particle*>& particles) {
     }
 
 // overide the XPBD solve function to work with coupled FEM constraint
-void XPBD_FEM_Generic_Coupled::apply(const std::vector<Particle*>& particles, scalar dt) {
+void XPBD_FEM_Generic_Coupled::apply(const std::vector<Particle*>& particles, const scalar dt) {
     if (_stiffness <= 0) return;
     std::vector<Particle*> x(nb());
     for (int i = 0; i < nb(); ++i) {

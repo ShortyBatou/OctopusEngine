@@ -11,9 +11,9 @@ void GL_DisplayMode::init() {
 }
 
 void GL_DisplayMesh::draw() {
-    GL_Geometry *gl_geometry = _graphic->gl_geometry();
-    for (auto &it: _graphic->gl_topologies()) {
-        GL_Topology *gl_topo = it.second;
+    const GL_Geometry *gl_geometry = _graphic->gl_geometry();
+    for (auto &[e, topo]: _graphic->gl_topologies()) {
+        const GL_Topology *gl_topo = topo;
 
         GL_VAO *vao = gl_geometry->vao;
         GL_Buffer<Vector3> *b_vertices = gl_geometry->b_vertex;
@@ -38,8 +38,8 @@ void GL_DisplayMesh::draw() {
             if (_wireframe) draw_triangles_wireframe(b_triangle);
             if (_surface) {
                 if (_graphic->use_element_color()) {
-                    GL_Buffer<int> *b_tri_to_elem = gl_topo->sbo_tri_to_elem;
-                    GL_Buffer<Color> *b_ecolors = gl_topo->sbo_ecolor;
+                    const GL_Buffer<int> *b_tri_to_elem = gl_topo->sbo_tri_to_elem;
+                    const GL_Buffer<Color> *b_ecolors = gl_topo->sbo_ecolor;
                     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, b_tri_to_elem->gl_id());
                     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, b_ecolors->gl_id());
                 }
@@ -50,8 +50,8 @@ void GL_DisplayMesh::draw() {
         if (b_quad->nb_element() > 0) {
             if (_surface) {
                 if (_graphic->use_element_color()) {
-                    GL_Buffer<int> *b_quad_to_elem = gl_topo->sbo_quad_to_elem;
-                    GL_Buffer<Color> *b_ecolors = gl_topo->sbo_ecolor;
+                    const GL_Buffer<int> *b_quad_to_elem = gl_topo->sbo_quad_to_elem;
+                    const GL_Buffer<Color> *b_ecolors = gl_topo->sbo_ecolor;
                     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, b_quad_to_elem->gl_id());
                     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, b_ecolors->gl_id());
                 }
@@ -74,9 +74,9 @@ void GL_DisplayMesh::set_shaders_path(std::vector<std::string> &paths) {
     paths.emplace_back("shaders/flat_ecolors.glsl"); // 3
 }
 
-void GL_DisplayMesh::draw_vertices(GL_Buffer<Vector3> *b_vertices) const {
+void GL_DisplayMesh::draw_vertices(const GL_Buffer<Vector3> *b_vertices) const {
     // emit unifdraw_lineorm color or use color array buffer is multi color
-    int shader_id = _graphic->use_multi_color() && !_graphic->use_element_color() && !_surface && !_wireframe;
+    const int shader_id = _graphic->use_multi_color() && !_graphic->use_element_color() && !_surface && !_wireframe;
     this->_programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
 
     if (shader_id == 0)
@@ -91,7 +91,7 @@ void GL_DisplayMesh::draw_vertices(GL_Buffer<Vector3> *b_vertices) const {
 
 void GL_DisplayMesh::draw_line(GL_Buffer<int> *b_line) const {
     // emit uniform color or use color array buffer is multi color
-    int shader_id = _graphic->use_multi_color() && !_graphic->use_element_color();
+    const int shader_id = _graphic->use_multi_color() && !_graphic->use_element_color();
     _programs[shader_id]->bind(_p, _v, Matrix::Identity4x4());
     if (shader_id == 0) {
         _programs[shader_id]->uniform("color", _graphic->color() * GL_Graphic::wireframe_intencity);

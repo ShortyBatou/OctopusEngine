@@ -17,7 +17,7 @@ __global__ void kernel_integration(
     ps.f[i] *= 0;
 }
 
-__global__ void kernel_velocity_update(scalar dt, GPU_ParticleSystem_Parameters ps) {
+__global__ void kernel_velocity_update(const scalar dt, GPU_ParticleSystem_Parameters ps) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
     if(vid >= ps.nb_particles) return;
     ps.v[vid] = (ps.p[vid] - ps.last_p[vid]) / dt;

@@ -5,7 +5,7 @@
 Mesh *TriangleMesh::build() {
     Mesh *mesh = new Mesh();
     Mesh::Geometry geometry = {_a, _b, _c};
-    Mesh::Topology topology = {0, 1, 2};
+    const Mesh::Topology topology = {0, 1, 2};
     apply_transform(geometry);
     mesh->set_geometry(geometry);
     mesh->set_topology(Triangle, topology);
@@ -37,7 +37,7 @@ void BoxMesh::buildGeometry(Mesh::Geometry &geometry) const {
 }
 
 void BoxMesh::buildTopology(Mesh::Topology &topology) {
-    int topo[24]{
+    constexpr int topo[24]{
         0, 1, 2, 3, 1, 5, 3, 7, 4, 5, 0, 1,
         4, 0, 6, 2, 2, 3, 6, 7, 6, 7, 4, 5
     };

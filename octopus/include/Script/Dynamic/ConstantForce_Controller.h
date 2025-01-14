@@ -10,7 +10,7 @@ public:
 
 	void late_init() override;
 
-	bool check_in_box(Vector3& p) const;
+	[[nodiscard]] bool check_in_box(const Vector3& p) const;
 
 	void update() override;
 

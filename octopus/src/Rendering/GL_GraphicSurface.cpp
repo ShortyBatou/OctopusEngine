@@ -88,8 +88,8 @@ void GL_GraphicSurface::get_quad_wireframe(
         if (!is_high_order(element)) {
             for (const Face<4> &quad: surface_quad) {
                 for (int j = 0; j < 8; j += 2) {
-                    int a = quad.ids[quad_lines[j]];
-                    int b = quad.ids[quad_lines[j + 1]];
+                    const int a = quad.ids[quad_lines[j]];
+                    const int b = quad.ids[quad_lines[j + 1]];
                     Face<2> edge({a, b});
                     auto it2 = surface_line.find(edge);
                     if (it2 == surface_line.end()) {
@@ -183,12 +183,12 @@ void GL_GraphicSurface::extract_topology_in_gl(
     std::map<Element, Map_Triangle> &elem_surface_tri,
     std::map<Element, Map_Quad> &elem_surface_quad,
     std::map<Element, Map_Line> &elem_surface_line,
-    bool high_order_only
+    const bool high_order_only
 ) const {
-    int quad_triangle[6] = {0, 1, 3, 3, 1, 2};
-    for (auto &it: _gl_topologies) {
-        Element element = it.first;
-        GL_Topology *gl_topo = it.second;
+    const int quad_triangle[6] = {0, 1, 3, 3, 1, 2};
+    for (const auto &[e, topo]: _gl_topologies) {
+        Element element = e;
+        GL_Topology *gl_topo = topo;
 
         MeshTools::ExtractTopo<2>(elem_surface_line[element], gl_topo->lines);
 

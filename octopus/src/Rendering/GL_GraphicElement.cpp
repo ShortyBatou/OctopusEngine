@@ -41,7 +41,7 @@ void GL_GraphicElement::update_gl_topology()
 
         // convert quads into two triangles
         static int quad_lines[8] = { 0,1,1,2,2,3,3,0 };
-        int quad_triangle[6] = { 0,1,3, 3,1,2 };
+        const int quad_triangle[6] = { 0,1,3, 3,1,2 };
         gl_topo->quads.resize(quads.size() / 4 * 6);
         gl_topo->quad_to_elem.resize(quads.size() / 4 * 2);
         for (int i = 0; i < quads.size() / 4; i++) {

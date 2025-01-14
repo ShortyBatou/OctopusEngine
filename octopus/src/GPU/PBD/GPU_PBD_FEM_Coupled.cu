@@ -64,7 +64,7 @@ __global__ void kernel_XPBD_Coupled_V0(
     const int eid = eids[tid + offset];
     const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
     const int qid = eid * fem.nb_quadrature;
-    int* topology = fem.topology + vid;
+    const int* topology = fem.topology + vid;
 
 
     Vector3 grad_C[64];
@@ -76,7 +76,7 @@ __global__ void kernel_XPBD_Coupled_V0(
     for (int q = 0; q < fem.nb_quadrature; ++q)
     {
         // must be possible to do in parrallel
-        Vector3* dN = fem.dN + q * fem.elem_nb_vert;
+        const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
         xpbd_constraint_fem_eval_coupled(fem.elem_nb_vert, mt, topology, fem.JX_inv[qid + q], fem.V[qid + q], dN, ps.p,
                                          C, grad_C);
     }

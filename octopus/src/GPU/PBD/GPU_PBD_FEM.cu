@@ -61,7 +61,7 @@ __global__ void kernel_XPBD_V0(
     const int eid = eids[tid + offset];
     const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
     const int qid = eid * fem.nb_quadrature;
-    int* topology = fem.topology+vid;
+    const int* topology = fem.topology+vid;
     for(int m = 0; m < 2; ++m) // nb materials
     {
         Vector3 grad_C[32];
@@ -72,7 +72,7 @@ __global__ void kernel_XPBD_V0(
         for (int q = 0; q < fem.nb_quadrature; ++q) { // must be possible to do in parrallel
             Matrix3x3 JX_inv = fem.JX_inv[qid + q];
             scalar V = fem.V[qid + q];
-            Vector3* dN = fem.dN + q * fem.elem_nb_vert;
+            const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
             xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, C, grad_C);
         }
 

@@ -10,7 +10,7 @@ VTK_Formater& VTK_Formater::open(const std::string& name) {
 	return *this;
 }
 
-VTK_Formater& VTK_Formater::save_mesh(Mesh::Geometry& geometry, std::map<Element, Mesh::Topology>& topologies) {
+VTK_Formater& VTK_Formater::save_mesh(const Mesh::Geometry& geometry, const std::map<Element, Mesh::Topology>& topologies) {
 	file << "DATASET UNSTRUCTURED_GRID\n";
 	nb_vertices = static_cast<int>(geometry.size());
 	// POINTS n dataType
@@ -125,7 +125,7 @@ VTK_Formater& VTK_Formater::add_scalar_data(std::vector<scalar>& data, const std
 	else if (data_mode == VTK::DATA::CELL) assert(data.size() == nb_cells);
 	file << "SCALARS " << name << " float 1\n";
 	file << "LOOKUP_TABLE default\n";
-	for (scalar& d : data) {
+	for (const scalar& d : data) {
 		file << d << " ";
 	}
 	file << "\n";
@@ -136,7 +136,7 @@ VTK_Formater& VTK_Formater::add_vector_data(std::vector<Vector3>& data, const st
 	if (data_mode == VTK::DATA::POINT) assert(data.size() == nb_vertices);
 	else if (data_mode == VTK::DATA::CELL) assert(data.size() == nb_cells);
 	file << "VECTORS " << name << " float\n";
-	for (Vector3& d : data) {
+	for (const Vector3& d : data) {
 		file << d.x << " " << d.y << " " << d.z << "  ";
 	}
 	file << "\n";
@@ -148,7 +148,7 @@ VTK_Formater& VTK_Formater::close() {
 	return *this;
 }
 
-int VTK_Formater::get_cell_type(Element e) {
+int VTK_Formater::get_cell_type(const Element e) {
 	switch (e)
 	{
 	case Line: return 3;

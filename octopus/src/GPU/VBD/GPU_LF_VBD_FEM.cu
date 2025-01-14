@@ -96,7 +96,6 @@ __global__ void kernel_lf_vbd_solve(
     snh_lf_volume(F, P, C);
     Vector4 gradC(  P * dF_dx, C);
     gradC *= 0.25f * fem.V[qe_off];
-    C *= 0.25f * fem.V[qe_off];
     // shared variable : f, H
     __shared__ scalar s_f_H[2592]; // size = block_size * 12 * sizeof(float)
     s_f_H[tid * 13 + 6] = gradC.w;
@@ -159,7 +158,7 @@ __global__ void kernel_lf_vbd_solve(
 }
 
 
-__global__ void kernel_reset(int n, scalar* l)
+__global__ void kernel_reset(const int n, scalar* l)
 {
     const int gid = blockIdx.x * blockDim.x + threadIdx.x;
     if(gid >= n) return;
@@ -168,9 +167,9 @@ __global__ void kernel_reset(int n, scalar* l)
 
 void GPU_LF_VBD_FEM::start(GPU_ParticleSystem* ps, scalar dt)
 {
-    int nb_thread = ps->nb_particles();
-    int block_size = 32;
-    int grid_size = (nb_thread + block_size-1) / block_size;
+    const int nb_thread = ps->nb_particles();
+    const int block_size = 32;
+    const int grid_size = (nb_thread + block_size-1) / block_size;
     kernel_reset<<<grid_size, block_size>>>(nb_thread, l->buffer);
 }
 

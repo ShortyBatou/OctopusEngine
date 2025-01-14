@@ -6,7 +6,7 @@
 #include <Manager/Input.h>
 
 void Cuda_Constraint_Rigid_Controller::late_init() {
-    Cuda_ParticleSystem_Dynamics *cuda_dynamic = _entity->get_component<Cuda_ParticleSystem_Dynamics>();
+    const Cuda_ParticleSystem_Dynamics *cuda_dynamic = _entity->get_component<Cuda_ParticleSystem_Dynamics>();
     Mesh* mesh = _entity->get_component<Mesh>();
     _fixation = new GPU_Plane_Fix(mesh->geometry(), _plane_pos, _plane_normal);
     cuda_dynamic->get_particle_system()->add_constraint(_fixation);
@@ -54,11 +54,11 @@ void Cuda_Constraint_Rigid_Controller::update() {
 
 
     if (_mode == 1) {
-        Matrix4x4 rot = _fixation->rot;
+        const Matrix4x4 rot = _fixation->rot;
         _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
     }
     if (_mode == 2) {
-        Matrix4x4 rot = _fixation->rot;
+        const Matrix4x4 rot = _fixation->rot;
         _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
     }
     if (_mode == 3) {
@@ -71,8 +71,8 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / scalar(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->rot;
+            _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
             _smooth_step++;
             _timer = 0;
         }
@@ -81,8 +81,8 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed / scalar(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->rot;
+            _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
             _smooth_step++;
             _timer = 0;
         }

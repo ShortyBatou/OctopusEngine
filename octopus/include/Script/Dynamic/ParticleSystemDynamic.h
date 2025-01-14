@@ -11,6 +11,7 @@ struct ParticleSystemDynamics_Getters
     [[nodiscard]] virtual std::vector<Vector3> get_init_positions() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_displacement() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_velocity() = 0;
+    [[nodiscard]] virtual std::vector<int> get_masks() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_masses() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_massses_inv() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_displacement_norm() = 0;
@@ -34,6 +35,7 @@ public:
     [[nodiscard]] std::vector<Vector3> get_init_positions() override;
     [[nodiscard]] std::vector<Vector3> get_displacement() override;
     [[nodiscard]] std::vector<Vector3> get_velocity() override;
+    [[nodiscard]] std::vector<int> get_masks() override;
     [[nodiscard]] std::vector<scalar> get_masses() override;
     [[nodiscard]] std::vector<scalar> get_massses_inv() override;
     [[nodiscard]] std::vector<scalar> get_displacement_norm() override;

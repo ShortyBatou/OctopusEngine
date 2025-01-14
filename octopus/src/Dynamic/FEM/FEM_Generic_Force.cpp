@@ -13,7 +13,7 @@ void FEM_Generic_Force::init(const std::vector<Particle *> &particles) {
 }
 
 void FEM_Generic_Force::apply(const std::vector<Particle *> &particles, const scalar) {
-    std::vector<Particle *> p = get_particles(particles);
+    const std::vector<Particle *> p = get_particles(particles);
     for (int i = 0; i < _shape->weights.size(); ++i) {
         Matrix3x3 Jx = get_jacobian(p, _shape->dN[i]);
         Matrix3x3 F = Jx * _JX_inv[i];

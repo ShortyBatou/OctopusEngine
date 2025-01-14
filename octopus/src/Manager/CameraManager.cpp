@@ -23,7 +23,7 @@ void CameraManager::update() {
 
 void CameraManager::move_camera(Camera *camera) const {
     if (!Input::Loop(M_RIGHT)) return;
-    const Vector2 offset = Input::MouseOffset() * _speed * scalar(0.01);
+    const Vector2 offset = Input::MouseOffset() * _speed * 0.01f;
     if (offset.x == 0 && offset.y == 0) return;
 
     const Vector3 front = glm::normalize(camera->position() - camera->target());

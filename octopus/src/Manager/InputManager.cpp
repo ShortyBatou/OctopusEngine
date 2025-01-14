@@ -6,20 +6,20 @@
 
 #include "Manager/InputManager.h"
 
-void key_callback(GLFWwindow *, int key, int, int action, int) {
+void key_callback(GLFWwindow *, const int key, int, const int action, int) {
     if (ImGui::GetIO().WantCaptureKeyboard) return;
     if (action == GLFW_PRESS) Input::Instance().keyboard().set_pressed(static_cast<Key>(key));
     if (action == GLFW_RELEASE) Input::Instance().keyboard().set_released(static_cast<Key>(key));
 }
 
-void mouse_callback(GLFWwindow *, double xpos, double ypos) {
+void mouse_callback(GLFWwindow *, const double xpos, const double ypos) {
     ImGui::GetIO().AddMousePosEvent(static_cast<scalar>(xpos), static_cast<scalar>(ypos));
 
     if (ImGui::GetIO().WantCaptureMouse) return;
     Input::Instance().set_mouse_position(Vector2(static_cast<scalar>(xpos), static_cast<scalar>(ypos)));
 }
 
-void scroll_callback(GLFWwindow *, double xoffset, double yoffset) {
+void scroll_callback(GLFWwindow *, const double xoffset, const double yoffset) {
     ImGuiIO &io = ImGui::GetIO();
     io.AddMouseWheelEvent(static_cast<scalar>(xoffset), static_cast<scalar>(yoffset));
 

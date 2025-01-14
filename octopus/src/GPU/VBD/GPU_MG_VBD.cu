@@ -19,7 +19,6 @@ __global__ void kernel_mg_integration(
 
 void GPU_MG_VBD:: step(const scalar dt) {
     const int n = nb_particles();
-    scalar omega = 1;
     // integration / first guess
     kernel_mg_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
         get_parameters(),y->buffer);

@@ -21,9 +21,9 @@ protected:
         _current_color = color;
     }
 
-    void add_vertice(const Vector3 &p);
+    void add_vertice(const Vector3 &p) const;
 
-    void add_line(int a, int b);
+    void add_line(int a, int b) const;
 
     std::vector<Color> vcolors;
     Color _current_color;

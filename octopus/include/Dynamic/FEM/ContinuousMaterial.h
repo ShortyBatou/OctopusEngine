@@ -30,13 +30,13 @@ struct ContinuousMaterial {
 
     static Matrix3x3 get_strain_tensor(const Matrix3x3 &F);
 
-    static Matrix3x3 pk1_to_chauchy_stress(Matrix3x3 &F, Matrix3x3 &P);
+    static Matrix3x3 pk1_to_chauchy_stress(const Matrix3x3 &F, const Matrix3x3 &P);
 
-    static Matrix3x3 chauchy_to_PK1_stress(Matrix3x3 &F, Matrix3x3 &C);
+    static Matrix3x3 chauchy_to_PK1_stress(const Matrix3x3 &F, const Matrix3x3 &C);
 
-    static Matrix3x3 chauchy_to_PK2_stress(Matrix3x3 &F, Matrix3x3 &C);
+    static Matrix3x3 chauchy_to_PK2_stress(const Matrix3x3 &F, const Matrix3x3 &C);
 
-    static scalar von_mises_stress(Matrix3x3 &C);
+    static scalar von_mises_stress(const Matrix3x3 &C);
 
     virtual ~ContinuousMaterial() = default;
 };

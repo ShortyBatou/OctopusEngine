@@ -71,9 +71,9 @@ struct GPU_FEM : GPU_Dynamic {
                          scalar young, scalar poisson, Material material);
 
     virtual GPU_FEM_Data* build_fem_const(const Element& element, const Mesh::Geometry& geometry, const Mesh::Topology& topology);
-    std::vector<scalar> get_stress(GPU_ParticleSystem *ps) const;
-    std::vector<scalar> get_volume(GPU_ParticleSystem *ps) const;
-    std::vector<scalar> get_volume_diff(GPU_ParticleSystem *ps) const;
+    std::vector<scalar> get_stress(const GPU_ParticleSystem *ps) const;
+    std::vector<scalar> get_volume(const GPU_ParticleSystem *ps) const;
+    std::vector<scalar> get_volume_diff(const GPU_ParticleSystem *ps) const;
 
     [[nodiscard]] GPU_FEM_Pameters get_fem_parameters() const {
         GPU_FEM_Pameters param{};

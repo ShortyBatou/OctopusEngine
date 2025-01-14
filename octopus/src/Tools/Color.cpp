@@ -1,6 +1,6 @@
 #include "Tools/Color.h"
 
-scalar ColorBase::Hue2RGB(scalar p, scalar q, scalar t) {
+scalar ColorBase::Hue2RGB(const scalar p, const scalar q, scalar t) {
     if (t < 0.f) t += 1.f;
     if (t > 1.f) t -= 1.f;
 
@@ -67,5 +67,6 @@ std::map<ColorMap::Type, std::vector<Color> > ColorMap::_map = {
             Color(0.5f, 0.8f, 0.3f, 1.f), Color(0.95f, 0.85f, 0.3f, 1.f)
         }
     },
-    {BnW, {Color(0.), Color(1.)}}
+    {BnW, {Color(0.), Color(1.)}},
+  {R2G, {Color(0.9,0.3,0.3,1), Color(0.9,0.6,0.3,1), Color(0.3,0.9,0.3,1)}}
 };

@@ -12,7 +12,7 @@
 
 void VBD_FEM::compute_inertia(VertexBlockDescent* vbd, const scalar dt) {
     for (int i = 0; i <  vbd->nb_particles(); ++i) {
-        Particle *p = vbd->get(i);
+        const Particle *p = vbd->get(i);
         _y[i] = p->position + p->velocity * dt + ((p->force + p->external_forces) * p->inv_mass + Dynamic::gravity()) * dt * dt;
     }
 }
@@ -58,7 +58,7 @@ void VBD_FEM::solve(VertexBlockDescent *vbd, const scalar dt) {
 
 static int test_id = 0;
 
-void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int vid, scalar mass) {
+void VBD_FEM::solve_vertex(VertexBlockDescent *vbd, const scalar dt, const int vid, const scalar mass) {
     const int nb_owners = static_cast<int>(_owners[vid].size());
     Vector3 f_i = Unit3D::Zero();
     Matrix3x3 H_i = Matrix::Zero3x3();
@@ -110,7 +110,7 @@ void VBD_FEM::solve_element(VertexBlockDescent *ps, const int eid, const int ref
 }
 
 
-void VBD_FEM::plot_residual(VertexBlockDescent *vbd, const scalar dt) {
+void VBD_FEM::plot_residual(VertexBlockDescent *vbd, const scalar dt) const {
     // compute error
     const int nb_vertices = static_cast<int>(_owners.size());
     const std::vector<Vector3> forces = compute_forces(vbd, dt);

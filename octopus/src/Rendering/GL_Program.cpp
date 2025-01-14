@@ -19,7 +19,7 @@ void GL_Program::bind(const Matrix4x4 &p, const Matrix4x4 &v, const Matrix4x4 &m
 void GL_Program::program_use_texture(const char *name, const int unit, const GLuint texture,
                                      const GLuint sampler) const {
     // verifie que l'uniform existe
-    int id = location(_program, name);
+    const int id = location(_program, name);
     if (id < 0) return;
 
     // selectionne l'unite de texture

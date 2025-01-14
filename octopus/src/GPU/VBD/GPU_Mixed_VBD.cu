@@ -6,7 +6,7 @@
 
 
 __global__ void kernel_rk4(
-    const int n, scalar dt, const Vector3 g, const int step,
+    const int n, const scalar dt, const Vector3 g, const int step,
     GPU_ParticleSystem_Parameters ps, Vector3* l, Vector3* k, Vector3* x_t)
 {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -34,14 +34,20 @@ __global__ void kernel_rk4(
         const Vector3 dt_p = (1.f/6.f) * (k[vid * 4] + 2.f * k[vid*4+1] + 2.f * k[vid*4+2] + k[vid*4+3]);
         const Vector3 dt_v = (1.f/6.f) * (l[vid * 4] + 2.f * l[vid*4+1] + 2.f * l[vid*4+2] + l[vid*4+3]);
         if(glm::length(dt_v) > 10) ps.mask[i] = 2;
+        if(ps.mask[i] == 2) {
+            ps.v[vid] = ps.v[vid] + g * dt;
+            ps.p[vid] = x_t[vid] + ps.v[vid] * dt;
+        }
+        else {
+            ps.v[vid] = ps.v[vid] + dt_v;
+            ps.p[vid] = x_t[vid] + dt_p;
+        }
 
-        ps.v[vid] = ps.v[vid] + (ps.mask[i] == 2 ? g * dt : dt_v);
-        ps.p[vid] = x_t[vid] + ps.v[vid] * dt;
     }
     ps.f[vid] *= 0.f;
 }
 
-__global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, scalar* w_max) {
+__global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, const scalar* w_max) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n || ps.mask[i] == 0) return;
     Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
@@ -59,7 +65,7 @@ __global__ void kenerl_semi_exicit_integration2(const int n, const scalar dt, co
 __global__ void kernel_reset_mask(const int n, GPU_ParticleSystem_Parameters ps)
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= n || ps.mask[i] == 0) return;
+    if (i >= n || ps.mask[i] == 0 || ps.mask[i] == 3) return;
     ps.mask[i] = 1;
 }
 
@@ -67,13 +73,18 @@ __global__ void kenerl_semi_exicit_integration3(const int n, const scalar dt, co
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n || ps.mask[i] == 0) return;
     const Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
-    if(glm::length(dt_v) > 10) ps.mask[i] = 2;
+    if(glm::length(dt_v) > 10 && ps.mask[i] != 3) {
+        ps.mask[i] = 2;
+        ps.v[i] = last_v[i];
+    }
 
-    ps.v[i] += g * dt + (ps.mask[i] == 2 ? Vector3(0.f) : dt_v);
+    if(ps.mask[i] == 1) {
+        ps.v[i] += g * dt + dt_v;
+    }
+
     ps.p[i] += ps.v[i] * dt;
     ps.f[i] *= 0;
 }
-
 
 __global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y, Vector3* last_v) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -87,7 +98,9 @@ __global__ void kernel_inertia(const scalar dt, const Vector3 g, GPU_ParticleSys
 
 void GPU_Mixed_VBD::step(const scalar dt) {
     const int n = nb_particles();
-    GPU_ParticleSystem_Parameters ps_param = get_parameters();
+    const GPU_ParticleSystem_Parameters ps_param = get_parameters();
+    kernel_reset_mask<<<(n+31) / 32, 32>>>(n, ps_param);
+
     // Compute inertia and save last_p (doesn't change v or p nor f)
     kernel_inertia<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(), ps_param,y->buffer, last_v->buffer);
 
@@ -100,14 +113,13 @@ void GPU_Mixed_VBD::step(const scalar dt) {
         kenerl_semi_exicit_integration3<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), last_v->buffer);/**/
         //kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);/**/
 
-        // integration Runge-Kutta 4
+        //integration Runge-Kutta 4
         /*for(int j = 0; j < 4; ++j) {
             for(const GPU_Mixed_VBD_FEM* fem : _fems)
                 fem->explicit_step(this, w_max, dt_exp);
             kernel_rk4<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), j, ps_param, l->buffer, k->buffer, rk4_last_p->buffer);
         }/**/
     }
-    kernel_reset_mask<<<(n+31) / 32, 32>>>(n, ps_param);
 
 
     for(int j = 0; j < iteration; ++j) {

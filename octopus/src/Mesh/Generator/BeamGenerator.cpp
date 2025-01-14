@@ -4,10 +4,10 @@ Mesh *BeamMeshGenerator::build() {
     Mesh *mesh = new Mesh();
     build_geometry_grid(mesh->geometry());
     apply_transform(mesh->geometry());
-    int ids[8];
     for (int z = 0; z < _subdivisions.z - 1; ++z)
         for (int y = 0; y < _subdivisions.y - 1; ++y)
             for (int x = 0; x < _subdivisions.x - 1; ++x) {
+                int ids[8];
                 this->get_cell_vertices_ids(x, y, z, ids);
                 add_geometry_at_cell(x, y, z, mesh->geometry());
                 build_topo_at_cell(ids, mesh->topologies());
@@ -19,10 +19,12 @@ void BeamMeshGenerator::build_geometry_grid(Mesh::Geometry &geometry) const {
     for (int z = 0; z < _subdivisions.z; ++z)
         for (int y = 0; y < _subdivisions.y; ++y)
             for (int x = 0; x < _subdivisions.x; ++x)
-                geometry.emplace_back(x * _x_step, y * _y_step, z * _z_step);
+                geometry.emplace_back(  static_cast<scalar>(x) * _x_step,
+                                        static_cast<scalar>(y) * _y_step,
+                                        static_cast<scalar>(z) * _z_step);
 }
 
-void BeamMeshGenerator::get_cell_vertices_ids(int x, int y, int z, int *ids) const {
+void BeamMeshGenerator::get_cell_vertices_ids(const int x, const int y, const int z, int *ids) const {
     ids[0] = icoord_to_id(x, y, z);
     ids[1] = icoord_to_id(x + 1, y, z);
     ids[2] = icoord_to_id(x + 1, y, z + 1);
@@ -34,7 +36,7 @@ void BeamMeshGenerator::get_cell_vertices_ids(int x, int y, int z, int *ids) con
     ids[7] = icoord_to_id(x, y + 1, z + 1);
 }
 
-int BeamMeshGenerator::icoord_to_id(int x, int y, int z) const {
+int BeamMeshGenerator::icoord_to_id(const int x, const int y, const int z) const {
     return x + y * _subdivisions.x + z * _subdivisions.y * _subdivisions.x;
 }
 
@@ -49,7 +51,7 @@ void PrismBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh::
         0, 1, 3, 4, 5, 7,
         1, 2, 3, 5, 6, 7
     };
-    for (int prysm: prysms)
+    for (const int& prysm: prysms)
         topologies[Prism].push_back(ids[prysm]);
 }
 
@@ -70,7 +72,7 @@ void PyramidBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh
         3, 0, 4, 7, 8,
         4, 5, 6, 7, 8
     };
-    for (int pyramid: pyramids) {
+    for (const int& pyramid: pyramids) {
         int id;
         if (pyramid == 8) id = _mid_id;
         else id = ids[pyramid];
@@ -83,13 +85,13 @@ void TetraBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh::
     static int tetras[24]{0, 4, 6, 5, 3, 6, 2, 0, 0, 4, 7, 6, 3, 6, 0, 7, 2, 0, 6, 1, 6, 0, 5, 1};
     //static unsigned tetras[20]{ 1,6,5,4, 1,2,6,3, 0,1,4,3, 7,6,3,4, 1,3,6,4 }; int nb = 20;
     //static unsigned tetras[20]{ 0,3,2,7, 7,4,5,0, 7,6,2,5, 2,1,0,5, 7,0,5,0}; int nb = 20;
-    for (int tetra: tetras)
+    for (const int& tetra: tetras)
         topologies[Tetra].push_back(ids[tetra]);
 }
 
 
 void subdive_tetra(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies) {
-    Mesh::Topology tetras = topologies[Tetra];
+    const Mesh::Topology& tetras = topologies[Tetra];
     topologies[Tetra].clear();
     topologies[Tetra10].clear();
 
@@ -104,10 +106,10 @@ void subdive_tetra(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &
         int j = 0;
         for (; j < 4; ++j) ids[j] = tetras[i + j];
 
-        for (Edge &tet_e: tetra_edges) {
+        for (auto &[e_first, e_second]: tetra_edges) {
             Edge e;
-            int e1 = ids[tet_e.first];
-            int e2 = ids[tet_e.second];
+            int e1 = ids[e_first];
+            int e2 = ids[e_second];
             if (e1 > e2) std::swap(e1, e2);
             e.first = e1;
             e.second = e2;
@@ -118,10 +120,10 @@ void subdive_tetra(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &
                 id = edges[e];
             } else {
                 id = static_cast<int>(geometry.size());
-                Vector3 pa = Vector3(geometry[e1]);
-                Vector3 pb = Vector3(geometry[e2]);
+                Vector3 pa(geometry[e1]);
+                Vector3 pb(geometry[e2]);
 
-                Vector3 p = static_cast<scalar>(0.5) * (pa + pb);
+                Vector3 p = 0.5f * (pa + pb);
                 geometry.push_back(p);
                 edges[e] = id;
             }
@@ -129,21 +131,19 @@ void subdive_tetra(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &
             ++j;
         }
 
-        for (int k: tetra_10_topo) {
+        for (const int& k: tetra_10_topo) {
             topologies[Tetra].push_back(ids[k]);
         }
     }
 }
 
 void tetra4_to_tetra10(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies) {
-    Mesh::Topology &tetras = topologies[Tetra];
+    const Mesh::Topology &tetras = topologies[Tetra];
 
     topologies[Tetra10].clear();
 
     using Edge = std::pair<int, int>;
     Edge tetra_edges[6] = {Edge(0, 1), Edge(1, 2), Edge(0, 2), Edge(0, 3), Edge(1, 3), Edge(2, 3)};
-    int e1, e2;
-    Edge e;
     std::map<Edge, int> edges;
     for (int i = 0; i < tetras.size(); i += 4) {
         int ids[10];
@@ -151,11 +151,11 @@ void tetra4_to_tetra10(Mesh::Geometry &geometry, std::map<Element, Mesh::Topolog
         for (; j < 4; ++j) ids[j] = tetras[i + j];
 
         for (Edge &tet_e: tetra_edges) {
-            e1 = ids[tet_e.first];
-            e2 = ids[tet_e.second];
+
+            int e1 = ids[tet_e.first];
+            int e2 = ids[tet_e.second];
             if (e1 > e2) std::swap(e1, e2);
-            e.first = e1;
-            e.second = e2;
+            Edge e(e1,e2);
 
             int id;
             // edge found in map
@@ -163,8 +163,8 @@ void tetra4_to_tetra10(Mesh::Geometry &geometry, std::map<Element, Mesh::Topolog
                 id = edges[e];
             } else {
                 id = static_cast<int>(geometry.size());
-                Vector3 pa = Vector3(geometry[e1]);
-                Vector3 pb = Vector3(geometry[e2]);
+                Vector3 pa(geometry[e1]);
+                Vector3 pb(geometry[e2]);
 
                 Vector3 p = static_cast<scalar>(0.5) * (pa + pb);
                 geometry.push_back(p);
@@ -403,7 +403,6 @@ void tetra_refine(
             Vector3 pb = ref_tetra_geometry[i + ref_tetra_edges[j + 1]];
             Vector3 p = 0.5f * (pa + pb);
 
-
             Face<2> e(e_topo);
             int id;
             // edge found in map
@@ -436,11 +435,11 @@ void tetra_refine(
 
 
 /// Create a mapping of a Tetra mesh into linear Tetra (that can be refined)
-MeshMap *tetra_to_linear(Mesh *mesh, Element elem, int subdivision) {
+MeshMap *tetra_to_linear(Mesh *mesh, const Element elem, const int subdivision) {
     if (elem != Tetra && elem != Tetra10 && elem != Tetra20) return nullptr;
 
-    Mesh::Topology tetras = mesh->topologies()[elem];
-    int nb_vert = elem_nb_vertices(elem);
+    const Mesh::Topology tetras = mesh->topologies()[elem];
+    const int nb_vert = elem_nb_vertices(elem);
 
     TetraConverter *tetra_converter = new TetraConverter();
     tetra_converter->init();
@@ -465,7 +464,7 @@ MeshMap *tetra_to_linear(Mesh *mesh, Element elem, int subdivision) {
         t_ids[t_id] = t_id;
         for (int j = 0; j < 4; ++j) // we only needs the first 4 vertices
         {
-            int k = t_id * 4 + j;
+            const int k = t_id * 4 + j;
             ref_tetra_geometry[k] = ref_tetra_geom[j];
             int id = tetras[i + j];
             if (v_ids[id] == -1) {

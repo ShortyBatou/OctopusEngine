@@ -65,7 +65,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -78,32 +78,38 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 5e6;
-        args.poisson = 0.475;
+        args.young = 1e7;
+        args.poisson = 0.49;
         args.damping = 5e-7;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
-        args.dir = Unit3D::right();
+        args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
-        args.display = FEM_DataDisplay::Type::Stress;
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        args.display = FEM_DataDisplay::Type::Mask;
+        args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
-        const Vector3 size(2, 1, 1);
-        Vector3I cells = Vector3I(12, 6, 6);
-        args.iteration = 10;
-        args.sub_iteration = 15;
-        build_mg_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, 0.5, true);
-        args.iteration = 2;
-        args.sub_iteration = 50;
-        build_vbd_entity(Vector3(0,0,2.2),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, true);
+        const Vector3 size(1, 1, 1);
+        Vector3I cells = Vector3I(24, 12, 12);
+        args.iteration = 20;
+        args.sub_iteration = 10;
+        //build_mg_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, 0.5, true);
+        args.iteration = 20;
+        args.sub_iteration = 10;
+        //build_vbd_entity(Vector3(0,0,2.2),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, true);
 
-        build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
+        args.iteration = 4;
+        args.sub_iteration = 25;
+        build_vbd_entity(Vector3(0,0.5,2.2),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
+        args.iteration = 4;
+        args.sub_iteration = 25;
+        build_mixed_vbd_entity(Vector3(0,0.5,1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 10);
+        //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
 
         args.sub_iteration = 400;
-        args.damping = 1e-6;
-        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, true);
+        args.damping = 5e-7;
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -152,13 +158,13 @@ struct BaseScene final : Scene
             if(args.scenario_1!=-1)
             {
                 const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(Unit3D::Zero() + args.dir*0.01f, -args.dir, args.scenario_1);
-                rd_constraint_1->_smooth_iterations = 30;
+                rd_constraint_1->_smooth_iterations = 5;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)
             {
                 const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 );
-                rd_constraint_2->_smooth_iterations = 30;
+                rd_constraint_2->_smooth_iterations = 5;
                 e->add_component(rd_constraint_2);
             }
         }

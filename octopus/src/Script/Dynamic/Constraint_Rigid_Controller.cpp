@@ -6,8 +6,8 @@ void Constraint_Rigid_Controller::late_init() {
     ParticleSystem *ps = ps_dynamic->getParticleSystem();
     std::vector<int> ids;
     for (int i = 0; i < ps->particles().size(); ++i) {
-        Particle *part = ps->particles()[i];
-        Vector3 dir = part->init_position - _plane_pos + _plane_normal * 0.001f;
+        const Particle *part = ps->particles()[i];
+        const Vector3 dir = part->init_position - _plane_pos + _plane_normal * 0.001f;
         if (glm::dot(dir, _plane_normal) >= 0) {
             ids.push_back(i);
         }
@@ -51,11 +51,11 @@ void Constraint_Rigid_Controller::update() {
 
     _fixation->set_active(_mode != -1);
     if (_mode == 1) {
-        Matrix4x4 rot = _fixation->rot;
+        const Matrix4x4 rot = _fixation->rot;
         _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
     }
     if (_mode == 2) {
-        Matrix4x4 rot = _fixation->rot;
+        const Matrix4x4 rot = _fixation->rot;
         _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
     }
     if (_mode == 3) {
@@ -70,8 +70,8 @@ void Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / scalar(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->rot;
+            _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
             _smooth_step++;
             _timer = 0;
         }
@@ -80,8 +80,8 @@ void Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed / scalar(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->rot;
+            _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
             _smooth_step++;
             _timer = 0;
         }
@@ -91,8 +91,8 @@ void Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            _fixation->offset += _plane_normal * _move_speed / scalar(_smooth_iterations);
-            _plane->_o = _fixation->com + _fixation->offset / scalar(_smooth_iterations);
+            _fixation->offset += _plane_normal * _move_speed / static_cast<scalar>(_smooth_iterations);
+            _plane->_o = _fixation->com + _fixation->offset / static_cast<scalar>(_smooth_iterations);
             _smooth_step++;
             _timer = 0;
         }
@@ -101,15 +101,15 @@ void Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            _fixation->offset -= _plane_normal * _move_speed / scalar(_smooth_iterations);
-            _plane->_o = _fixation->com + _fixation->offset / scalar(_smooth_iterations);
+            _fixation->offset -= _plane_normal * _move_speed / static_cast<scalar>(_smooth_iterations);
+            _plane->_o = _fixation->com + _fixation->offset / static_cast<scalar>(_smooth_iterations);
             _smooth_step++;
             _timer = 0;
         }
     }
 }
 
-void Constraint_Rigid_Controller::rgn_crush() {
+void Constraint_Rigid_Controller::rgn_crush() const {
     ParticleSystemDynamic *ps_dynamic = this->_entity->get_component<ParticleSystemDynamic>();
     ParticleSystem *ps = ps_dynamic->getParticleSystem();
     for (const auto part: ps->particles()) {

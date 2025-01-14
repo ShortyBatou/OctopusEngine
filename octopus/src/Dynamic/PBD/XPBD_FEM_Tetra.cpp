@@ -14,7 +14,7 @@ void XPBD_FEM_Tetra::init(const std::vector<Particle *> &particles) {
     JX[1] = X[1] - X[3];
     JX[2] = X[2] - X[3];
 
-    V_init = std::abs(glm::determinant(JX)) / scalar(6);
+    V_init = std::abs(glm::determinant(JX)) / 6.f;
     JX_inv = glm::inverse(JX);
     this->_stiffness = material->get_stiffness() * V_init;
     V = V_init;
@@ -22,14 +22,14 @@ void XPBD_FEM_Tetra::init(const std::vector<Particle *> &particles) {
 
 
 bool XPBD_FEM_Tetra::project(const std::vector<Particle *> &x, std::vector<Vector3> &grads, scalar &C) {
-    Matrix3x3 Jx = Matrix::Zero3x3(), F, P;
+    Matrix3x3 Jx = Matrix::Zero3x3(), P;
     Jx[0] = x[0]->position - x[3]->position;
     Jx[1] = x[1]->position - x[3]->position;
     Jx[2] = x[2]->position - x[3]->position;
 
-    F = Jx * JX_inv;
+    const Matrix3x3 F = Jx * JX_inv;
     material->get_pk1_and_energy(F, P, C);
-    V = std::abs(glm::determinant(Jx)) / scalar(6);
+    V = std::abs(glm::determinant(Jx)) / 6.f;
 
     P = P * glm::transpose(JX_inv);
 
@@ -38,7 +38,7 @@ bool XPBD_FEM_Tetra::project(const std::vector<Particle *> &x, std::vector<Vecto
     grads[2] = P[2];
     grads[3] = -grads[0] - grads[1] - grads[2];
 
-    if (std::abs(C) <= scalar(1e-12)) return false;
+    if (std::abs(C) <= 1e-12) return false;
 
     return true;
 }

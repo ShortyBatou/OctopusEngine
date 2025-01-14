@@ -57,6 +57,11 @@ std::vector<Vector3> Cuda_ParticleSystem_Dynamics::get_velocity()
     _gpu_ps->get_velocity(velocity);
     return velocity;
 }
+[[nodiscard]] std::vector<int> Cuda_ParticleSystem_Dynamics::get_masks() {
+    std::vector<int> masks;
+    _gpu_ps->get_masks(masks);
+    return masks;
+}
 
 std::vector<scalar> Cuda_ParticleSystem_Dynamics::get_masses()
 {

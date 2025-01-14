@@ -85,7 +85,7 @@ void Application::init_glfw() {
     // a utiliser avec l'input manager
     glfwSetKeyCallback(
         AppInfo::Window(),
-        [](GLFWwindow* window, int key, int scancode, int action, int mods)
+        [](GLFWwindow* window, const int key, const int, const int action, const int)
         {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             {
@@ -95,7 +95,7 @@ void Application::init_glfw() {
 
     // RESIZE
     glfwSetFramebufferSizeCallback(
-        AppInfo::Window(), [](GLFWwindow* window, int width, int height)
+        AppInfo::Window(), [](GLFWwindow*, const int width, const int height)
         {
             glViewport(0, 0, width, height);
             AppInfo::Instance().set_window_size(width, height);

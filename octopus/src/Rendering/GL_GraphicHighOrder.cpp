@@ -15,7 +15,7 @@ GL_GraphicHighOrder::GL_GraphicHighOrder(const int quality, const Color &color) 
 
 void GL_GraphicHighOrder::update_gl_vcolors() {
     Element element = Line;
-    FEM_Shape *shape = nullptr;
+    const FEM_Shape *shape = nullptr;
     int element_size = 0;
     _gl_geometry->vcolors.resize(_ref_geometry.size());
     for (int i = 0; i < _ref_geometry.size(); ++i) {
@@ -37,7 +37,7 @@ void GL_GraphicHighOrder::update_gl_vcolors() {
 
 void GL_GraphicHighOrder::update_gl_geometry() {
     Element element = Element::Line;
-    FEM_Shape *shape = nullptr;
+    const FEM_Shape *shape = nullptr;
     unsigned int element_size = 0;
     _gl_geometry->geometry.resize(_ref_geometry.size());
     for (int i = 0; i < _ref_geometry.size(); ++i) {
@@ -97,7 +97,7 @@ void GL_GraphicHighOrder::rebuild_geometry(std::map<Element, Map_Triangle> &elem
 }
 
 void GL_GraphicHighOrder::rebuild_wireframe(std::map<Element, Map_Line> &elem_surface_line,
-                                            std::map<int, int> &map_id) {
+                                            std::map<int, int> &map_id) const {
     for (const auto &it: _mesh->topologies()) {
         Element element = it.first;
         std::set<Face<2> > remaped_wireframe;

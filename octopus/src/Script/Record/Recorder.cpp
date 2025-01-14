@@ -129,7 +129,7 @@ void Graphic_VTK_Recorder::save() {
 
 
 void FEM_Flexion_error_recorder::init(Entity *entity) {
-    auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
+    const auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
     assert(fem_dynamic != nullptr);
     _ps = fem_dynamic->getParticleSystem();
 
@@ -153,7 +153,7 @@ void FEM_Flexion_error_recorder::init(Entity *entity) {
 
 
 void FEM_Flexion_error_recorder::add_data_json(std::ofstream &json) {
-    Particle *p = _ps->get(p_id);
+    const Particle *p = _ps->get(p_id);
     json <<
             "{"
             << "\"error\" : " << glm::length2(_p_target - p->position) << ","
@@ -240,7 +240,7 @@ void FEM_Torsion_error_recorder::add_data_json(std::ofstream &json) {
             "}";
 }
 
-void FEM_Torsion_error_recorder::add_scalar_array(std::ofstream &json, std::vector<scalar> &s_array) {
+void FEM_Torsion_error_recorder::add_scalar_array(std::ofstream &json, const std::vector<scalar> &s_array) {
     json << "[";
     for (int i = 0; i < s_array.size(); ++i) {
         json << s_array[i];

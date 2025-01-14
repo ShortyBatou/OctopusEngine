@@ -219,8 +219,8 @@ private:
 
 class FEM_Torsion_error_recorder : public Recorder {
 public:
-    FEM_Torsion_error_recorder(scalar max_rotation, scalar beam_length)
-        : _max_rotation(max_rotation), _beam_length(beam_length), _ps(nullptr), p_ids({}) {
+    FEM_Torsion_error_recorder(const scalar max_rotation, const scalar beam_length)
+        : p_ids({}), _ps(nullptr), _max_rotation(max_rotation), _beam_length(beam_length) {
     }
 
     void init(Entity *entity) override;
@@ -237,7 +237,7 @@ public:
 
     void add_data_json(std::ofstream &json) override;
 
-    void add_scalar_array(std::ofstream &json, std::vector<scalar> &s_array);
+    void add_scalar_array(std::ofstream &json, const std::vector<scalar> &s_array);
 
 private:
     std::vector<int> p_ids;

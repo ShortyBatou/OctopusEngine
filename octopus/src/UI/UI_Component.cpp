@@ -142,7 +142,7 @@ void UI_Mesh_Display::draw(Entity* entity) {
 
 
 void UI_Data_Recorder::draw(Entity* entity) {
-	int id = entity->id() - 1;
+	const int id = entity->id() - 1;
 	if(saved.size() <= id) {
 		saved.push_back(false);
 		save_frame.push_back(0);
@@ -203,7 +203,7 @@ void UI_PBD_Dynamic::draw(Entity* entity) {
 }
 
 void UI_Constraint_Rigid_Controller::draw(Entity* entity) {
-	std::vector<Constraint_Rigid_Controller*> components = entity->get_components<Constraint_Rigid_Controller>();
+	const std::vector<Constraint_Rigid_Controller*> components = entity->get_components<Constraint_Rigid_Controller>();
 	if (components.empty()) return;
 
 	Constraint_Rigid_Controller* rc = components[0];

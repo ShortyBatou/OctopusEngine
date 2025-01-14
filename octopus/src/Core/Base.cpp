@@ -76,7 +76,7 @@ scalar cubic_max_abs_root(const scalar a, const scalar b, const scalar c) {
 
     scalar x;
     if (r * r < q * q * q) {
-        scalar sqrt_q = -2.0f * sqrtf(q);
+        const scalar sqrt_q = -2.0f * sqrtf(q);
         // Three Real Roots
         const scalar t = acos(std::clamp(r / sqrt(q * q * q), -1.0f, 1.0f));
         const scalar x0 = sqrt_q * cos((t) / 3.0f) - a / 3.0f;
@@ -106,7 +106,7 @@ scalar mat3_f_trace_cg(const scalar A, const scalar B, const scalar C, Vector3 &
 
     const scalar D = y * y - 4.0f * d;
     if (D < 1e-10f) {
-        float D2 = std::max(-4.0f * (b - y), 0.0f);
+        const float D2 = std::max(-4.0f * (b - y), 0.0f);
         q1 = q2 = y * 0.5f;
         p1 = +sqrtf(D2) * 0.5f;
         p2 = -sqrtf(D2) * 0.5f;

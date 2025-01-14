@@ -16,7 +16,7 @@ void ConstantForce_Controller::late_init() {
 	ps->add_constraint(_cf);
 }
 
-bool ConstantForce_Controller::check_in_box(Vector3& p) const {
+bool ConstantForce_Controller::check_in_box(const Vector3& p) const {
 	return p.x > _pmin.x && p.y > _pmin.y && p.z > _pmin.z
 		&& p.x <= _pmax.x && p.y <= _pmax.y && p.z <= _pmax.z;
 }

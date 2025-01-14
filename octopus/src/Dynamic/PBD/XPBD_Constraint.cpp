@@ -42,8 +42,8 @@ scalar XPBD_Constraint::get_dual_residual(const std::vector<Particle*>& particle
 
 
 void XPBD_DistanceConstraint::init(const std::vector<Particle*>& particles) {
-    Vector3 pa = particles[ids[0]]->position;
-    Vector3 pb = particles[ids[1]]->position;
+    const Vector3 pa = particles[ids[0]]->position;
+    const Vector3 pb = particles[ids[1]]->position;
     _rest_length = glm::distance(pa, pb);
 }
 

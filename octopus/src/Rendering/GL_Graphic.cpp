@@ -159,7 +159,7 @@ void GL_Graphic::update_gl_topology() {
             case Line: gl_topo->lines = it.second; break;
             case Triangle: gl_topo->triangles = it.second; break;
             case Quad: gl_topo->quads = it.second; break;
-            default: break;
+            default: ;
         }
         if (element == Line) continue;
 

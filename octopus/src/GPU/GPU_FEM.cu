@@ -116,7 +116,7 @@ __global__ void kernel_compute_volume_diff(
     diff_volumes[eid] = diff_volume;
 }
 
-std::vector<scalar> GPU_FEM::get_stress(GPU_ParticleSystem* ps) const
+std::vector<scalar> GPU_FEM::get_stress(const GPU_ParticleSystem* ps) const
 {
     kernel_compute_stress<<<(d_fem->nb_element + 31) / 32, 32>>>(
         *d_material, ps->get_parameters(), get_fem_parameters(), cb_elem_data->buffer
@@ -127,7 +127,7 @@ std::vector<scalar> GPU_FEM::get_stress(GPU_ParticleSystem* ps) const
     return stress;
 }
 
-std::vector<scalar> GPU_FEM::get_volume(GPU_ParticleSystem* ps) const
+std::vector<scalar> GPU_FEM::get_volume(const GPU_ParticleSystem* ps) const
 {
     kernel_compute_volume<<<(d_fem->nb_element + 31) / 32, 32>>>(
         ps->get_parameters(), get_fem_parameters(), cb_elem_data->buffer
@@ -137,7 +137,7 @@ std::vector<scalar> GPU_FEM::get_volume(GPU_ParticleSystem* ps) const
     return volumes;
 }
 
-std::vector<scalar> GPU_FEM::get_volume_diff(GPU_ParticleSystem* ps) const
+std::vector<scalar> GPU_FEM::get_volume_diff(const GPU_ParticleSystem* ps) const
 {
     kernel_compute_volume_diff<<<(d_fem->nb_element + 31) / 32, 32>>>(
         ps->get_parameters(), get_fem_parameters(), cb_elem_data->buffer

@@ -66,6 +66,7 @@ struct GPU_ParticleSystem
     void get_prev_position(std::vector<Vector3>& p) const { _data->_cb_prev_position->get_data(p); }
     void get_velocity(std::vector<Vector3>& v) const { _data->_cb_velocity->get_data(v); }
     void get_forces(std::vector<Vector3>& f) const { _data->_cb_forces->get_data(f); }
+    void get_masks(std::vector<int>& masks) const { _data->_cb_mask->get_data(masks); }
     void get_mass(std::vector<scalar>& m) const { _data->_cb_mass->get_data(m); }
     void get_inv_mass(std::vector<scalar>& w) const { _data->_cb_inv_mass->get_data(w); }
     void get_init_position(std::vector<Vector3>& p) const { _data->_cb_init_position->get_data(p); }

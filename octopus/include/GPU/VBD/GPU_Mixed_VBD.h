@@ -15,6 +15,17 @@ struct GPU_Mixed_VBD final : GPU_VBD {
         k = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size() * 4));
         last_v = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size()));
         rk4_last_p = new Cuda_Buffer<Vector3>(std::vector<Vector3>(positions.size()));
+
+        const scalar f = 0.01;
+        const scalar m_max = *std::max_element(masses.begin(), masses.end());
+        const scalar thresh = m_max * f;
+        std::vector<int> masks(masses.size());
+        for(int i = 0; i < masses.size(); ++i) {
+            if(masses[i] >= thresh) masks[i] = 1;
+            else masks[i] = 3;
+        }
+        this->_data->_cb_mask->load_data(masks);
+
     }
 
     void step(scalar dt) override;

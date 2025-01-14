@@ -1,7 +1,7 @@
 #include "Rendering/Camera.h"
 #include <UI/AppInfo.h>
 
-void Camera::build(scalar near, scalar far, scalar fov, ProjectionType type)
+void Camera::build(const scalar near, const scalar far, const scalar fov, const ProjectionType type)
 {
     _near = near;
     _far  = far;
@@ -27,7 +27,7 @@ void Camera::update_vp()
         _projection = glm::ortho(-right, right, -top, top, _near, _far);
     }
 
-    Vector3 lookDir = _target - _position;
+    const Vector3 lookDir = _target - _position;
     _up = glm::cross(lookDir, glm::vec3(0.f, 1.f, 0.f));
     _up = glm::cross(_up, lookDir);
     _up = glm::normalize(_up);

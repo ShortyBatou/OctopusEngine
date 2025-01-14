@@ -22,7 +22,7 @@ public:
     void rebuild_geometry(std::map<Element, Map_Triangle> &elem_surface_tri,
                           std::map<Element, Map_Quad> &elem_surface_quad, std::map<int, int> &map_id);
 
-    void rebuild_wireframe(std::map<Element, Map_Line> &elem_surface_line, std::map<int, int> &map_id);
+    void rebuild_wireframe(std::map<Element, Map_Line> &elem_surface_line, std::map<int, int> &map_id) const;
 
     void refine(std::map<Element, Map_Triangle> &elem_surface_tri, std::map<Element, Map_Quad> &elem_surface_quad,
                 std::map<Element, Map_Line> &elem_surface_line);

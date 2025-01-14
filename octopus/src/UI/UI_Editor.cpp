@@ -28,7 +28,7 @@ void UI_Editor::draw() {
     AppInfo::Window_sizes(wx, wy);
 
     ImGui::SetNextWindowPos(ImVec2(10.f, 10.f));
-    ImGui::SetNextWindowSize(ImVec2(500.f, scalar(wy) - 40.f));
+    ImGui::SetNextWindowSize(ImVec2(500.f, static_cast<scalar>(wy) - 40.f));
     ImGui::Begin(name().c_str());
     if (ImGui::Button("Pause")) {
         _step = true;
@@ -136,7 +136,7 @@ void UI_Editor::example() {
 
     // Arrow buttons with Repeater
     static int counter = 0;
-    float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+    const float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
     ImGui::PushButtonRepeat(true);
     if (ImGui::ArrowButton("##left", ImGuiDir_Left)) { counter--; }
     ImGui::SameLine(0.0f, spacing);
@@ -242,9 +242,9 @@ void UI_Editor::example() {
 }
 
 void UI_Editor::clear() {
-    for (UI_Component *ui: _managers_ui) delete ui;
-    for (UI_Component *ui: _components_ui) delete ui;
-    for (UI_Display *ui: _core_ui) delete ui;
+    for (const UI_Component *ui: _managers_ui) delete ui;
+    for (const UI_Component *ui: _components_ui) delete ui;
+    for (const UI_Display *ui: _core_ui) delete ui;
     _managers_ui.clear();
     _components_ui.clear();
     _core_ui.clear();

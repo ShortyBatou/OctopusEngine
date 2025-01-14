@@ -255,7 +255,7 @@ __global__ void kernel_explicit_fem_sum_partial_forces(const int n, GPU_Particle
     ps.f[vid] = fi;
 }
 
-void GPU_Mixed_VBD_FEM::explicit_step(GPU_ParticleSystem* ps, Cuda_Buffer<scalar>* w_max, scalar dt) const
+void GPU_Mixed_VBD_FEM::explicit_step(const GPU_ParticleSystem* ps, Cuda_Buffer<scalar>* w_max, scalar dt) const
 {
     if(d_fem->elem_nb_vert == 4) {
         // if we use w_max has filter

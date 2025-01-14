@@ -54,6 +54,12 @@ std::vector<Vector3> ParticleSystemDynamic::get_velocity()
     return velocities;
 }
 
+std::vector<int> ParticleSystemDynamic::get_masks() {
+    std::vector<int> masks(_ps->nb_particles());
+    for (int i = 0; i < _ps->nb_particles(); ++i)
+        masks[i] = _ps->get(i)->mask;
+    return masks;
+}
 
 std::vector<scalar> ParticleSystemDynamic::get_masses()
 {

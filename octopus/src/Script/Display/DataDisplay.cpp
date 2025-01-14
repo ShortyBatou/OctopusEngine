@@ -11,6 +11,7 @@ std::string FEM_DataDisplay::Type_To_Str(const Type mode) {
         case Mass: return "Mass";
         case Inv_Mass: return "Inverse Mass";
         case Velocity: return "Velocity";
+        case Mask: return "Mask";
         default: return "";
     }
 }
@@ -31,7 +32,7 @@ std::vector<Color> FEM_DataDisplay::convert_to_color(const std::vector<scalar> &
 
     std::vector<Color> colors(data.size());
     for (size_t i = 0; i < data.size(); ++i) {
-        scalar t = (diff > eps) ? (data[i] - min) / diff : 0.f;
+        const scalar t = (diff > eps) ? (data[i] - min) / diff : 0.f;
         colors[i] = ColorMap::evaluate(t);
     }
     return colors;
@@ -47,54 +48,54 @@ void FEM_DataDisplay::update() {
     } else if (_mode == V_Stress) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _fem_dynamic->get_stress_vertices();
+        const std::vector<scalar> data = _fem_dynamic->get_stress_vertices();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Displacement) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _ps_dynamic->get_displacement_norm();
+        const std::vector<scalar> data = _ps_dynamic->get_displacement_norm();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Mass) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _ps_dynamic->get_masses();
+        const std::vector<scalar> data = _ps_dynamic->get_masses();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Inv_Mass) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _ps_dynamic->get_massses_inv();
+        const std::vector<scalar> data = _ps_dynamic->get_massses_inv();
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Velocity) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(false);
-        std::vector<scalar> data = _ps_dynamic->get_velocity_norm();
+        const std::vector<scalar> data = _ps_dynamic->get_velocity_norm();
+        _graphic->set_vcolors(convert_to_color(data));
+    } else if (_mode == Mask) {
+        _graphic->set_multi_color(true);
+        _graphic->set_element_color(false);
+        std::vector<int> i_data =_ps_dynamic->get_masks();
+        const std::vector<scalar> data(i_data.begin(), i_data.end());
         _graphic->set_vcolors(convert_to_color(data));
     } else if (_mode == Stress) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_stress();
-        for (auto &it: e_data) {
-            const Element  type = it.first;
-            std::vector<scalar> &data = it.second;
-            _graphic->set_ecolors(type, convert_to_color(data));
+        for (auto &[e, data]: e_data) {
+            _graphic->set_ecolors(e, convert_to_color(data));
         }
     } else if (_mode == Volume) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_volume();
-        for (auto &it: e_data) {
-            const Element type = it.first;
-            std::vector<scalar> &data = it.second;
-            _graphic->set_ecolors(type, convert_to_color(data));
+        for (auto &[e, data]: e_data) {
+            _graphic->set_ecolors(e, convert_to_color(data));
         }
     } else if (_mode == Volume_Diff) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_volume_diff();
-        for (auto &it: e_data) {
-            Element type = it.first;
-            std::vector<scalar> &data = it.second;
-            _graphic->set_ecolors(type, convert_to_color(data));
+        for (auto &[e, data]: e_data) {
+            _graphic->set_ecolors(e, convert_to_color(data));
         }
     }
 }

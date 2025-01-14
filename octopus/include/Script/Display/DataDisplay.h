@@ -8,7 +8,7 @@
 
 struct FEM_DataDisplay : public Component {
     enum Type {
-        BaseColor, Displacement, Stress, V_Stress, Volume, Volume_Diff, Mass, Inv_Mass, Velocity, None
+        BaseColor, Displacement, Stress, V_Stress, Volume, Volume_Diff, Mass, Inv_Mass, Velocity, Mask, None
     };
 
     explicit FEM_DataDisplay(const Type mode = BaseColor, const ColorMap::Type type = ColorMap::Type::Default)

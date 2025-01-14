@@ -1,6 +1,6 @@
 #include "GPU/Explicit/GPU_Explicit.h"
 
-void GPU_Explicit::step(scalar dt)
+void GPU_Explicit::step(const scalar dt)
 {
     for (GPU_Dynamic* dynamic : _dynamics)
         dynamic->step(this, dt);

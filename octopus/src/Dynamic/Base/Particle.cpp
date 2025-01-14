@@ -1,7 +1,7 @@
 #pragma once
 #include "Dynamic/Base/Particle.h"
 
-void Particle::build(const Vector3 &_position, scalar _mass) {
+void Particle::build(const Vector3 &_position, const scalar _mass) {
     init_position = _position;
     position = _position;
     last_position = _position;
@@ -17,6 +17,6 @@ void Particle::build(const Vector3 &_position, scalar _mass) {
 }
 
 void Particle::reset() {
-    Vector3 init_pos = init_position;
+    const Vector3 init_pos = init_position;
     build(init_pos, mass);
 }

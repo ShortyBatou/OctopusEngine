@@ -100,7 +100,6 @@ void VTK_Loader::load(std::ifstream& inputFile, Mesh::Geometry& vertices, std::m
     topologies.clear();
     std::string line;
     int nbElements = 0, nb_ids;
-    int off = 0;
 
     // read Title (256 characters maximum, terminated with newline \n character)
     // if 2D, must be specified at beginning of title!

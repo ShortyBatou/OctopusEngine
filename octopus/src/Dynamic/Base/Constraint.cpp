@@ -41,7 +41,6 @@ void RB_Fixation::draw_debug(const std::vector<Particle *> &parts) {
     Debug::Axis(com, rot, 0.1f);
     Debug::SetColor(ColorBase::Blue());
     for (int i = 0; i < this->nb(); i++) {
-        Particle *part = parts[ids[i]];
         Debug::Cube(parts[ids[i]]->position, 0.02f);
     }
 }
@@ -57,7 +56,7 @@ void ConstantForce::apply(const std::vector<Particle *> &parts, const scalar) {
 void ConstantForce::draw_debug(const std::vector<Particle *> &parts) {
     Debug::SetColor(ColorBase::Red());
     for (int i = 0; i < this->nb(); i++) {
-        Particle *part = parts[ids[i]];
-        Debug::Line(part->position, part->position + f * scalar(0.1));
+        const Particle *part = parts[ids[i]];
+        Debug::Line(part->position, part->position + f * 0.1f);
     }
 }

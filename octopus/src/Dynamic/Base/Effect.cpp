@@ -8,9 +8,9 @@ void ForceField::apply(const std::vector<Particle *> &particles, const scalar dt
         scalar dist = glm::length(dir);
         if (dist <= radius) {
             switch (mode) {
-                case Uniform: p->force += dir * (scalar(1.) / dist) * intensity;
+                case Uniform: p->force += dir * (1.f / dist) * intensity;
                     break;
-                case Linear: p->force += dir * (scalar(1.) / radius) * intensity;
+                case Linear: p->force += dir * (1.f / radius) * intensity;
                     break;
                 case Quadratic: p->force += dir * intensity * (dist / (radius * radius));
                     break;
@@ -24,8 +24,8 @@ void PlaneConstraint::apply(const std::vector<Particle *> &particles, const scal
     Debug::SetColor(ColorBase::Blue());
     for (Particle *part: particles) {
         Vector3 op = part->position - _o;
-        scalar d = glm::dot(op, _n);
+        const scalar d = glm::dot(op, _n);
         if (d > 0.) continue;
-        part->position -= _n * d - _n * scalar(0.001);
+        part->position -= _n * d - _n * 0.001f;
     }
 }

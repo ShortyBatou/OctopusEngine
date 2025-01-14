@@ -3,7 +3,7 @@
 #include <algorithm>
 //https://gist.github.com/alexsr/5065f0189a7af13b2f3bc43d22aff62f
 namespace MatrixAlgo {
-    Vector2 approx_givens_quat(float s_pp, float s_pq, float s_qq) {
+    Vector2 approx_givens_quat(const float s_pp, const float s_pq, const float s_qq) {
         const float c_h = 2 * (s_pp - s_qq);
         const float s_h2 = s_pq * s_pq;
         const float c_h2 = c_h * c_h;
@@ -59,8 +59,8 @@ namespace MatrixAlgo {
         return q;
     }
 
-    Vector2 approx_qr_givens_quat(float a0, float a1) {
-        float rho = sqrt(a0 * a0 + a1 * a1);
+    Vector2 approx_qr_givens_quat(const float a0, const float a1) {
+        const float rho = sqrt(a0 * a0 + a1 * a1);
         float s_h = a1;
         float max_rho_eps = rho;
         if (rho <= SVD_EPS) {
@@ -73,7 +73,7 @@ namespace MatrixAlgo {
             c_h = s_h;
             s_h = temp;
         }
-        float omega = 1.0f / sqrt(c_h * c_h + s_h * s_h);
+        const float omega = 1.0f / sqrt(c_h * c_h + s_h * s_h);
         return  {omega * c_h, omega * s_h};
     }
 
@@ -82,19 +82,19 @@ namespace MatrixAlgo {
         // (ch, 0, 0, sh)
         Matrix3x3 Q10, Q20, Q21;
 
-        Vector2 ch_sh10 = approx_qr_givens_quat(B[0].x, B[0].y);
+        const Vector2 ch_sh10 = approx_qr_givens_quat(B[0].x, B[0].y);
         quat_to_mat3(Vector4(ch_sh10.x, 0, 0, ch_sh10.y), Q10);
         R = glm::transpose(Q10) * B;
 
         // 2 0
         // (ch, 0, -sh, 0)
-        Vector2 ch_sh20 = approx_qr_givens_quat(R[0].x, R[0].z);
+        const Vector2 ch_sh20 = approx_qr_givens_quat(R[0].x, R[0].z);
         quat_to_mat3(Vector4(ch_sh20.x, 0, -ch_sh20.y, 0), Q20);
         R = glm::transpose(Q20) * R;
 
         // 2 1
         // (ch, sh, 0, 0)
-        Vector2 ch_sh21 = approx_qr_givens_quat(R[1].y, R[1].z);
+        const Vector2 ch_sh21 = approx_qr_givens_quat(R[1].y, R[1].z);
         quat_to_mat3(Vector4(ch_sh21.x, ch_sh21.y, 0, 0), Q21);
         R = glm::transpose(Q21) * R;
 

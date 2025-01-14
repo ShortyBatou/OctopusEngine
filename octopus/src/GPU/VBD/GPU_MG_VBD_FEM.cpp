@@ -20,7 +20,6 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     it_count = 0;
     level = 1;
 
-    const int nb_vertices = static_cast<int>(geometry.size());
     const int nb_vert_elem = elem_nb_vertices(element);
     const int nb_elem = static_cast<int>(topology.size()) / nb_vert_elem;
 

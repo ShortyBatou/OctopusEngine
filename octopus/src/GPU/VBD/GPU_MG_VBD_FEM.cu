@@ -2,7 +2,7 @@
 #include <random>
 #include <numeric>
 
-__global__ void kernel_prolongation(int n, GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter) {
+__global__ void kernel_prolongation(const int n, GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter) {
     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
     const int* primitive = inter.primitives + tid * inter.nb_vert_primitives;

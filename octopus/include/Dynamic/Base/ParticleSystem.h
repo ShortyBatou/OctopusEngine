@@ -34,7 +34,7 @@ public:
 
     void clear_constraints();
 
-    void reset();
+    void reset() const;
 
     virtual void draw_debug_constraints();
 

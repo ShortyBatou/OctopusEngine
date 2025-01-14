@@ -75,8 +75,8 @@ void Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P
 }
 
 void NeoHooke_ln_First::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    Matrix3x3 F_t_inv = glm::transpose(glm::inverse(F));
-    scalar J = glm::determinant(F);
+    const Matrix3x3 F_t_inv = glm::transpose(glm::inverse(F));
+    const scalar J = glm::determinant(F);
     P = (2.f * J) * (F - F_t_inv) * F_t_inv;
 }
 
@@ -87,8 +87,8 @@ void NeoHooke_ln_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, sc
 }
 
 void Developed_Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    scalar I_3 = glm::determinant(F);
-    energy = Matrix::SquaredNorm(F) - scalar(3) - scalar(2) * (I_3 - scalar(1));
+    const scalar I_3 = glm::determinant(F);
+    energy = Matrix::SquaredNorm(F) - 3.f - 2.f * (I_3 - 1.f);
 
     Matrix3x3 d_detF; // derivative of det(F) by F
     d_detF[0] = glm::cross(F[1], F[2]);
@@ -99,8 +99,8 @@ void Developed_Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, Ma
 
 // Anysostropic
 void Anisotropic::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    Vector3 Fa = F * a;
-    scalar IVc_1 = glm::dot(Fa, Fa) - scalar(1);
+    const Vector3 Fa = F * a;
+    const scalar IVc_1 = glm::dot(Fa, Fa) - 1.f;
 
     energy = (IVc_1) * (IVc_1);
 
@@ -108,8 +108,8 @@ void Anisotropic::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &e
 }
 
 void Sqrt_Anisotropic::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    Vector3 Fa = F * a;
-    scalar dFa = glm::length(Fa);
+    const Vector3 Fa = F * a;
+    const scalar dFa = glm::length(Fa);
 
     energy = (dFa - 1.f) * (dFa - 1.f);
 
@@ -144,8 +144,8 @@ void C_Stable_NeoHooke_First::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &
 
 
 void C_Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
-    energy = sqrt(abs(Matrix::SquaredNorm(F) - 3));
-    P = F * (scalar(1) / energy);
+    energy = sqrt(abs(Matrix::SquaredNorm(F) - 3.f));
+    P = F * (1.f / energy);
 }
 
 
@@ -169,7 +169,7 @@ void C_Developed_Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, 
     P = (2.f * F - 2.f * d_det) * (1.f / (2.f * energy));
 }
 
-std::vector<PBD_ContinuousMaterial *> get_pbd_materials(Material material, scalar young, scalar poisson) {
+std::vector<PBD_ContinuousMaterial *> get_pbd_materials(const Material material, const scalar young, const scalar poisson) {
     std::vector<PBD_ContinuousMaterial *> materials;
     switch (material) {
         case Hooke:

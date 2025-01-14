@@ -41,7 +41,7 @@ ParticleSystem* FEM_Dynamic_Generic::build_particle_system()
     return new FEM_System(new EulerSemiExplicit(0.999f), _sub_iteration);
 }
 
-std::vector<FEM_Generic*> FEM_Dynamic_Generic::build_element(const std::vector<int>& ids, Element type, scalar& volume)
+std::vector<FEM_Generic*> FEM_Dynamic_Generic::build_element(const std::vector<int>& ids, const Element type, scalar& volume)
 {
     FEM_Generic_Force* fem = new FEM_Generic_Force(ids, get_fem_material(_material, _young, _poisson),
                                                    get_fem_shape(type));

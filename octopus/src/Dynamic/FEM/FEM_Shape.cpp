@@ -84,7 +84,7 @@ void get_fem_const(const Element& elem, const Mesh::Geometry& geometry, const Me
 }
 
 std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry,
-                                     const Mesh::Topology& topology, const scalar density, Mass_Distribution distrib)
+                                     const Mesh::Topology& topology, const scalar density, const Mass_Distribution distrib)
 {
     const int nb_vert_elem = elem_nb_vertices(elem);
     const FEM_Shape* shape = get_fem_shape(elem);

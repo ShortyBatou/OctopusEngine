@@ -3,12 +3,12 @@
 #include "Core/Engine.h"
 
 void Engine::init() {
-    for (auto &_entitie: _entities)
+    for (auto *_entitie: _entities)
         _entitie->init();
 }
 
 void Engine::late_init() {
-    for (auto &_entitie: _entities)
+    for (auto *_entitie: _entities)
         _entitie->late_init();
 }
 
@@ -37,23 +37,23 @@ Entity *Engine::CreateEnity() {
 
 Entity *Engine::CreateEnity(const std::string &name) {
     auto &engine = Instance();
-    Entity *e = new Entity(name, int(engine._entities.size()));
+    Entity *e = new Entity(name, static_cast<int>(engine._entities.size()));
     engine._entities.push_back(e);
     return e;
 }
 
 
 Entity *Engine::GetEntity(const std::string &name) {
-    auto &engine = Instance();
+    const auto &engine = Instance();
     for (Entity *e: engine._entities)
         if (e->name() == name) return e;
     return nullptr;
 }
 
 Entity *Engine::GetEntity(const int id) {
-    auto &engine = Instance();
-    for (auto &_entitie: engine._entities)
-        if (id == _entitie->id()) return _entitie;
+    const auto &engine = Instance();
+    for (auto *e: engine._entities)
+        if (id == e->id()) return e;
     return nullptr;
 }
 
@@ -68,8 +68,8 @@ int Engine::Count() {
 }
 
 void Engine::clear() {
-    for (auto &_entitie: _entities) {
-        delete _entitie;
+    for (const auto *e: _entities) {
+        delete e;
     }
     _entities.clear();
 }
