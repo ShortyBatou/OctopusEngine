@@ -25,6 +25,17 @@ void FEM_DataDisplay::init() {
 }
 
 
+std::vector<Color> FEM_DataDisplay::convert_to_color(const std::vector<scalar> &data, const  scalar vmin, const scalar vmax) {
+    const scalar diff = vmax - vmin;
+    std::vector<Color> colors(data.size());
+    for (size_t i = 0; i < data.size(); ++i) {
+        const scalar t = (diff > eps) ? (data[i] - vmin) / diff : 0.f;
+        colors[i] = ColorMap::evaluate(t);
+    }
+    return colors;
+}
+
+
 std::vector<Color> FEM_DataDisplay::convert_to_color(const std::vector<scalar> &data) {
     const scalar min = *std::min_element(data.begin(), data.end());
     const scalar max = *std::max_element(data.begin(), data.end());
@@ -75,7 +86,7 @@ void FEM_DataDisplay::update() {
         _graphic->set_element_color(false);
         std::vector<int> i_data =_ps_dynamic->get_masks();
         const std::vector<scalar> data(i_data.begin(), i_data.end());
-        _graphic->set_vcolors(convert_to_color(data));
+        _graphic->set_vcolors(convert_to_color(data,0,3));
     } else if (_mode == Stress) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);

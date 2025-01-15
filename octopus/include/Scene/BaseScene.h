@@ -68,8 +68,8 @@ struct BaseScene final : Scene
         root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
-        root->add_behaviour(new DebugManager(true));
-        root->add_behaviour(new OpenGLManager(Color(0.9f,0.9f,0.9f,1.f)));
+        root->add_behaviour(new DebugManager(false));
+        root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
     }
 
     // build scene's entities
@@ -84,32 +84,33 @@ struct BaseScene final : Scene
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
-        args.dir = Unit3D::up();
+        args.scenario_2 = -1;
+        args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
-        args.display = FEM_DataDisplay::Type::Mask;
-        args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
+        args.display = FEM_DataDisplay::Type::BaseColor;
+        //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
-        const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(24, 12, 12);
-        args.iteration = 20;
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(64, 16, 16);
+        args.iteration = 10;
         args.sub_iteration = 10;
-        //build_mg_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, 0.5, true);
-        args.iteration = 20;
+        //build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.3,.8,0.5,0.), Hexa27, args, 0, 0.5, true);
+        args.iteration = 10;
         args.sub_iteration = 10;
-        //build_vbd_entity(Vector3(0,0,2.2),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, 0, true);
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Hexa27, args, 0, true);
 
-        args.iteration = 4;
+        args.iteration = 2;
+        args.sub_iteration = 120;
+        build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
+        args.damping = 1e-6;
+        args.iteration = 1;
         args.sub_iteration = 25;
-        build_vbd_entity(Vector3(0,0.5,2.2),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
-        args.iteration = 4;
-        args.sub_iteration = 25;
-        build_mixed_vbd_entity(Vector3(0,0.5,1.1),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 10);
+        build_mixed_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.7,0.7,0.), Hexa, args, 10);
         //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
 
         args.sub_iteration = 400;
         args.damping = 5e-7;
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Hexa, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -139,8 +140,8 @@ struct BaseScene final : Scene
     }
 
     GL_Graphic* build_graphic(const Color& color) {
-        //return new GL_GraphicHighOrder(2, color);
-        return new GL_GraphicSurface(color);
+        return new GL_GraphicHighOrder(2, color);
+        //return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {

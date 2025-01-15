@@ -73,7 +73,7 @@ __global__ void kenerl_semi_exicit_integration3(const int n, const scalar dt, co
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n || ps.mask[i] == 0) return;
     const Vector3 dt_v = ps.f[i] * ps.w[i] * dt;
-    if(glm::length(dt_v) > 10 && ps.mask[i] != 3) {
+    if(glm::length(dt_v) > 1 && ps.mask[i] != 3) {
         ps.mask[i] = 2;
         ps.v[i] = last_v[i];
     }

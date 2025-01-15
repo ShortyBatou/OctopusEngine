@@ -19,6 +19,7 @@ struct FEM_DataDisplay : public Component {
     void init() override;
 
     static std::vector<Color> convert_to_color(const std::vector<scalar>& data);
+    static std::vector<Color> convert_to_color(const std::vector<scalar>& data, scalar min, scalar max);
 
     void update() override;
 
