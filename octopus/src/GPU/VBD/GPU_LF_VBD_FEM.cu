@@ -186,3 +186,4 @@ void GPU_LF_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         );
     }
 }
+

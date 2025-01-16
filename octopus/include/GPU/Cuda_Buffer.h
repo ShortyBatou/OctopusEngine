@@ -11,6 +11,7 @@ struct Cuda_Buffer final
 	int nb;
 
 	explicit Cuda_Buffer(const std::vector<T>& data);
+	explicit Cuda_Buffer(const int size, const T& d_val);
 	~Cuda_Buffer();
 	void get_data(std::vector<T>& data);
 	void malloc();
@@ -23,6 +24,13 @@ Cuda_Buffer<T>::Cuda_Buffer(const std::vector<T> &data) {
 	nb = data.size();
 	malloc();
 	load_data(data);
+}
+
+template<typename T>
+Cuda_Buffer<T>::Cuda_Buffer(const int size, const T& d_val) {
+	nb = size;
+	malloc();
+	load_data(std::vector<T>(nb, d_val));
 }
 
 template<typename T>

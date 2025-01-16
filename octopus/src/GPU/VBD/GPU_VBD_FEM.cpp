@@ -8,7 +8,7 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     const int nb_vertices = static_cast<int>(geometry.size());
     _damping = damping;
     d_owners = new GPU_Owners_Data();
-
+    r = new Cuda_Buffer(nb_vertices, Vector3(0.f));
     std::vector<std::vector<int>> e_owners;
     std::vector<std::vector<int>> e_ref_id;
     build_graph_color(topology, nb_vertices, _colors,e_owners,e_ref_id);

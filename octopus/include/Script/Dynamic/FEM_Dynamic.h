@@ -15,6 +15,7 @@ struct FEM_Dynamic_Getters
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_volume() = 0;
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_volume_diff() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_stress_vertices() = 0;
+    [[nodiscard]] virtual std::vector<Vector3> get_residual_vertices() = 0;
 };
 
 struct FEM_Dynamic : public ParticleSystemDynamic, public FEM_Dynamic_Getters
@@ -24,7 +25,7 @@ struct FEM_Dynamic : public ParticleSystemDynamic, public FEM_Dynamic_Getters
     }
 
     std::vector<scalar> get_stress_vertices() override;
-
+    std::vector<Vector3> get_residual_vertices() override { return std::vector<Vector3>(_ps->nb_particles(), Vector3(0));}
     scalar _density;
     Mass_Distribution _m_distrib;
     scalar _young, _poisson;

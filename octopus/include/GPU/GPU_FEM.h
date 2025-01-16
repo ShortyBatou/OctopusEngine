@@ -74,6 +74,7 @@ struct GPU_FEM : GPU_Dynamic {
     std::vector<scalar> get_stress(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume_diff(const GPU_ParticleSystem *ps) const;
+    std::vector<Vector3> get_residual(const GPU_ParticleSystem *ps, scalar dt) const;
 
     [[nodiscard]] GPU_FEM_Pameters get_fem_parameters() const {
         GPU_FEM_Pameters param{};

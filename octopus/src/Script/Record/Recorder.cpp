@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <Mesh/Generator/BeamGenerator.h>
 
 void MeshRecorder::add_data_json(std::ofstream &json) {
     json <<

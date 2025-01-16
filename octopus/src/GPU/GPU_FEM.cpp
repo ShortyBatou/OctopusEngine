@@ -19,6 +19,7 @@ GPU_Plane_Fix::GPU_Plane_Fix(const Mesh::Geometry& positions, const Vector3& o, 
 }
 
 
+
 GPU_FEM::GPU_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
                  const scalar young, const scalar poisson, const Material material) : d_material(nullptr), d_fem(nullptr)
 {

@@ -4,6 +4,7 @@
 #include "Core/Base.h"
 #include "Cuda_ParticleSystem_Dynamic.h"
 #include "Script/Dynamic/FEM_Dynamic.h"
+#include "Manager/TimeManager.h"
 
 struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynamic_Getters
 {
@@ -93,6 +94,25 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
             }
         }
         return stresses;
+    }
+
+    [[nodiscard]] std::vector<Vector3> get_residual_vertices() override {
+        std::vector<Vector3> residuals(_gpu_ps->nb_particles(), Vector3(0));
+        scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
+        for(auto&[e, topo] : _mesh->topologies()) {
+            if(topo.empty()) continue;
+            std::vector<Vector3> r ;
+            //std::vector<Vector3> r = _gpu_fems[e]->get_residual(_gpu_ps, sub_dt);
+            const int nb_vert_elem = elem_nb_vertices(e);
+            const int nb_elem = static_cast<int>(topo.size()) / nb_vert_elem;
+            for(int i = 0; i < nb_elem; i++)
+            {
+                const int eid = i * nb_vert_elem;
+                for(int j = 0; j < nb_vert_elem; j++)
+                    residuals[topo[eid+j]] += r[topo[eid+j]];
+            }
+        }
+        return residuals;
     }
 
     std::map<Element, GPU_FEM*> _gpu_fems;

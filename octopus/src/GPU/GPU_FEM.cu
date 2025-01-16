@@ -147,10 +147,13 @@ std::vector<scalar> GPU_FEM::get_volume_diff(const GPU_ParticleSystem* ps) const
     return volumes_diff;
 }
 
+std::vector<Vector3> GPU_FEM::get_residual(const GPU_ParticleSystem *ps, scalar dt) const {
+    std::cout << "Nique ma race" << std::endl;
+    return std::vector<Vector3>(ps->nb_particles(), Vector3(0));
+}
 
 void GPU_Plane_Fix::step(GPU_ParticleSystem* ps, const scalar dt)
 {
-
     if(all) kernel_constraint_plane_crush<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
     else kernel_constraint_plane<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
 
