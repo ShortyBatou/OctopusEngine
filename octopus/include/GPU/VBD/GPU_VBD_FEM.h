@@ -43,7 +43,7 @@ struct GPU_VBD_FEM : GPU_FEM
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
-    //std::vector<Vector3> get_residual(const GPU_ParticleSystem *ps, scalar dt) const override;
+    std::vector<Vector3> get_forces(const GPU_ParticleSystem *ps, scalar dt) const override;
 
     void build_graph_color(
         const Mesh::Topology& topology,

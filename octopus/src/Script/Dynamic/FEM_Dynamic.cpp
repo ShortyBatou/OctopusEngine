@@ -4,6 +4,16 @@
 #include <Dynamic/FEM/FEM.h>
 
 
+std::vector<scalar> FEM_Dynamic_Getters::get_residual_norm()
+{
+    const std::vector<Vector3> r = get_residual_vertices();
+    std::vector<scalar> residual_norm(r.size());
+    for (int i = 0; i < r.size(); i++) {
+        residual_norm[i] = glm::length(r[i]);
+    }
+    return residual_norm;
+}
+
 std::vector<scalar> FEM_Dynamic::get_stress_vertices()
 {
 

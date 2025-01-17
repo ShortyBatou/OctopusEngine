@@ -129,8 +129,8 @@ void DebugUI_Plot::add_value(const float value) {
     _values[_offset] = value;
     _offset = (_offset + 1) % _size;
     if (_auto_range) {
-        _r_min = std::min(value, _r_min);
-        _r_max = std::max(value, _r_max);
+        _r_min = *std::max(_values.begin(), _values.end());
+        _r_max = *std::min(_values.begin(), _values.end());
     }
 }
 

@@ -3,7 +3,6 @@
 #include <Manager/Debug.h>
 #include <Manager/Dynamic.h>
 
-
 __global__ void kernel_mg_integration(
         const scalar dt, const Vector3 g,
         GPU_ParticleSystem_Parameters ps,

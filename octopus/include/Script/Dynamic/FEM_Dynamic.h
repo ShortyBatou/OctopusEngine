@@ -16,6 +16,7 @@ struct FEM_Dynamic_Getters
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_volume_diff() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_stress_vertices() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_residual_vertices() = 0;
+    [[nodiscard]] virtual std::vector<scalar> get_residual_norm();
 };
 
 struct FEM_Dynamic : public ParticleSystemDynamic, public FEM_Dynamic_Getters

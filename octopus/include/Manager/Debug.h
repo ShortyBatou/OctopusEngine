@@ -82,7 +82,7 @@ struct DebugUI_Group final : DebugUI_Component {
 
 
 struct DebugUI_Plot final : DebugUI_Component {
-    explicit DebugUI_Plot(const std::string &name, int size, bool auto_range = true)
+    explicit DebugUI_Plot(const std::string &name, const int size, bool auto_range = true)
         : DebugUI_Component(name), _auto_range(auto_range), _r_min(std::numeric_limits<float>::max()),
           _r_max(std::numeric_limits<float>::min()),
           _vmin(0), _vmax(0), _offset(0), _size(size) {

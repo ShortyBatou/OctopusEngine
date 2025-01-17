@@ -1,8 +1,7 @@
 #pragma once
 #include <set>
-
-#include "GPU/GPU_FEM.h"
 #include "Core/Base.h"
+#include "GPU/GPU_FEM.h"
 #include "Mesh/Elements.h"
 #include "GPU/Cuda_Buffer.h"
 #include "GPU/GPU_Integrator.h"

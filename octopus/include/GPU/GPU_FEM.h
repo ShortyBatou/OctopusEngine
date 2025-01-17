@@ -1,9 +1,8 @@
 #pragma once
+#include "Core/Base.h"
 #include <Dynamic/FEM/ContinuousMaterial.h>
 #include <Dynamic/FEM/FEM_Shape.h>
 #include <Mesh/Mesh.h>
-
-#include "Core/Base.h"
 #include "Mesh/Elements.h"
 #include "GPU/Cuda_Buffer.h"
 #include "GPU/GPU_ParticleSystem.h"
@@ -74,7 +73,7 @@ struct GPU_FEM : GPU_Dynamic {
     std::vector<scalar> get_stress(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume_diff(const GPU_ParticleSystem *ps) const;
-    std::vector<Vector3> get_residual(const GPU_ParticleSystem *ps, scalar dt) const;
+    virtual std::vector<Vector3> get_forces(const GPU_ParticleSystem *ps, scalar dt) const;
 
     [[nodiscard]] GPU_FEM_Pameters get_fem_parameters() const {
         GPU_FEM_Pameters param{};
@@ -106,6 +105,8 @@ struct GPU_FEM : GPU_Dynamic {
 private:
     Cuda_Buffer<scalar> *cb_elem_data;
 };
+
+
 
 __global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3 *p, Vector3 *v,
                                         Vector3 *f);

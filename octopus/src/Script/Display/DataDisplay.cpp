@@ -12,6 +12,7 @@ std::string FEM_DataDisplay::Type_To_Str(const Type mode) {
         case Inv_Mass: return "Inverse Mass";
         case Velocity: return "Velocity";
         case Mask: return "Mask";
+        case Residual: return "Residual";
         default: return "";
     }
 }
@@ -87,6 +88,12 @@ void FEM_DataDisplay::update() {
         std::vector<int> i_data =_ps_dynamic->get_masks();
         const std::vector<scalar> data(i_data.begin(), i_data.end());
         _graphic->set_vcolors(convert_to_color(data,0,3));
+    } else if (_mode == Residual) {
+        _graphic->set_multi_color(true);
+        _graphic->set_element_color(false);
+        const std::vector<scalar> r_norm = _fem_dynamic->get_residual_norm();
+        _graphic->set_vcolors(convert_to_color(r_norm));
+
     } else if (_mode == Stress) {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);

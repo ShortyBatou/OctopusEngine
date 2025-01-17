@@ -5,7 +5,8 @@ set(OCTOPUS ${PROJECT_NAME})
 
 file(GLOB_RECURSE cuda_files "*.cu")
 file(GLOB_RECURSE cpp_files "*.cpp")
-add_executable(${OCTOPUS} main.cu ${cuda_files} ${cpp_files})
+set_source_files_properties(${cpp_files} PROPERTIES LANGUAGE CUDA)
+add_executable(${OCTOPUS} main.cu  ${cuda_files} ${cpp_files})
 
 set_property(TARGET ${OCTOPUS} PROPERTY CUDA_ARCHITECTURES native)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -dlto")

@@ -86,6 +86,12 @@ __global__ void kernel_XPBD_Coupled_V0(
 }
 
 
+GPU_PBD_FEM_Coupled::GPU_PBD_FEM_Coupled(
+    const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology,
+    const scalar young, const scalar poisson, const Material material)
+        : GPU_PBD_FEM(element, geometry, topology, young, poisson, material) { }
+
+
 void GPU_PBD_FEM_Coupled::step(GPU_ParticleSystem* ps, const scalar dt)
 {
     for (int j = 0; j < d_thread->nb_kernel; ++j)

@@ -101,8 +101,7 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
         scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
-            std::vector<Vector3> r ;
-            //std::vector<Vector3> r = _gpu_fems[e]->get_residual(_gpu_ps, sub_dt);
+            std::vector<Vector3> r = _gpu_fems[e]->get_forces(_gpu_ps, sub_dt);
             const int nb_vert_elem = elem_nb_vertices(e);
             const int nb_elem = static_cast<int>(topo.size()) / nb_vert_elem;
             for(int i = 0; i < nb_elem; i++)

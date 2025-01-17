@@ -28,9 +28,9 @@ typedef glm::vec<2, unsigned int, precision> Vector2UI;
 typedef glm::vec<3, unsigned int, precision> Vector3UI;
 typedef glm::vec<4, unsigned int, precision> Vector4UI;
 
-typedef glm::mat<2, 2, scalar, precision> Matrix2x2; 
-typedef glm::mat<3, 3, scalar, precision> Matrix3x3; 
-typedef glm::mat<4, 4, scalar, precision> Matrix4x4; 
+typedef glm::mat<2, 2, scalar, precision> Matrix2x2;
+typedef glm::mat<3, 3, scalar, precision> Matrix3x3;
+typedef glm::mat<4, 4, scalar, precision> Matrix4x4;
 
 namespace Matrix
 {

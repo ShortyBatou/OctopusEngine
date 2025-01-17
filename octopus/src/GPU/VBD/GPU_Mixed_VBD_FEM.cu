@@ -255,6 +255,25 @@ __global__ void kernel_explicit_fem_sum_partial_forces(const int n, GPU_Particle
     ps.f[vid] = fi;
 }
 
+GPU_Mixed_VBD_FEM::GPU_Mixed_VBD_FEM(const Element &element, const Mesh::Topology &topology, const Mesh::Geometry &geometry,
+                         const Material& material, const scalar &young, const scalar &poisson, const scalar& damping) :
+    GPU_VBD_FEM(element, topology, geometry, material, young, poisson, damping)
+{
+
+    p_forces = new Cuda_Buffer<Vector3>(std::vector<Vector3>(topology.size()));
+    d_exp_thread = new Thread_Data();
+    int block_size = 0;
+    for(int i = 0; i < d_thread->nb_kernel; ++i)
+    {
+        block_size = std::max(block_size, d_thread->block_size[i]);
+    }
+    d_exp_thread->nb_kernel = 1;
+    d_exp_thread->block_size.push_back(block_size);
+    d_exp_thread->nb_threads.push_back(static_cast<int>(geometry.size()) * block_size);
+    d_exp_thread->grid_size.push_back((d_exp_thread->nb_threads[0] + block_size-1) / block_size);
+    d_exp_thread->offsets.push_back(0);
+}
+
 void GPU_Mixed_VBD_FEM::explicit_step(const GPU_ParticleSystem* ps, Cuda_Buffer<scalar>* w_max, scalar dt) const
 {
     if(d_fem->elem_nb_vert == 4) {
@@ -283,13 +302,4 @@ void GPU_Mixed_VBD_FEM::explicit_step(const GPU_ParticleSystem* ps, Cuda_Buffer<
         grid_size = (nb_thread+block_size-1)/block_size;
         kernel_explicit_fem_sum_partial_forces<<<grid_size, block_size>>>(nb_thread, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), p_forces->buffer);/**/
     }
-
-
-
-
-
-
-
-
-
 }
