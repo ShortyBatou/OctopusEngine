@@ -211,7 +211,7 @@ void GPU_LF_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
 
     for(const int c : kernels) {
         kernel_lf_vbd_solve<<<d_thread->grid_size[c], d_thread->block_size[c]>>>(
-             d_thread->nb_threads[c], _damping, dt, d_thread->offsets[c],
+             d_thread->nb_threads[c], damping, dt, d_thread->offsets[c],
              y->buffer, l->buffer, Vi->buffer, *d_material,
              ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );

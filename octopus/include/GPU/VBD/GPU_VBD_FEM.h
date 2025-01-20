@@ -9,6 +9,9 @@
 #include <GPU/GPU_Dynamic.h>
 #include <GPU/GPU_FEM.h>
 
+enum VBD_Version {
+    Base, Threaded_Quadrature, Reduction_Symmetry
+};
 
 struct GPU_Owners_Parameters
 {
@@ -39,7 +42,8 @@ struct GPU_VBD_FEM : GPU_FEM
 {
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
-                const scalar& young, const scalar& poisson, const scalar& damping);
+                const scalar& young, const scalar& poisson, const scalar& damping,
+                const VBD_Version& v = VBD_Version::Reduction_Symmetry);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
@@ -54,7 +58,7 @@ struct GPU_VBD_FEM : GPU_FEM
 
 
     void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners,
-                                            const std::vector<std::vector<int>>& e_ref_id) const;
+                                            const std::vector<std::vector<int>>& e_ref_id);
 
     [[nodiscard]] GPU_Owners_Parameters get_owners_parameters() const
     {
@@ -67,18 +71,31 @@ struct GPU_VBD_FEM : GPU_FEM
     }
 
     GPU_Owners_Data* d_owners;
-    scalar _damping;
+    VBD_Version version;
+    scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solver
+    std::vector<int> shared_sizes;
     std::vector<int> _colors; // mesh coloration (used for debug)
 };
 
-__global__ void kernel_vbd_solve(
+__global__ void kernel_vbd_solve_v1(
     int n, scalar damping, scalar dt, int offset,const Vector3* y,
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
 );
 
+__global__ void kernel_vbd_solve_v2(
+    int n, scalar damping, scalar dt, int offset,const Vector3* y,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
+);
+
+__global__ void kernel_vbd_solve_v3(
+    int n, scalar damping, scalar dt, int offset,const Vector3* y,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
+);
 
 __global__ void kernel_vbd_compute_residual(
     int n, scalar damping, scalar dt, int offset,const Vector3* y, Vector3* r,

@@ -17,11 +17,11 @@ void Cuda_ParticleSystem_Dynamics::update()
     const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
     for(int i = 0; i < _sub_iterations; i++)
         _gpu_ps->step(sub_dt);
-    cudaDeviceSynchronize();
+
     _gpu_ps->get_position(_mesh->geometry());
     const scalar t = Time::Tac() * 1000.f;
     DebugUI::Begin("Entity Time " + std::to_string(entity()->id()));
-    DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t);
+    DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t, 200);
     DebugUI::Range("Range (" + std::to_string(entity()->id()) + ")", t);
     DebugUI::Value("Value (" + std::to_string(entity()->id()) + ")", t);
     DebugUI::End();

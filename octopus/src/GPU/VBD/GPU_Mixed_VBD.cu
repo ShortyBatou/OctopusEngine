@@ -121,7 +121,6 @@ void GPU_Mixed_VBD::step(const scalar dt) {
         }/**/
     }
 
-
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)

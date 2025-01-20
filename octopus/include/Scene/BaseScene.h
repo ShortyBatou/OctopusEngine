@@ -91,25 +91,23 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
         const Vector3 size(3, 1, 1);
-        Vector3I cells = Vector3I(18, 6, 6);
+        Vector3I cells = Vector3I(64, 16, 16);
         args.iteration = 10;
         args.sub_iteration = 10;
         //build_mg_vbd_entity(Vector3(0,0,3),cells, size, Color(0.3,.8,0.5,0.), Tetra10, args, 0, 0.5, true);
         args.iteration = 10;
         args.sub_iteration = 10;
         //build_vbd_entity(Vector3(0,0,4.5),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
-        args.iteration = 100;
-        args.sub_iteration = 1;
-        args.display = FEM_DataDisplay::Type::Residual;
-        //build_vbd_entity(Vector3(0,0,1.5),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
-        args.display = FEM_DataDisplay::Type::BaseColor;
+        args.iteration = 2;
+        args.sub_iteration = 100;
+        build_vbd_entity(Vector3(0,0,1.5),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
         args.iteration = 2;
         args.sub_iteration = 120;
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
         args.damping = 1e-6;
         args.iteration = 1;
         args.sub_iteration = 25;
-        build_mixed_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.7,0.7,0.), Hexa27, args, 10);
+        //build_mixed_vbd_entity(Vector3(0,0,1.1),cells, size, Color(0.3,.7,0.7,0.), Hexa27, args, 10);
         //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
 
         args.sub_iteration = 400;
