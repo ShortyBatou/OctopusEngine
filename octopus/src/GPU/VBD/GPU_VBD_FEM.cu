@@ -365,18 +365,23 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
     // sort neighbors
     for(int c = 0; c < d_thread->nb_kernel; ++c) {
         int n_max = 1;
+        int n_min = 100;
         int nb_vert = 0;
         int n = static_cast<int>(nb_owners.size());
+        std::cout << c << " : ";
         for(int i = 0; i < nb_vertices; ++i) {
             if(c != colors[i]) continue;
             owners_offset.push_back(static_cast<int>(owners.size()));
             owners.insert(owners.end(), e_owners[i].begin(), e_owners[i].end());
             ref_id.insert(ref_id.end(), e_ref_id[i].begin(), e_ref_id[i].end());
             nb_owners.push_back(static_cast<int>(e_owners[i].size()));
-
+            n_min = std::min(n_min, nb_owners.back());
             n_max = std::max(n_max, nb_owners.back());
+            std::cout << nb_owners.back() << ", ";
             nb_vert ++;
         }
+        std::cout << std::endl;
+
         d_thread->grid_size.push_back(nb_vert);
         d_thread->block_size.push_back(n_max);
         shared_sizes.push_back(n_max * sizeof(scalar));
@@ -408,6 +413,24 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
                 neighbors[topology[i + j]].insert(topology[i + k]);
             }
         }
+    }
+
+    std::vector<int> index(nb_vertices);
+    std::iota(index.begin(), index.end(), 0);
+    std::sort(index.begin(), index.end(),
+         [&](const int& a, const int& b) {
+            return e_neighbors[a].size() < e_neighbors[b].size();
+          }
+    );
+
+    const std::vector<std::vector<int>> temp = e_neighbors;
+    for ( int i = 0; i < index.size(); ++i) {
+        e_neighbors[i] = temp[index[i]];
+    }
+
+    const std::vector<std::vector<int>> temp2 = e_ref_id;
+    for ( int i = 0; i < index.size(); ++i) {
+        e_ref_id[i] = temp2[index[i]];
     }
 
     int max_neighbors = 0;

@@ -91,7 +91,7 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
         const Vector3 size(3, 1, 1);
-        Vector3I cells = Vector3I(64, 16, 16);
+        Vector3I cells = Vector3I(6, 2, 2);
         args.iteration = 10;
         args.sub_iteration = 10;
         //build_mg_vbd_entity(Vector3(0,0,3),cells, size, Color(0.3,.8,0.5,0.), Tetra10, args, 0, 0.5, true);
