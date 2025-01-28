@@ -10,7 +10,26 @@
 #include <GPU/GPU_FEM.h>
 
 enum VBD_Version {
-    Base, Threaded_Quadrature, Reduction_Symmetry
+    Base, Threaded_Quadrature, Reduction_Symmetry, Block_Merge
+};
+
+struct GPU_BLock_Parameters {
+    int* sub_block_size;
+    int* nb_sub_block;
+    int* offset;
+};
+
+struct GPU_Block_Data {
+    Cuda_Buffer<int>* cb_offset; // offset to the first owners for each vertice
+    Cuda_Buffer<int>* cb_sub_block_size; // number of neighbors for each vertices
+    Cuda_Buffer<int>* cb_nb_sub_block; // element's id that own a vertices
+
+    ~GPU_Block_Data()
+    {
+        delete cb_offset;
+        delete cb_sub_block_size;
+        delete cb_nb_sub_block;
+    }
 };
 
 struct GPU_Owners_Parameters
@@ -43,7 +62,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
                 const scalar& young, const scalar& poisson, const scalar& damping,
-                const VBD_Version& v = VBD_Version::Reduction_Symmetry);
+                const VBD_Version& v = VBD_Version::Block_Merge);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
@@ -70,11 +89,27 @@ struct GPU_VBD_FEM : GPU_FEM
         return params;
     }
 
+    [[nodiscard]] GPU_BLock_Parameters get_block_parameters() const
+    {
+        GPU_BLock_Parameters params{};
+        params.offset = d_blocks->cb_offset->buffer;
+        params.sub_block_size = d_blocks->cb_sub_block_size->buffer;
+        params.nb_sub_block = d_blocks->cb_nb_sub_block->buffer;
+        return params;
+    }
+
+    ~GPU_VBD_FEM() override {
+        delete d_owners;
+        delete d_blocks;
+        delete r;
+    }
+
     GPU_Owners_Data* d_owners;
+    GPU_Block_Data* d_blocks;
     VBD_Version version;
     scalar damping;
     Cuda_Buffer<Vector3>* r;
-    Cuda_Buffer<Vector3>* y; // gets ot from VBD solver
+    Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
     std::vector<int> shared_sizes;
     std::vector<int> _colors; // mesh coloration (used for debug)
 };

@@ -90,8 +90,8 @@ struct BaseScene final : Scene
         args.display = FEM_DataDisplay::Type::BaseColor;
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
-        const Vector3 size(3, 1, 1);
-        Vector3I cells = Vector3I(6, 2, 2);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(64, 16, 16);
         args.iteration = 10;
         args.sub_iteration = 10;
         //build_mg_vbd_entity(Vector3(0,0,3),cells, size, Color(0.3,.8,0.5,0.), Tetra10, args, 0, 0.5, true);
@@ -100,7 +100,7 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0,4.5),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
         args.iteration = 2;
         args.sub_iteration = 100;
-        build_vbd_entity(Vector3(0,0,1.5),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
+        build_vbd_entity(Vector3(0,0,1.5),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, 0, true);
         args.iteration = 2;
         args.sub_iteration = 120;
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
