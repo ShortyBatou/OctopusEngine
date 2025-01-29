@@ -10,7 +10,7 @@
 #include <GPU/GPU_FEM.h>
 
 enum VBD_Version {
-    Base, Threaded_Quadrature, Reduction_Symmetry, Block_Merge
+    Base, Threaded_Quadrature, Reduction_Symmetry, Better_Coloration, Block_Merge
 };
 
 struct GPU_BLock_Parameters {
@@ -110,7 +110,6 @@ struct GPU_VBD_FEM : GPU_FEM
     scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
-    std::vector<int> shared_sizes;
     std::vector<int> _colors; // mesh coloration (used for debug)
 };
 

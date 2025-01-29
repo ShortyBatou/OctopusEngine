@@ -40,9 +40,9 @@ __device__ void vec_reduction(const int tid, const int block_size, const int off
     __syncthreads();
     int i,b;
     for(i=block_size/2, b=(block_size+1)/2; i > 0; b=(b+1)/2, i/=2) {
-        if(tid < offset + i) {
+        if(tid < i) {
             for(int j = 0; j < v_size; ++j) {
-                s_data[tid*v_size+j] += s_data[(tid+b)*v_size+j];
+                s_data[(offset + tid)*v_size+j] += s_data[(offset + tid+b)*v_size+j];
             }
             __syncthreads();
         }
@@ -232,7 +232,6 @@ __global__ void kernel_vbd_solve_v3(
 
     const int qe_off = eid * fem.nb_quadrature + qid;
     const int qv_off = qid * fem.elem_nb_vert;
-
     Vector3 fi(0.f);
     Matrix3x3 H(0.f);
     compute_f_H(fem.elem_nb_vert, r_vid,
@@ -276,10 +275,11 @@ __global__ void kernel_vbd_solve_v4(
     // sub block system
     const int bid = offset + blockIdx.x; // block id
     const int b_sub_size = blocks.sub_block_size[bid];
-    const int b_nb_sub_size = blocks.nb_sub_block[bid];
-    const int b_size = b_sub_size * b_nb_sub_size;
+    const int b_nb_sub_block = blocks.nb_sub_block[bid];
+    const int b_size = b_sub_size * b_nb_sub_block;
     const int b_sub_id = threadIdx.x / b_sub_size;
     if(threadIdx.x >= b_size) return;
+
 
     const int tid = threadIdx.x % b_sub_size;
     // vertex information
@@ -305,14 +305,16 @@ __global__ void kernel_vbd_solve_v4(
 
     // shared variable : f, H
     extern __shared__ scalar s_f_H[]; // size = block_size * 9 * sizeof(float)
-    store_f_H_in_shared_sym(tid, fi, H, s_f_H);
-    vec_reduction(tid, b_sub_size, b_sub_id * b_sub_size, 9, s_f_H);
+    const int s_off = b_sub_id * b_sub_size;
+    const int o = s_off * 9;
+    store_f_H_in_shared_sym(tid, fi, H, s_f_H+o);
+    vec_reduction(tid, b_sub_size, s_off, 9, s_f_H);
 
     if (tid == 0) {
-        fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
-        H[0][0] = s_f_H[3];
-        H[1][0] = s_f_H[4]; H[1][1] = s_f_H[6];
-        H[2][0] = s_f_H[5]; H[2][1] = s_f_H[7];  H[2][2] = s_f_H[8];
+        fi.x = s_f_H[o + 0]; fi.y = s_f_H[o + 1]; fi.z = s_f_H[o + 2];
+        H[0][0] = s_f_H[o + 3];
+        H[1][0] = s_f_H[o + 4]; H[1][1] = s_f_H[o + 6];
+        H[2][0] = s_f_H[o + 5]; H[2][1] = s_f_H[o + 7];  H[2][2] = s_f_H[o + 8];
         // symmetry
         H[0][1] = H[1][0]; H[1][2] = H[2][1]; H[0][2] = H[2][0];
 
@@ -417,7 +419,6 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     std::vector<std::vector<int>> e_ref_id;
     build_graph_color(topology, nb_vertices, _colors,e_owners,e_ref_id);
     sort_by_color(nb_vertices, _colors, e_owners, e_ref_id);
-    shared_sizes.push_back(10);
 }
 
 void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners, const std::vector<std::vector<int>>& e_ref_id)
@@ -431,6 +432,9 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
     std::vector<int> nb_sub_block;      // nb sub_block in block
     std::vector<int> sub_block_size;    // size of one sub block
     std::vector<int> block_offset;      // first vertice id in block
+
+    int total_thread = 0;
+    int total_merge_thread = 0;
     // sort neighbors
     for(int c = 0; c < d_thread->nb_kernel; ++c) {
         int n_max = 1; // max block size
@@ -443,10 +447,11 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
             n_max = std::max(n_max, static_cast<int>(e_owners[i].size()));
             nb_block++;
         }
+        total_thread += nb_block * n_max;
         // the max block size depends on the largest block in color and needs to be a multiple of 32 (NVidia)
-        const int vmax = (n_max * d_fem->nb_quadrature / 32 + (n_max * d_fem->nb_quadrature % 32 == 0 ? 0 : 1)) * 32;
-
+        int vmax = n_max;
         if(version == Block_Merge) {
+            vmax = (n_max * d_fem->nb_quadrature / 32 + (n_max * d_fem->nb_quadrature % 32 == 0 ? 0 : 1)) * 32;
             nb_block = 0;
             // sort id by nb_owners
             std::sort(ids.begin(), ids.end(),
@@ -462,7 +467,7 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
                 const int v = e_owners[ids[i]].size() * d_fem->nb_quadrature; // block size
                 // nb block that have the same size
                 int nb = 1;
-                while(i+1 < ids.size() && e_owners[ids[i+1]].size() == v) {
+                while(i+1 < ids.size() && e_owners[ids[i+1]].size() * d_fem->nb_quadrature == v) {
                     nb++; i++;
                 }
 
@@ -477,7 +482,6 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
                     off += max_block;
                     nb_block++;
                 }
-
                 if(rest != 0) {
                     nb_sub_block.push_back(nb - max_block * nb_group);
                     sub_block_size.push_back(v);
@@ -487,7 +491,9 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
                 }
                 std::cout << v << " x " << nb << " => " << nb_group << "x(" << max_block << "x" << v << ") + (" << rest / v << "x" << v << ")" << std::endl;
             }
+            total_merge_thread += n_max * nb_block;
             std::cout << std::endl;
+            vmax /= d_fem->nb_quadrature;
         }
 
         for(const int id : ids) {
@@ -501,9 +507,8 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
         d_thread->nb_threads.push_back(nb_block * vmax);
         d_thread->offsets.push_back(offset);
         d_thread->block_size.push_back(vmax);
-        shared_sizes.push_back(vmax * sizeof(scalar));
     }
-
+    std::cout << total_thread << " vs " << total_merge_thread << std::endl;
     //vert data
     d_owners->cb_nb = new Cuda_Buffer(nb_owners);
     d_owners->cb_offset = new Cuda_Buffer(owners_offset);
@@ -539,38 +544,53 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
         }
     }
 
+
     std::vector<int> index(nb_vertices);
     std::iota(index.begin(), index.end(), 0);
-    std::sort(index.begin(), index.end(),
-         [&](const int& a, const int& b) {
-            return e_neighbors[a].size() < e_neighbors[b].size();
-          }
-    );
 
-    int max_neighbors = 0;
-    d_thread->nb_kernel = 1;
+    if(version == Better_Coloration || version == Block_Merge) {
+        std::sort(index.begin(), index.end(),
+         [&](const int& a, const int& b) {
+                return e_neighbors[a].size() < e_neighbors[b].size();
+            }
+        );
+    }
+
+    d_thread->nb_kernel = 0;
+    std::vector<int> min_neighbors;
+    std::vector<int> max_neighbors;
     colors.resize(nb_vertices, -1);
     std::vector<int> available(64, true);
     for (int i = 0; i < nb_vertices; ++i) {
         const int vid = index[i];
         // for all vertices, check the neighbor elements colors
-        max_neighbors = std::max(static_cast<int>(e_neighbors[vid].size()), max_neighbors);
         //std::cout << vid << ": " <<  e_neighbors[vid].size() << " => ";
         for (const int n: neighbors[vid]) {
             if (colors[n] != -1) available[colors[n]] = false;
         }
         for (int c = 0; c < available.size(); ++c) {
             if (available[c]) {
-                d_thread->nb_kernel = std::max(d_thread->nb_kernel, c);
+                if(c < d_thread->nb_kernel) {
+                    min_neighbors[c] = std::min(min_neighbors[c], static_cast<int>(e_neighbors[vid].size()));
+                    max_neighbors[c] = std::max(max_neighbors[c], static_cast<int>(e_neighbors[vid].size()));
+                }
+                else { // new color needed
+                    d_thread->nb_kernel++;
+                    min_neighbors.push_back(e_neighbors[vid].size());
+                    max_neighbors.push_back(e_neighbors[vid].size());
+                }
+
                 colors[vid] = c;
-                //std::cout << c << std::endl;
                 break;
             }
         }
         std::fill(available.begin(), available.end(), true);
     }
-    d_thread->nb_kernel++;
-    std::cout << "NB color: " << d_thread->nb_kernel << "  NB neighbors : " << max_neighbors << std::endl;
+    std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
+
+    if(version == Better_Coloration || version == Block_Merge) {
+        
+    }
 }
 
 void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
@@ -593,8 +613,9 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                      y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
                 );
             break;
-            case Reduction_Symmetry :
+            case Reduction_Symmetry : case Better_Coloration :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
+                //std::cout << d_thread->block_size[c] * d_fem->nb_quadrature * 9 << " " << d_thread->block_size[c] << " " << d_fem->nb_quadrature << std::endl;
                 kernel_vbd_solve_v3<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
                     y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
