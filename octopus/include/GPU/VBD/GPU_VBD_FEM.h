@@ -62,7 +62,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
                 const scalar& young, const scalar& poisson, const scalar& damping,
-                const VBD_Version& v = VBD_Version::Block_Merge);
+                const VBD_Version& v = VBD_Version::Better_Coloration);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 

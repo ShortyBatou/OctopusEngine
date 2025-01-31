@@ -29,7 +29,74 @@ __device__ Matrix3x3 snh_stress(const Matrix3x3 &F, const scalar lambda, const s
     return lambda * (I_3 - alpha) * d_detF + mu * F;
 }
 
-__device__ void hooke_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[6]) {
+
+__device__ void hooke_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
+    for(int i = 0; i < 9; ++i)
+        d2W_dF2[i] = Matrix3x3(0.f);
+
+    const Matrix3x3 I_mu_lambda = Matrix3x3(mu + lambda);
+    for (int i = 0; i <= 2; ++i)
+        d2W_dF2[i * 4] = I_mu_lambda; // 0, 4, 8
+}
+
+__device__ void stvk_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
+    for(int i = 0; i < 9; ++i)
+        d2W_dF2[i] = Matrix3x3(0.f);
+
+    const Matrix3x3 FFt = F * glm::transpose(F);
+    const Matrix3x3 FtF = glm::transpose(F) * F;
+    const Matrix3x3 H1 = Matrix3x3(0.5f * lambda * mat3x3_trace(FFt) - mu);
+    const Matrix3x3 H2_A = mu * FFt;
+    const Matrix3x3 diag = H1 + H2_A;
+
+    for (int i = 0; i <= 2; ++i) {
+        d2W_dF2[i * 4] += diag; // 0, 4, 8
+        for (int j = i; j <= 2; ++j) {
+            // 0, 1, 2, 4, 5, 8
+            d2W_dF2[i * 3 + j] += 0.5f * lambda * glm::outerProduct(F[i], F[j]);
+            d2W_dF2[i * 3 + j] += mu * glm::outerProduct(F[j], F[i]);
+            d2W_dF2[i * 3 + j] += Matrix3x3(FtF[i][j]);
+        }
+    }
+
+    // symmetric matrix
+    d2W_dF2[3] = d2W_dF2[1];
+    d2W_dF2[6] = d2W_dF2[2];
+    d2W_dF2[7] = d2W_dF2[5];
+}
+
+
+__device__ void snh_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 d2W_dF2[9]) {
+    Matrix3x3 comF = mat3x3_com(F);
+    const scalar detF = glm::determinant(F);
+    const scalar alpha = 1.f + (mu / lambda  );
+    const scalar s = lambda * (detF - alpha);
+    // lambda * (I3 - alpha) * H3
+    d2W_dF2[0] = Matrix3x3(0);
+    d2W_dF2[1] = vec_hat(F[2]) * s;
+    d2W_dF2[2] = -vec_hat(F[1]) * s;
+    d2W_dF2[3] = -d2W_dF2[1];
+    d2W_dF2[4] = Matrix3x3(0);
+    d2W_dF2[5] = vec_hat(F[0]) * s;
+    d2W_dF2[6] = -d2W_dF2[2];
+    d2W_dF2[7] = -d2W_dF2[5];
+    d2W_dF2[8] = Matrix3x3(0);
+
+    // mu/2 * H2 = mu * I_9x9x
+    for (int i = 0; i < 3; ++i) {
+        d2W_dF2[0][i][i] += mu;
+        d2W_dF2[4][i][i] += mu;
+        d2W_dF2[8][i][i] += mu;
+    }
+
+    // lambda vec(com F) * vec(com F)^T
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            d2W_dF2[i * 3 + j] += glm::outerProduct(comF[i], comF[j]) * lambda;
+}
+
+
+__device__ void hooke_hessian_sym(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[6]) {
     for(int i = 0; i <= 5; ++i)
         d2W_dF2[i] = Matrix3x3(0.f);
 
@@ -39,7 +106,7 @@ __device__ void hooke_hessian(const Matrix3x3 &F, const scalar lambda, const sca
     d2W_dF2[5] = I_mu_lambda;
 }
 
-__device__ void stvk_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[6]) {
+__device__ void stvk_hessian_sym(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[6]) {
     const Matrix3x3 FFt = F * glm::transpose(F);
     const Matrix3x3 FtF = glm::transpose(F) * F;
     const Matrix3x3 H1 = Matrix3x3(0.5f * lambda * mat3x3_trace(FFt) - mu);
@@ -63,7 +130,7 @@ __device__ void stvk_hessian(const Matrix3x3 &F, const scalar lambda, const scal
     }
 }
 
-__device__ void snh_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 d2W_dF2[6]) {
+__device__ void snh_hessian_sym(const Matrix3x3 &F, const scalar lambda, const scalar mu, Matrix3x3 d2W_dF2[6]) {
     const Matrix3x3 comF = mat3x3_com(F);
     const scalar detF = glm::determinant(F);
     const scalar alpha = 1.f + (mu / lambda  );
@@ -107,7 +174,7 @@ __device__ scalar von_mises_stress(const Matrix3x3 &C) {
     return sqrt(s);
 }
 
-__device__ void eval_hessian(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 d2W_dF2[6]) {
+__device__ void eval_hessian(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 d2W_dF2[9]) {
     switch (material) {
         case Hooke : hooke_hessian(F, lambda, mu, d2W_dF2); break;
         case StVK : stvk_hessian(F, lambda, mu, d2W_dF2); break;
@@ -116,7 +183,16 @@ __device__ void eval_hessian(const Material material, const scalar lambda, const
     }
 }
 
-__device__ Matrix3x3 assemble_sub_hessian(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[6])
+__device__ void eval_hessian_sym(const Material material, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 d2W_dF2[6]) {
+    switch (material) {
+        case Hooke : hooke_hessian_sym(F, lambda, mu, d2W_dF2); break;
+        case StVK : stvk_hessian_sym(F, lambda, mu, d2W_dF2); break;
+        case NeoHooke : snh_hessian_sym(F, lambda, mu, d2W_dF2); break;
+        case Stable_NeoHooke : snh_hessian_sym(F, lambda, mu, d2W_dF2); break;
+    }
+}
+
+__device__ Matrix3x3 assemble_sub_hessian_sym(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[6])
 {
     Matrix3x3 H;
     for (int j = 0; j < 3; ++j) {
@@ -133,6 +209,23 @@ __device__ Matrix3x3 assemble_sub_hessian(const Vector3& dF_dx, const scalar& V,
             H_kl[0][1] = d2W_dF2[1][j][i];
             H_kl[0][2] = d2W_dF2[2][j][i];
             H_kl[1][2] = d2W_dF2[4][j][i];
+            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V;
+        }
+    }
+    return H;
+}
+
+__device__ Matrix3x3 assemble_sub_hessian(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[9])
+{
+    Matrix3x3 H;
+    for (int j = 0; j < 3; ++j) {
+        for (int i = 0; i < 3; ++i) {
+            Matrix3x3 H_kl;
+            for(int l = 0; l < 3; ++l) {
+                for(int k = 0; k < 3; ++k) {
+                    H_kl[k][l] = d2W_dF2[k+l*3][i][j];
+                }
+            }
             H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V;
         }
     }

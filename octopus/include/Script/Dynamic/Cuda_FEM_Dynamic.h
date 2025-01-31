@@ -80,6 +80,8 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
     [[nodiscard]] std::vector<scalar> get_stress_vertices() override
     {
         std::vector<scalar> stresses(_gpu_ps->nb_particles(),0);
+        std::vector<scalar> masses(_gpu_ps->nb_particles());
+        _gpu_ps->get_mass(masses);
         for(auto&[e, topo] : _mesh->topologies())
         {
             if(topo.empty()) continue;
@@ -92,6 +94,9 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
                 for(int j = 0; j < nb_vert_elem; j++)
                     stresses[topo[eid+j]] += stress[i];
             }
+        }
+        for(int i = 0; i < _gpu_ps->nb_particles(); i++) {
+            stresses[i] /= masses[i];
         }
         return stresses;
     }
@@ -107,8 +112,9 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
             for(int i = 0; i < nb_elem; i++)
             {
                 const int eid = i * nb_vert_elem;
-                for(int j = 0; j < nb_vert_elem; j++)
+                for(int j = 0; j < nb_vert_elem; j++) {
                     residuals[topo[eid+j]] += r[topo[eid+j]];
+                }
             }
         }
         return residuals;

@@ -9,10 +9,32 @@
 #include <GPU/GPU_FEM_Material.h>
 #include <GPU/GPU_ParticleSystem.h>
 
-
-
-
 __device__ void compute_f_H(
+    const int n, const int r_vid,
+    const Material_Data& mt, const GPU_ParticleSystem_Parameters ps, const int* topo,
+    const Matrix3x3 &JX_inv, const scalar V, const Vector3* dN,
+    Vector3& fi, Matrix3x3& H) {
+    Matrix3x3 Jx(0.f);
+    Matrix3x3 d2W_dF2[9];
+
+    for (int i = 0; i < n; ++i) {
+        Jx += glm::outerProduct(ps.p[topo[i]], dN[i]);
+    }
+
+    const Matrix3x3 F = Jx * JX_inv;
+    const Vector3 dF_dx = glm::transpose(JX_inv) * dN[r_vid];
+
+    // Compute force at vertex i
+    const Matrix3x3 P = eval_pk1_stress(mt.material, mt.lambda, mt.mu, F);
+    fi -= P * dF_dx * V;
+
+    // Compute hessian
+    eval_hessian(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
+    H += assemble_sub_hessian(dF_dx, V, d2W_dF2);
+}
+
+
+__device__ void compute_f_H_sym(
     const int n, const int r_vid,
     const Material_Data& mt, const GPU_ParticleSystem_Parameters ps, const int* topo,
     const Matrix3x3 &JX_inv, const scalar V, const Vector3* dN,
@@ -32,9 +54,10 @@ __device__ void compute_f_H(
     fi -= P * dF_dx * V;
 
     // Compute hessian
-    eval_hessian(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
-    H += assemble_sub_hessian(dF_dx, V, d2W_dF2);
+    eval_hessian_sym(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
+    H += assemble_sub_hessian_sym(dF_dx, V, d2W_dF2);
 }
+
 
 __device__ void vec_reduction(const int tid, const int block_size, const int offset, const int v_size, scalar* s_data) {
     __syncthreads();
@@ -234,7 +257,7 @@ __global__ void kernel_vbd_solve_v3(
     const int qv_off = qid * fem.elem_nb_vert;
     Vector3 fi(0.f);
     Matrix3x3 H(0.f);
-    compute_f_H(fem.elem_nb_vert, r_vid,
+    compute_f_H_sym(fem.elem_nb_vert, r_vid,
                 mt, ps, topo, fem.JX_inv[qe_off], fem.V[qe_off], fem.dN + qv_off,
                 fi, H);
 
@@ -298,7 +321,7 @@ __global__ void kernel_vbd_solve_v4(
 
     Vector3 fi(0.f);
     Matrix3x3 H(0.f);
-    compute_f_H(fem.elem_nb_vert, r_vid,
+    compute_f_H_sym(fem.elem_nb_vert, r_vid,
                 mt, ps, topo, fem.JX_inv[qe_off], fem.V[qe_off], fem.dN + qv_off,
                 fi, H);
 
@@ -321,9 +344,6 @@ __global__ void kernel_vbd_solve_v4(
         ps.p[vid] += compute_correction(vid, damping, dt, ps, y, fi, H);
     }
 }
-
-
-
 
 
 __global__ void kernel_vbd_compute_residual(
@@ -394,7 +414,8 @@ __global__ void kernel_vbd_compute_residual(
 
 std::vector<Vector3> GPU_VBD_FEM::get_forces(const GPU_ParticleSystem *ps, const scalar dt) const {
     for(int c = 0; c < d_thread->nb_kernel; ++c) {
-        kernel_vbd_compute_residual<<<d_thread->grid_size[c], d_thread->block_size[c]>>>(
+        scalar s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
+        kernel_vbd_compute_residual<<<d_thread->grid_size[c] * d_fem->nb_quadrature, d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
             d_thread->nb_threads[c], damping, dt, d_thread->offsets[c],
              y->buffer, r->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );
@@ -547,11 +568,10 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
 
     std::vector<int> index(nb_vertices);
     std::iota(index.begin(), index.end(), 0);
-
     if(version == Better_Coloration || version == Block_Merge) {
         std::sort(index.begin(), index.end(),
          [&](const int& a, const int& b) {
-                return e_neighbors[a].size() < e_neighbors[b].size();
+                return neighbors[a].size() >= neighbors[b].size();
             }
         );
     }
@@ -559,37 +579,44 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
     d_thread->nb_kernel = 0;
     std::vector<int> min_neighbors;
     std::vector<int> max_neighbors;
+    std::vector<int> nb_vert_col;
     colors.resize(nb_vertices, -1);
     std::vector<int> available(64, true);
     for (int i = 0; i < nb_vertices; ++i) {
         const int vid = index[i];
-        // for all vertices, check the neighbor elements colors
-        //std::cout << vid << ": " <<  e_neighbors[vid].size() << " => ";
+        int nb = static_cast<int>(neighbors[vid].size());
         for (const int n: neighbors[vid]) {
             if (colors[n] != -1) available[colors[n]] = false;
         }
         for (int c = 0; c < available.size(); ++c) {
             if (available[c]) {
                 if(c < d_thread->nb_kernel) {
-                    min_neighbors[c] = std::min(min_neighbors[c], static_cast<int>(e_neighbors[vid].size()));
-                    max_neighbors[c] = std::max(max_neighbors[c], static_cast<int>(e_neighbors[vid].size()));
+                    min_neighbors[c] = std::min(min_neighbors[c], nb);
+                    max_neighbors[c] = std::max(max_neighbors[c], nb);
+                    nb_vert_col[c] ++;
                 }
                 else { // new color needed
                     d_thread->nb_kernel++;
-                    min_neighbors.push_back(e_neighbors[vid].size());
-                    max_neighbors.push_back(e_neighbors[vid].size());
+                    min_neighbors.push_back(nb);
+                    max_neighbors.push_back(nb);
+                    nb_vert_col.push_back(1);
                 }
-
                 colors[vid] = c;
                 break;
             }
         }
         std::fill(available.begin(), available.end(), true);
     }
+
+
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
 
     if(version == Better_Coloration || version == Block_Merge) {
-        
+
+    }
+
+    for(int c = 0; c < d_thread->nb_kernel; ++c) {
+        std::cout << "c " << c << "  nb = " << nb_vert_col[c] <<  " min: " << min_neighbors[c] << "  max: " << max_neighbors[c] << std::endl;
     }
 }
 
