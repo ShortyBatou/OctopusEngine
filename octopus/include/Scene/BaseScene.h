@@ -91,13 +91,13 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
         const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(16, 4, 4);
+        Vector3I cells = Vector3I(64, 16, 16);
         args.iteration = 10;
         args.sub_iteration = 10;
-        build_mg_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
-        args.iteration = 2;
-        args.sub_iteration = 50;
-        build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
+        //build_mg_vbd_entity(Vector3(0,0,1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
+        args.iteration = 1;
+        args.sub_iteration = 200;
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, 0, true);
         args.iteration = 1;
         args.sub_iteration = 200;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -110,12 +110,12 @@ struct BaseScene final : Scene
         args.damping = 1e-6;
         args.iteration = 1;
         args.sub_iteration = 25;
-        build_mixed_vbd_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Tetra10, args, 10);
+        //build_mixed_vbd_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Tetra10, args, 10);
         //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
 
         args.sub_iteration = 400;
-        args.damping = 1e-7;
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Hexa27, args, true);
+        args.damping = 1e-6;
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Tetra, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {

@@ -6,6 +6,7 @@
 
 #include <random>
 #include <set>
+#include <Tools/Graph.h>
 #include <GPU/GPU_FEM_Material.h>
 #include <GPU/GPU_ParticleSystem.h>
 
@@ -468,6 +469,7 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
             n_max = std::max(n_max, static_cast<int>(e_owners[i].size()));
             nb_block++;
         }
+
         total_thread += nb_block * n_max;
         // the max block size depends on the largest block in color and needs to be a multiple of 32 (NVidia)
         int vmax = n_max;
@@ -560,63 +562,22 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
             // all vertices inside an element are linked
             for (int k = 0; k < d_fem->elem_nb_vert; ++k) {
                 if (k == j) continue;
-                neighbors[topology[i + j]].insert(topology[i + k]);
+                neighbors[topology[i + j]].insert(topology[i + k]); // adjacence
             }
         }
     }
 
-
-    std::vector<int> index(nb_vertices);
-    std::iota(index.begin(), index.end(), 0);
-    if(version == Better_Coloration || version == Block_Merge) {
-        std::sort(index.begin(), index.end(),
-         [&](const int& a, const int& b) {
-                return neighbors[a].size() >= neighbors[b].size();
-            }
-        );
-    }
-
-    d_thread->nb_kernel = 0;
-    std::vector<int> min_neighbors;
-    std::vector<int> max_neighbors;
-    std::vector<int> nb_vert_col;
-    colors.resize(nb_vertices, -1);
-    std::vector<int> available(64, true);
-    for (int i = 0; i < nb_vertices; ++i) {
-        const int vid = index[i];
-        int nb = static_cast<int>(neighbors[vid].size());
-        for (const int n: neighbors[vid]) {
-            if (colors[n] != -1) available[colors[n]] = false;
-        }
-        for (int c = 0; c < available.size(); ++c) {
-            if (available[c]) {
-                if(c < d_thread->nb_kernel) {
-                    min_neighbors[c] = std::min(min_neighbors[c], nb);
-                    max_neighbors[c] = std::max(max_neighbors[c], nb);
-                    nb_vert_col[c] ++;
-                }
-                else { // new color needed
-                    d_thread->nb_kernel++;
-                    min_neighbors.push_back(nb);
-                    max_neighbors.push_back(nb);
-                    nb_vert_col.push_back(1);
-                }
-                colors[vid] = c;
-                break;
-            }
-        }
-        std::fill(available.begin(), available.end(), true);
-    }
-
-
+    const Graph graph(neighbors);
+    const auto [nb_color, color] = GraphColoration::DSAT(graph);
+    colors = color;
+    d_thread->nb_kernel = nb_color;
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
-
-    if(version == Better_Coloration || version == Block_Merge) {
-
+    std::vector<int> nb_per_color(nb_color, 0);
+    for(int c : colors) {
+        nb_per_color[c]++;
     }
-
-    for(int c = 0; c < d_thread->nb_kernel; ++c) {
-        std::cout << "c " << c << "  nb = " << nb_vert_col[c] <<  " min: " << min_neighbors[c] << "  max: " << max_neighbors[c] << std::endl;
+    for(int i = 0; i < nb_color; ++i) {
+        std::cout << i << " " <<  nb_per_color[i] << std::endl;
     }
 }
 
