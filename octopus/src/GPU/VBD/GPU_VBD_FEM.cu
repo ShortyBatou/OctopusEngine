@@ -550,7 +550,6 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
 void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vertices,
     std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id) const
 {
-    std::vector<std::set<int> > neighbors(nb_vertices);
     e_neighbors.resize(nb_vertices);
     e_ref_id.resize(nb_vertices);
     // for each vertice get all its neighboors
@@ -559,25 +558,22 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
         for (int j = 0; j < d_fem->elem_nb_vert; ++j) {
             e_neighbors[topology[i + j]].push_back(eid);
             e_ref_id[topology[i+j]].push_back(j);
-            // all vertices inside an element are linked
-            for (int k = 0; k < d_fem->elem_nb_vert; ++k) {
-                if (k == j) continue;
-                neighbors[topology[i + j]].insert(topology[i + k]); // adjacence
-            }
         }
     }
 
-    const Graph graph(neighbors);
-    const auto [nb_color, color] = GraphColoration::DSAT(graph);
+    const Graph graph(d_fem->elem_nb_vert, topology);
+    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
+
     colors = color;
     d_thread->nb_kernel = nb_color;
+
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
     std::vector<int> nb_per_color(nb_color, 0);
     for(int c : colors) {
         nb_per_color[c]++;
     }
     for(int i = 0; i < nb_color; ++i) {
-        std::cout << i << " " <<  nb_per_color[i] << std::endl;
+        std::cout << "c " << i << " = " <<  nb_per_color[i] << " verts" << std::endl;
     }
 }
 

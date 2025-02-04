@@ -130,20 +130,7 @@ void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
     d_fem = l_fems[level];
     d_owners = l_owners[level];
 
-    std::vector<int> kernels(d_thread->nb_kernel);
-    std::iota(kernels.begin(), kernels.end(), 0);
-    std::shuffle(kernels.begin(), kernels.end(), std::mt19937());
-
-    const auto fem_param = get_fem_parameters();
-    const auto owners_param = get_owners_parameters();
-    for (const int c : kernels)
-    {
-        scalar s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
-        kernel_vbd_solve_v3<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
-            d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-             y->buffer, *d_material, ps_param, fem_param, owners_param
-        );
-    }
+    GPU_VBD_FEM::step(ps, dt);
 
     if (level == 1)
     {

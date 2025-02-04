@@ -1,13 +1,33 @@
 #pragma once
 #include "Core/Base.h"
+#include "Mesh/Mesh.h"
 #include <vector>
 #include <set>
 #include <algorithm>
 struct Graph {
+    Graph(const int nb_vert_elem, const Mesh::Topology& topology) {
+        n = *std::max_element(topology.begin(), topology.end())+1;
+        degree.resize(n);
+        adj.resize(n);
+        for (int i = 0; i < topology.size(); i += nb_vert_elem) {
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                for (int k = 0; k < nb_vert_elem; ++k) {
+                    if (k == j) continue;
+                    const int id = topology[i + j];
+                    adj[id].insert(topology[i + k]);
+                }
+            }
+        }
+
+        for(int i = 0; i < adj.size(); ++i) {
+            degree[i] = adj[i].size();
+        }
+    }
+
     Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
         degree.resize(n);
-        for(int i = 0; i < adjacence.size(); ++i) {
-            degree[i] = adjacence[i].size();
+        for(int i = 0; i < adj.size(); ++i) {
+            degree[i] = adj[i].size();
         }
     }
 
@@ -135,55 +155,72 @@ public:
     }
 
     static Coloration DSAT(const Graph& graph) {
+        int vid, i;
+        std::vector<bool> used(graph.n, false);
         std::vector<int> colors(graph.n, -1);
-        std::vector<int> saturation(graph.n, 0);
+        std::vector<int> degree(graph.degree);
+        std::vector<std::set<int> > adjCols(graph.n);
+        std::set<Node, maxSat> max_queue; // sort vertices depending on their saturation > degree > id
 
-        while (true) {
-            int maxSaturation = -1, maxDegree = -1, v = -1;
-            for (int i = 0; i < graph.n; i++) {
-                if (colors[i] == -1)
-                {
-                    if (saturation[i] > maxSaturation || (saturation[i] == maxSaturation && graph.degree[i] > maxDegree))
-                    {
-                        maxSaturation = saturation[i];
-                        maxDegree = graph.degree[i];
-                        v = i;
-                    }
-                }
-            }
+        // generate nodes
+        for (vid = 0; vid < graph.n; vid++) {
+            max_queue.emplace(Node{ 0, degree[vid], vid });
+        }
 
-            if (v == -1) break;
+        // while there is vertices to color
+        while (!max_queue.empty()) {
+            // get and pop the max saturation vertex
+            const auto maxPtr = max_queue.begin();
+            vid = maxPtr->vertex;
+            max_queue.erase(maxPtr);
 
-            std::set<int> forbidden;
-            for (const int neighbor : graph.adj[v]) {
-                if (colors[neighbor] != -1) {
-                    forbidden.insert(colors[neighbor]);
-                }
-            }
+            // get used color around vertex
+            for (const int v : graph.adj[vid])
+                if (colors[v] != -1)
+                    used[colors[v]] = true;
 
-            int chosenColor = 0;
-            while (forbidden.find(chosenColor) != forbidden.end()) {
-                chosenColor++;
-            }
+            // get the first color i not used
+            for (i = 0; i < used.size(); i++)
+                if (!used[i]) break;
 
-            colors[v] = chosenColor;
+            //
+            for (const int v : graph.adj[vid])
+                if (colors[v] != -1)
+                    used[colors[v]] = false;
 
-            std::set<int> usedColors;
-            for (const int neighbor : graph.adj[v]) {
-                if (colors[neighbor] != -1) {
-                    usedColors.insert(colors[neighbor]);
-                }
-            }
-            for (const int neighbor : graph.adj[v]) {
-                if (colors[neighbor] == -1) {
-                    saturation[neighbor] = usedColors.size();
+            // color vertex
+            colors[vid] = i;
+
+            // change saturation of vertices around current vertex
+            for (const int v : graph.adj[vid]) {
+                if (colors[v] == -1) {
+                    max_queue.erase(
+                        { static_cast<int>(adjCols[v].size()), degree[v], v });
+                    adjCols[v].insert(i);
+                    degree[v]--;
+                    max_queue.emplace(Node{ static_cast<int>(adjCols[v].size()),degree[v], v });
                 }
             }
         }
+
         return { *std::max_element(colors.begin(), colors.end())+1, colors};
     }
-
 private:
+    struct Node {
+        int sat;
+        int deg;
+        int vertex;
+    };
+
+    struct maxSat {
+        bool operator()(const Node& lhs,
+                        const Node& rhs) const
+        {
+            return std::tie(lhs.sat, lhs.deg, lhs.vertex)
+                   > std::tie(rhs.sat, rhs.deg, rhs.vertex);
+        }
+    };
+
     static void find_color_greedy(const Graph& graph, const int i, int& nb_color, std::vector<int>& colors) {
         std::set<int> used_colors;
         for(const int id : graph.adj[i]) {
@@ -205,4 +242,5 @@ private:
             colors[i] = available_colors.front();
         }
     }
+
 };
