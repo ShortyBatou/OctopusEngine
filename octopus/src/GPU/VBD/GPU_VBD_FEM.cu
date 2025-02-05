@@ -474,6 +474,8 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
         // the max block size depends on the largest block in color and needs to be a multiple of 32 (NVidia)
         int vmax = n_max;
         if(version == Block_Merge) {
+            // on devrait avoir une taille par bloc !
+            // s'il y a  32 thread qui font rien, le bloc est terminé extrèmement vite
             vmax = (n_max * d_fem->nb_quadrature / 32 + (n_max * d_fem->nb_quadrature % 32 == 0 ? 0 : 1)) * 32;
             nb_block = 0;
             // sort id by nb_owners
@@ -548,7 +550,7 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
 
 
 void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vertices,
-    std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id) const
+    std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id)
 {
     e_neighbors.resize(nb_vertices);
     e_ref_id.resize(nb_vertices);
@@ -561,15 +563,17 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
         }
     }
 
-    const Graph graph(d_fem->elem_nb_vert, topology);
-    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
+    graph = new Graph(d_fem->elem_nb_vert, topology, false);
+
+    Graph graph2(d_fem->elem_nb_vert, topology);
+    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::DSAT(graph2) : GraphColoration::Greedy(graph2);
 
     colors = color;
     d_thread->nb_kernel = nb_color;
 
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
     std::vector<int> nb_per_color(nb_color, 0);
-    for(int c : colors) {
+    for(const int c : colors) {
         nb_per_color[c]++;
     }
     for(int i = 0; i < nb_color; ++i) {
@@ -612,6 +616,26 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                 y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_block_parameters()
             );
             break;
+        }
+    }
+    std::vector<Vector3> positions(graph->n);
+    std::vector<int> topo(d_fem->cb_topology->nb);
+    d_fem->cb_topology->get_data(topo);
+
+    ps->get_position(positions);
+    Debug::SetColor(ColorBase::Red());
+
+    for(int eid = 0; eid < graph->n; ++eid) {
+        Vector3 p = Vector3(0);
+        for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+            p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
+        p /= static_cast<scalar>(d_fem->elem_nb_vert);
+        for(int eid2 : graph->adj[eid]) {
+            Vector3 p2 = Vector3(0);
+            for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+                p2 += positions[topo[eid2 * d_fem->elem_nb_vert+ i] ];
+            p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
+            Debug::Line(p, p2);
         }
     }
 }

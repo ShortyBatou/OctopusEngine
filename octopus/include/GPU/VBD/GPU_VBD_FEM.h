@@ -8,6 +8,7 @@
 #include <GPU/Cuda_Buffer.h>
 #include <GPU/GPU_Dynamic.h>
 #include <GPU/GPU_FEM.h>
+#include <Tools/Graph.h>
 
 enum VBD_Version {
     Base, Threaded_Quadrature, Reduction_Symmetry, Better_Coloration, Block_Merge
@@ -73,7 +74,7 @@ struct GPU_VBD_FEM : GPU_FEM
         int nb_vertices,
         std::vector<int>& colors,
         std::vector<std::vector<int>>& e_neighbors,
-        std::vector<std::vector<int>>& ref_id) const;
+        std::vector<std::vector<int>>& ref_id);
 
 
     void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners,
@@ -107,6 +108,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_Owners_Data* d_owners;
     GPU_Block_Data* d_blocks;
     VBD_Version version;
+    Graph* graph;
     scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve

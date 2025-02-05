@@ -1,11 +1,25 @@
 #pragma once
 #include "Core/Base.h"
-#include "Mesh/Mesh.h"
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <numeric>
+#include <queue>
+
 struct Graph {
-    Graph(const int nb_vert_elem, const Mesh::Topology& topology) {
+    Graph(const int nb_vert_elem, const Mesh::Topology& topology, const bool primal = true) {
+        if(primal) build_primal(nb_vert_elem, topology);
+        else build_dual(nb_vert_elem, topology);
+    }
+
+    explicit Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
+        degree.resize(n);
+        for(int i = 0; i < adj.size(); ++i) {
+            degree[i] = adj[i].size();
+        }
+    }
+
+    void build_primal(const int nb_vert_elem, const Mesh::Topology& topology) {
         n = *std::max_element(topology.begin(), topology.end())+1;
         degree.resize(n);
         adj.resize(n);
@@ -24,8 +38,50 @@ struct Graph {
         }
     }
 
-    Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
+    void build_dual(const int nb_vert_elem, const Mesh::Topology& topology) {
+        n = topology.size() / nb_vert_elem; // nb_element
         degree.resize(n);
+        adj.resize(n);
+        const Element elem = get_elem_by_size(nb_vert_elem);
+        Element lin_elem = get_linear_element(elem);
+        int lin_nb_vert_elem = elem_nb_vertices(elem);
+
+        Mesh::Topology r_tri = ref_triangles(lin_elem);
+        Mesh::Topology r_quads = ref_quads(lin_elem);
+
+        // we need to find pairs of faces (triangle or quads)
+        std::map<Face<4>, int> quads;
+        std::map<Face<3>, int> triangles;
+
+        for(int eid = 0; eid < n; ++eid) {
+            int i = eid * nb_vert_elem;
+            for(int j = 0; j < r_tri.size(); j+= 3) {
+                Face<3> tri({topology[i + r_tri[j]], topology[i + r_tri[j+1]], topology[i + r_tri[j+2]]});
+                if(auto it = triangles.find(tri); it != triangles.end()) {
+                    int eid2 = triangles[tri];
+                    adj[eid].insert(eid2);
+                    adj[eid2].insert(eid);
+                    triangles.erase(it);
+                }
+                else {
+                    triangles[tri] = eid;
+                }
+            }
+
+            for(int j = 0; j < r_quads.size(); j+= 4) {
+                Face<4> quad({topology[i + r_quads[j]], topology[i + r_quads[j+1]], topology[i + r_quads[j+2]], topology[i + r_quads[j+3]]});
+                if(auto it = quads.find(quad); it != quads.end()) {
+                    int eid2 = quads[quad];
+                    adj[eid].insert(eid2);
+                    adj[eid2].insert(eid);
+                    quads.erase(it);
+                }
+                else {
+                    quads[quad] = eid;
+                }
+            }
+        }
+
         for(int i = 0; i < adj.size(); ++i) {
             degree[i] = adj[i].size();
         }
