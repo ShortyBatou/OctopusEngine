@@ -7,9 +7,9 @@
 #include <queue>
 
 struct Graph {
-    Graph(const int nb_vert_elem, const Mesh::Topology& topology, const bool primal = true) {
-        if(primal) build_primal(nb_vert_elem, topology);
-        else build_dual(nb_vert_elem, topology);
+    Graph(const Element element, const Mesh::Topology& topology, const bool primal = true) {
+        if(primal) build_primal(element, topology);
+        else build_dual(element, topology);
     }
 
     explicit Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
@@ -19,7 +19,8 @@ struct Graph {
         }
     }
 
-    void build_primal(const int nb_vert_elem, const Mesh::Topology& topology) {
+    void build_primal(const Element element, const Mesh::Topology& topology) {
+        const int nb_vert_elem = elem_nb_vertices(element);
         n = *std::max_element(topology.begin(), topology.end())+1;
         degree.resize(n);
         adj.resize(n);
@@ -38,16 +39,14 @@ struct Graph {
         }
     }
 
-    void build_dual(const int nb_vert_elem, const Mesh::Topology& topology) {
+    void build_dual(const Element element, const Mesh::Topology& topology) {
+        const int nb_vert_elem = elem_nb_vertices(element);
         n = topology.size() / nb_vert_elem; // nb_element
         degree.resize(n);
         adj.resize(n);
-        const Element elem = get_elem_by_size(nb_vert_elem);
-        Element lin_elem = get_linear_element(elem);
-        int lin_nb_vert_elem = elem_nb_vertices(elem);
-
-        Mesh::Topology r_tri = ref_triangles(lin_elem);
-        Mesh::Topology r_quads = ref_quads(lin_elem);
+        const Element lin_elem = get_linear_element(element);
+        const Mesh::Topology r_tri = ref_triangles(lin_elem);
+        const Mesh::Topology r_quads = ref_quads(lin_elem);
 
         // we need to find pairs of faces (triangle or quads)
         std::map<Face<4>, int> quads;
@@ -260,6 +259,107 @@ public:
         }
 
         return { *std::max_element(colors.begin(), colors.end())+1, colors};
+    }
+
+
+    static Coloration Primal_Dual_Element(const Element& elem, const Mesh::Topology& topo, const Graph& d_graph) {
+        const int nb_vert_elem = elem_nb_vertices(elem);
+        const Element lin_elem = get_linear_element(elem);
+        int n = *std::max_element(topo.begin(), topo.end()) + 1;
+        std::vector<int> colors(n,-1);
+        std::vector<int> elem_color(nb_vert_elem,0);
+        std::iota(elem_color.begin(), elem_color.end(), 0);
+
+        // get the graph of the reference element
+        Mesh::Topology edges = ref_edges(elem);
+        {
+            Mesh::Topology edges2 = ref_edges(lin_elem);
+            std::reverse(edges2.begin(), edges2.end());
+            edges.insert(edges.end(), edges2.begin(), edges2.end());
+        }
+        const Graph e_graph(Line, edges);
+
+        std::queue<int> q;
+        std::vector<bool> visited(d_graph.n, false);
+
+        // color the first element
+        for(int i = 0; i < nb_vert_elem; i++) {
+            colors[topo[i]] = i;
+        }
+
+        // adds its neighbors to queue
+        for(int neighbor : d_graph.adj[0]) {
+            visited[neighbor] = true;
+            q.push(neighbor);
+        }
+
+        while(!q.empty()) {
+            const int eid = q.front();
+            const int offset = eid * nb_vert_elem;
+            q.pop();
+
+            // get all colored vertices in element
+            std::vector<int> not_saturate; // colored vertices that doesn't all their neighbors colored
+            for(int i = 0; i < nb_vert_elem; i++) {
+                const int vid = topo[offset + i];
+                if(colors[vid] == -1) continue;
+                not_saturate.push_back(i);
+            }
+            std::cout << eid << std::endl;
+
+            // while there is coloration to do
+            int k = 0;
+            while(!not_saturate.empty()) {
+                const int i = not_saturate[k];
+                const int c = colors[topo[offset + i]];
+                // what are the color we are supposed to find
+                std::set<int> not_used;
+                std::cout << "add ";
+                for(const int v_neighbor : e_graph.adj[c]) {
+                    not_used.insert(v_neighbor);
+                    std::cout << v_neighbor << ", ";
+                }
+                std::cout << std::endl;
+                // what color is around vertex
+                int last_id = -1;
+                std::cout << "erase " ;
+                for(const int v_neighbor : e_graph.adj[i]) {
+                    const int v_c = colors[topo[offset+v_neighbor]];
+                    if(v_c == -1) {
+                        last_id = v_neighbor;
+                        continue;
+                    }
+                    std::cout << v_c << ", ";
+                    not_used.erase(v_c);
+                }
+                std::cout << std::endl;
+
+                if(not_used.size() == 1) {
+                    colors[topo[offset + last_id]] = *not_used.begin();
+                }
+
+                if(not_used.size() <= 1) {
+                    not_saturate.erase(not_saturate.begin() + k);
+                    k--;
+                }
+                std::cout << k << " " << not_saturate.size() << " " << not_used.size() << std::endl;
+
+                if(!not_saturate.empty())
+                    k = (k + 1) % not_saturate.size();
+            }
+
+            // add neighbors elements
+            for(int e_neighbor : d_graph.adj[eid]) {
+                // if not visited => add to queue for coloring
+                if(!visited[e_neighbor]) {
+                    q.push(e_neighbor);
+                    visited[e_neighbor] = true;
+                }
+            }
+        }
+
+
+        return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 private:
     struct Node {

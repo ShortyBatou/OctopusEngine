@@ -92,14 +92,14 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
 
         const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(1, 1, 1);
+        Vector3I cells = Vector3I(10, 10, 10);
         args.iteration = 10;
         args.sub_iteration = 40;
         //build_mg_vbd_entity(Vector3(0,0,-1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
 
         args.iteration = 1;
         args.sub_iteration = 1;
-        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, 0, true);
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0, true);
         args.iteration = 1;
         args.sub_iteration = 200;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -147,14 +147,14 @@ struct BaseScene final : Scene
     }
 
     GL_Graphic* build_graphic(const Color& color) {
-        return new GL_GraphicHighOrder(2, color);
-        //return new GL_GraphicSurface(color);
+        //return new GL_GraphicHighOrder(2, color);
+        return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = true;
-        display->wireframe() = false;
+        display->surface() = false;
+        display->wireframe() = true;
         display->point() = false;
         return display;
     }

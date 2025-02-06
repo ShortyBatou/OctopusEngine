@@ -70,6 +70,7 @@ struct GPU_VBD_FEM : GPU_FEM
     std::vector<Vector3> get_forces(const GPU_ParticleSystem *ps, scalar dt) const override;
 
     void build_graph_color(
+        Element element,
         const Mesh::Topology& topology,
         int nb_vertices,
         std::vector<int>& colors,

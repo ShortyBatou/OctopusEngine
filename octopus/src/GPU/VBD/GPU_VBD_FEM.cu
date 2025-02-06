@@ -439,7 +439,7 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     r = new Cuda_Buffer(nb_vertices, Vector3(0.f));
     std::vector<std::vector<int>> e_owners;
     std::vector<std::vector<int>> e_ref_id;
-    build_graph_color(topology, nb_vertices, _colors,e_owners,e_ref_id);
+    build_graph_color(element, topology, nb_vertices, _colors,e_owners,e_ref_id);
     sort_by_color(nb_vertices, _colors, e_owners, e_ref_id);
 }
 
@@ -549,7 +549,7 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
 }
 
 
-void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vertices,
+void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology &topology, const int nb_vertices,
     std::vector<int> &colors, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id)
 {
     e_neighbors.resize(nb_vertices);
@@ -563,10 +563,10 @@ void GPU_VBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb
         }
     }
 
-    graph = new Graph(d_fem->elem_nb_vert, topology, false);
+    graph = new Graph(element, topology, false);
 
-    Graph graph2(d_fem->elem_nb_vert, topology);
-    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::DSAT(graph2) : GraphColoration::Greedy(graph2);
+    Graph graph2(element, topology);
+    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *graph) : GraphColoration::Greedy(graph2);
 
     colors = color;
     d_thread->nb_kernel = nb_color;
