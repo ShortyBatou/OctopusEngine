@@ -273,76 +273,98 @@ public:
         // get the graph of the reference element
         Mesh::Topology edges = ref_edges(elem);
         {
-            Mesh::Topology edges2 = ref_edges(lin_elem);
+            Mesh::Topology edges2 = ref_edges(elem);
             std::reverse(edges2.begin(), edges2.end());
             edges.insert(edges.end(), edges2.begin(), edges2.end());
         }
         const Graph e_graph(Line, edges);
 
-        std::queue<int> q;
+        std::queue<int> q; // element to visit
         std::vector<bool> visited(d_graph.n, false);
 
-        // color the first element
-        for(int i = 0; i < nb_vert_elem; i++) {
-            colors[topo[i]] = i;
+        {
+            int first_id = n * 0.5;
+            std::cout << first_id <<  " D = " << d_graph.adj[first_id].size() << std::endl;
+            // color the first element
+            std::cout << "Topo : ";
+            for(int i = 0; i < nb_vert_elem; i++) {
+                colors[topo[first_id * nb_vert_elem + i]] = i;
+                std::cout << topo[first_id * nb_vert_elem + i] << ", ";
+            }
+            std::cout << std::endl;
+
+            std::cout << "N ";
+            // adds its neighbors to queue
+            for(int neighbor : d_graph.adj[first_id]) {
+                visited[neighbor] = true;
+                std::cout << neighbor << ",";
+                q.push(neighbor);
+
+            }
+            std::cout << std::endl;
         }
 
-        // adds its neighbors to queue
-        for(int neighbor : d_graph.adj[0]) {
-            visited[neighbor] = true;
-            q.push(neighbor);
-        }
-
+        // while there is element to color
         while(!q.empty()) {
+            // get element id and offset in topo array
             const int eid = q.front();
             const int offset = eid * nb_vert_elem;
+            //std::cout << "ELEMENT " << eid << std::endl;
             q.pop();
 
             // get all colored vertices in element
             std::vector<int> not_saturate; // colored vertices that doesn't all their neighbors colored
+            //std::cout << "Topo : ";
             for(int i = 0; i < nb_vert_elem; i++) {
                 const int vid = topo[offset + i];
+                //std::cout << vid << ", ";
                 if(colors[vid] == -1) continue;
                 not_saturate.push_back(i);
             }
-            std::cout << eid << std::endl;
+            //std::cout << std::endl;
 
             // while there is coloration to do
             int k = 0;
             while(!not_saturate.empty()) {
                 const int i = not_saturate[k];
                 const int c = colors[topo[offset + i]];
+                //std::cout << "vertex " << i << " " << topo[offset + i] << " " << c << std::endl;
                 // what are the color we are supposed to find
                 std::set<int> not_used;
-                std::cout << "add ";
+                //std::cout << "add ";
                 for(const int v_neighbor : e_graph.adj[c]) {
                     not_used.insert(v_neighbor);
-                    std::cout << v_neighbor << ", ";
+                    //std::cout << v_neighbor << ", ";
                 }
-                std::cout << std::endl;
+                //std::cout << std::endl;
                 // what color is around vertex
                 int last_id = -1;
-                std::cout << "erase " ;
+                //std::cout << "erase " ;
                 for(const int v_neighbor : e_graph.adj[i]) {
                     const int v_c = colors[topo[offset+v_neighbor]];
                     if(v_c == -1) {
                         last_id = v_neighbor;
                         continue;
                     }
-                    std::cout << v_c << ", ";
+                    //std::cout << "(" << v_c << " ," << topo[offset+v_neighbor] <<  ") ";
                     not_used.erase(v_c);
                 }
-                std::cout << std::endl;
+                //std::cout << std::endl;
 
                 if(not_used.size() == 1) {
+                    if(last_id == -1)
+                    {
+                        std::cout << std::endl;
+                    }
                     colors[topo[offset + last_id]] = *not_used.begin();
+                    //std::cout << topo[offset + last_id] << " => " << colors[topo[offset + last_id]] << std::endl;
                 }
 
                 if(not_used.size() <= 1) {
                     not_saturate.erase(not_saturate.begin() + k);
                     k--;
                 }
-                std::cout << k << " " << not_saturate.size() << " " << not_used.size() << std::endl;
+                //std::cout << "It " << k << " " << not_saturate.size() << " " << not_used.size() << std::endl;
 
                 if(!not_saturate.empty())
                     k = (k + 1) % not_saturate.size();

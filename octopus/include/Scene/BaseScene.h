@@ -42,6 +42,7 @@ struct SimulationArgs {
     int scenario_1;
     int scenario_2;
     std::string mesh_file;
+    std::string mesh_type;
     Vector3 dir;
 };
 
@@ -89,17 +90,19 @@ struct BaseScene final : Scene
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Stress;
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
-        //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
+        args.mesh_file = "mesh/msh/airplane.msh";
+        args.mesh_type = "msh";
+
 
         const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(10, 10, 10);
+        Vector3I cells = Vector3I(4, 4, 4);
         args.iteration = 10;
         args.sub_iteration = 40;
         //build_mg_vbd_entity(Vector3(0,0,-1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
 
         args.iteration = 1;
         args.sub_iteration = 1;
-        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0, true);
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, 0, true);
         args.iteration = 1;
         args.sub_iteration = 200;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -225,9 +228,22 @@ struct BaseScene final : Scene
         return mesh;
     }
 
+    Mesh* build_msh_mesh(const Vector3& pos, const std::string& file, const Element element) {
+        Msh_Loader loader(AppInfo::PathToAssets() + file);
+        loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
+        Mesh* mesh = loader.build();
+        if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+        if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+        if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
+        mesh->set_dynamic_geometry(true);
+        return mesh;
+    }
+
+
     void add_fem_mesh(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const SimulationArgs& args) {
         if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        else e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
+        else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
+        else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element));
     }
 
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {
