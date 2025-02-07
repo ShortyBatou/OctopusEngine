@@ -57,7 +57,6 @@ struct GPU_Owners_Data
     }
 };
 
-
 struct GPU_VBD_FEM : GPU_FEM
 {
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,

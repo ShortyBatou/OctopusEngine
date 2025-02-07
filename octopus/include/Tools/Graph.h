@@ -261,47 +261,23 @@ public:
         return { *std::max_element(colors.begin(), colors.end())+1, colors};
     }
 
-
-    static Coloration Primal_Dual_Element(const Element& elem, const Mesh::Topology& topo, const Graph& d_graph) {
+ static Coloration Primal_Dual_DSAT(const Element& elem, const Mesh::Topology& topo, const Graph& p_graph, const Graph& d_graph) {
         const int nb_vert_elem = elem_nb_vertices(elem);
-        const Element lin_elem = get_linear_element(elem);
-        int n = *std::max_element(topo.begin(), topo.end()) + 1;
-        std::vector<int> colors(n,-1);
-        std::vector<int> elem_color(nb_vert_elem,0);
-        std::iota(elem_color.begin(), elem_color.end(), 0);
-
-        // get the graph of the reference element
-        Mesh::Topology edges = ref_edges(elem);
-        {
-            Mesh::Topology edges2 = ref_edges(elem);
-            std::reverse(edges2.begin(), edges2.end());
-            edges.insert(edges.end(), edges2.begin(), edges2.end());
-        }
-        const Graph e_graph(Line, edges);
-
+        std::vector<int> colors(p_graph.n,-1);
         std::queue<int> q; // element to visit
         std::vector<bool> visited(d_graph.n, false);
 
         {
-            int first_id = n * 0.5;
-            std::cout << first_id <<  " D = " << d_graph.adj[first_id].size() << std::endl;
             // color the first element
-            std::cout << "Topo : ";
             for(int i = 0; i < nb_vert_elem; i++) {
-                colors[topo[first_id * nb_vert_elem + i]] = i;
-                std::cout << topo[first_id * nb_vert_elem + i] << ", ";
+                colors[topo[i]] = i;
             }
-            std::cout << std::endl;
 
-            std::cout << "N ";
             // adds its neighbors to queue
-            for(int neighbor : d_graph.adj[first_id]) {
+            for(int neighbor : d_graph.adj[0]) {
                 visited[neighbor] = true;
-                std::cout << neighbor << ",";
                 q.push(neighbor);
-
             }
-            std::cout << std::endl;
         }
 
         // while there is element to color
@@ -309,65 +285,35 @@ public:
             // get element id and offset in topo array
             const int eid = q.front();
             const int offset = eid * nb_vert_elem;
-            //std::cout << "ELEMENT " << eid << std::endl;
             q.pop();
-
-            // get all colored vertices in element
-            std::vector<int> not_saturate; // colored vertices that doesn't all their neighbors colored
-            //std::cout << "Topo : ";
+            // get vertices that are not colored and get their saturation
+            std::vector<std::pair<int,int>> sat_and_id;
             for(int i = 0; i < nb_vert_elem; i++) {
                 const int vid = topo[offset + i];
-                //std::cout << vid << ", ";
-                if(colors[vid] == -1) continue;
-                not_saturate.push_back(i);
+                int c = colors[vid];
+                if (c != -1) continue;
+                int s = 0;
+                for(const int neighbor : p_graph.adj[vid]) {
+                    if(colors[neighbor] != 1) s++;
+                }
+                sat_and_id.push_back({s,vid});
             }
-            //std::cout << std::endl;
 
-            // while there is coloration to do
-            int k = 0;
-            while(!not_saturate.empty()) {
-                const int i = not_saturate[k];
-                const int c = colors[topo[offset + i]];
-                //std::cout << "vertex " << i << " " << topo[offset + i] << " " << c << std::endl;
-                // what are the color we are supposed to find
-                std::set<int> not_used;
-                //std::cout << "add ";
-                for(const int v_neighbor : e_graph.adj[c]) {
-                    not_used.insert(v_neighbor);
-                    //std::cout << v_neighbor << ", ";
-                }
-                //std::cout << std::endl;
-                // what color is around vertex
-                int last_id = -1;
-                //std::cout << "erase " ;
-                for(const int v_neighbor : e_graph.adj[i]) {
-                    const int v_c = colors[topo[offset+v_neighbor]];
-                    if(v_c == -1) {
-                        last_id = v_neighbor;
-                        continue;
-                    }
-                    //std::cout << "(" << v_c << " ," << topo[offset+v_neighbor] <<  ") ";
-                    not_used.erase(v_c);
-                }
-                //std::cout << std::endl;
+            std::sort(sat_and_id.begin(), sat_and_id.end(),
+                [&](const std::pair<int,int>& a, const std::pair<int,int>& b) {
+                return a.first > b.first;
+            });
 
-                if(not_used.size() == 1) {
-                    if(last_id == -1)
-                    {
-                        std::cout << std::endl;
-                    }
-                    colors[topo[offset + last_id]] = *not_used.begin();
-                    //std::cout << topo[offset + last_id] << " => " << colors[topo[offset + last_id]] << std::endl;
+            for(auto [sat, vid] : sat_and_id) {
+                std::set<int> used_color;
+                for(const int neighbor : p_graph.adj[vid]) {
+                    used_color.insert(colors[neighbor]);
                 }
-
-                if(not_used.size() <= 1) {
-                    not_saturate.erase(not_saturate.begin() + k);
-                    k--;
+                int c = 0;
+                while(used_color.find(c) != used_color.end()) {
+                    c++;
                 }
-                //std::cout << "It " << k << " " << not_saturate.size() << " " << not_used.size() << std::endl;
-
-                if(!not_saturate.empty())
-                    k = (k + 1) % not_saturate.size();
+                colors[vid] = c;
             }
 
             // add neighbors elements
@@ -380,9 +326,9 @@ public:
             }
         }
 
-
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
+
 private:
     struct Node {
         int sat;
@@ -421,4 +367,59 @@ private:
         }
     }
 
+};
+
+struct GraphBalance  {
+    static void Greedy(const Graph& graph, Coloration& coloration, int nb_iteration = 1000000) {
+        std::map<int, std::set<int>> c_verts;
+        for (int i = 0; i < graph.n; ++i) {
+            int c = coloration.color[i];
+            c_verts[c].insert(i);
+        }
+
+        const int mean_size = graph.n / coloration.nb_color;
+
+        // get the color that have more or less vertices that the mean size
+        std::vector<int> over_represented;
+        std::vector<int> under_represented;
+        for (auto &[color, verts] : c_verts) {
+            if (verts.size() >= mean_size) over_represented.push_back(color);
+            else under_represented.push_back(color);
+        }
+        bool color_change = true;
+        while(color_change) {
+            color_change = false;
+            for(int i = 0; i < over_represented.size(); ++i) {
+                int over_color = over_represented[i];
+                // get all vertices of this color and try to assign to an under represented color
+                for (int vid : c_verts[over_color]) {
+                    std::set<int> used_colors;
+                    for (const int neighbor : graph.adj[vid]) {
+                        used_colors.insert(coloration.color[neighbor]);
+                    }
+
+                    for(int j = 0; j < under_represented.size(); ++j) {
+                        int under_color = under_represented[j];
+                        if (used_colors.count(under_color)) continue;
+                        coloration.color[vid] = under_color;
+                        c_verts[over_color].erase(vid);
+                        c_verts[under_color].insert(vid);
+                        color_change = true;
+                        if (c_verts[under_color].size() == mean_size) {
+                            under_represented.erase(under_represented.begin() + j);
+                            over_represented.push_back(under_color);
+                        }
+                        break;
+                    }
+
+                    if(c_verts[over_color].size() <= mean_size) {
+                        over_represented.erase(over_represented.begin() + i);
+                        i--;
+                        under_represented.push_back(over_color);
+                    }
+                    if(color_change) break;
+                }
+            }
+        }
+    }
 };

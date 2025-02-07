@@ -563,20 +563,20 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
         }
     }
 
-    graph = new Graph(element, topology, false);
+    const Graph graph(element, topology);
+    const Graph graph_2(element, topology, false);
+    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
+    //GraphBalance::Greedy(graph, coloration);
 
-    Graph graph2(element, topology);
-    auto [nb_color, color] = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *graph) : GraphColoration::Greedy(graph2);
-
-    colors = color;
-    d_thread->nb_kernel = nb_color;
+    colors = coloration.color;
+    d_thread->nb_kernel = coloration.nb_color;
 
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
-    std::vector<int> nb_per_color(nb_color, 0);
+    std::vector<int> nb_per_color(coloration.nb_color, 0);
     for(const int c : colors) {
         nb_per_color[c]++;
     }
-    for(int i = 0; i < nb_color; ++i) {
+    for(int i = 0; i < coloration.nb_color; ++i) {
         std::cout << "c " << i << " = " <<  nb_per_color[i] << " verts" << std::endl;
     }
 }
@@ -616,26 +616,6 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                 y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_block_parameters()
             );
             break;
-        }
-    }
-    std::vector<Vector3> positions(graph->n);
-    std::vector<int> topo(d_fem->cb_topology->nb);
-    d_fem->cb_topology->get_data(topo);
-
-    ps->get_position(positions);
-    Debug::SetColor(ColorBase::Red());
-
-    for(int eid = 0; eid < graph->n; ++eid) {
-        Vector3 p = Vector3(0);
-        for(int i = 0; i < d_fem->elem_nb_vert; ++i)
-            p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
-        p /= static_cast<scalar>(d_fem->elem_nb_vert);
-        for(int eid2 : graph->adj[eid]) {
-            Vector3 p2 = Vector3(0);
-            for(int i = 0; i < d_fem->elem_nb_vert; ++i)
-                p2 += positions[topo[eid2 * d_fem->elem_nb_vert+ i] ];
-            p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
-            Debug::Line(p, p2);
         }
     }
 }

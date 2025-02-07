@@ -79,7 +79,7 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e6;
+        args.young = 1e7;
         args.poisson = 0.45;
         args.damping = 1e-6;
         args.iteration = 5;
@@ -90,19 +90,20 @@ struct BaseScene final : Scene
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Stress;
         //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
-        args.mesh_file = "mesh/msh/airplane.msh";
-        args.mesh_type = "msh";
+        //args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/msh/airplane.msh";
+        //args.mesh_type = "msh";
 
 
-        const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(4, 4, 4);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(32, 8, 8);
         args.iteration = 10;
         args.sub_iteration = 40;
         //build_mg_vbd_entity(Vector3(0,0,-1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
 
         args.iteration = 1;
-        args.sub_iteration = 1;
-        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, 0, true);
+        args.sub_iteration = 200;
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
         args.iteration = 1;
         args.sub_iteration = 200;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -156,8 +157,8 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = false;
-        display->wireframe() = true;
+        display->surface() = true;
+        display->wireframe() = false;
         display->point() = false;
         return display;
     }
@@ -221,6 +222,7 @@ struct BaseScene final : Scene
         VTK_Loader loader(AppInfo::PathToAssets() + file);
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
+
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
