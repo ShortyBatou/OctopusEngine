@@ -108,6 +108,7 @@ __device__ Vector3 compute_correction(const int vid, const scalar damping, const
     const scalar mh2 = ps.m[vid] / (dt*dt);
     fi -= mh2 * (ps.p[vid] - y[vid]);
     H[0][0] += mh2; H[1][1] += mh2; H[2][2] += mh2;
+
     //scalar detH = glm::determinant(s_H);
     const scalar detH = abs(glm::determinant(H));
     return detH > 1e-6f ? glm::inverse(H) * fi : Vector3(0.f);
@@ -495,9 +496,8 @@ void GPU_VBD_FEM::sort_by_color(const int nb_vertices, const std::vector<int>& c
                 while(i+1 < ids.size() && e_owners[ids[i+1]].size() * d_fem->nb_quadrature == v) {
                     nb++; i++;
                 }
-
                 // how we merge the block depending on the max block size
-                const int max_block = vmax / v; // max sub_group
+                const int max_block = vmax / v; // max size sub_group
                 const int nb_group = nb / max_block; // how many sub group
                 const int rest = (nb - max_block * nb_group) * v;  // nb thread that can't be totally merge
                 for(int j = 0; j < nb_group; ++j) {
@@ -565,7 +565,8 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
 
     const Graph graph(element, topology);
     const Graph graph_2(element, topology, false);
-    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
+    //Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
+    Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_DSAT(element, topology, graph, graph_2) : GraphColoration::Greedy(graph);
     //GraphBalance::Greedy(graph, coloration);
 
     colors = coloration.color;

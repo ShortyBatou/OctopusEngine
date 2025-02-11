@@ -80,16 +80,16 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.distribution = Shape;
         args.young = 1e7;
-        args.poisson = 0.45;
-        args.damping = 1e-6;
+        args.poisson = 0.49;
+        args.damping = 5e-7;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
-        args.display = FEM_DataDisplay::Type::Stress;
-        //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
+        args.display = FEM_DataDisplay::Type::Displacement;
+        //args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
         //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/airplane.msh";
         //args.mesh_type = "msh";
@@ -98,12 +98,13 @@ struct BaseScene final : Scene
         const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(32, 8, 8);
         args.iteration = 10;
-        args.sub_iteration = 40;
-        //build_mg_vbd_entity(Vector3(0,0,-1),cells, size, Color(0.8,.3,0.5,0.), Tetra10, args, 0, 0.5, true);
+        args.sub_iteration = 20;
+        build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.5,0.), Hexa27, args, 0, 0.5, true);
 
-        args.iteration = 1;
-        args.sub_iteration = 200;
-        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
+        args.damping = 1e-7;
+        args.iteration = 2;
+        args.sub_iteration = 100;
+        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Hexa27, args, 0, true);
         args.iteration = 1;
         args.sub_iteration = 200;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -113,10 +114,10 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
         //build_xpbd_entity(Vector3(0,0.,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, true, true);
 
-        args.damping = 1e-6;
+        args.damping = 5e-7;
         args.iteration = 1;
-        args.sub_iteration = 25;
-        //build_mixed_vbd_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Tetra10, args, 10);
+        args.sub_iteration = 50;
+        //build_mixed_vbd_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 16);
         //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
 
         args.sub_iteration = 400;
