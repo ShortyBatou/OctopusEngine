@@ -9,6 +9,7 @@
 #include <Tools/Graph.h>
 #include <GPU/GPU_FEM_Material.h>
 #include <GPU/GPU_ParticleSystem.h>
+#include <Manager/TimeManager.h>
 
 __device__ void compute_f_H(
     const int n, const int r_vid,
@@ -563,11 +564,21 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
         }
     }
 
-    const Graph graph(element, topology);
-    const Graph graph_2(element, topology, false);
-    //Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(graph) : GraphColoration::Greedy(graph);
-    Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_DSAT(element, topology, graph, graph_2) : GraphColoration::Greedy(graph);
-    //GraphBalance::Greedy(graph, coloration);
+    p_graph = new Graph(element, topology);
+    d_graph = new Graph(element, topology, false);
+    Time::Tic();
+    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(*p_graph) : GraphColoration::Greedy_LF(*p_graph);
+    //std::cout << "DSAT " << Time::Tac() << std::endl;
+    //Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph) : GraphColoration::Greedy(*p_graph);
+    //GraphBalance::Greedy(*p_graph, coloration);
+    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    _t_nb_color = c2.nb_color;
+    _t_color = c2.color;
+    _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
+    Coloration c3 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
+    std::cout << "PDE " << _t_nb_color << std::endl;
+    std::cout << "DSAT " << coloration.nb_color << std::endl;
+    std::cout << "DUAL " << c3.nb_color << std::endl;
 
     colors = coloration.color;
     d_thread->nb_kernel = coloration.nb_color;
@@ -619,4 +630,100 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
         }
     }
+
+    std::vector<Vector3> positions(d_graph->n);
+    ps->get_position(positions);
+    std::vector<int> topo(d_fem->cb_topology->nb);
+    d_fem->cb_topology->get_data(topo);
+
+
+    // display all non colored vertices
+    /*Debug::SetColor(ColorBase::Black());
+    for(int i = 0; i < positions.size(); i++) {
+        if(_t_color[i] == -1) {
+            Debug::Cube(positions[i], 0.001);
+        }
+    }/**/
+
+
+    ColorMap::Set_Type(ColorMap::Rainbow);
+    for(int i = 0; i < positions.size(); i++) {
+        if(_t_color[i] != -1) {
+            const scalar t = static_cast<scalar>(_t_color[i]) / static_cast<scalar>(_t_nb_color);
+            Color c = ColorMap::evaluate(t);
+            Debug::SetColor(c);
+        }
+        else {
+            Debug::SetColor(ColorBase::Black());
+        }
+        Debug::Cube(positions[i], 0.01);
+    }/**/
+    /*
+     // display bad elements
+    Debug::SetColor(ColorBase::Red());
+    for(int eid = 0; eid < d_graph->n; ++eid) {
+        std::set<int> neighbors;
+        for(int j : d_graph->adj[eid]) {
+            neighbors.insert(j);
+        }
+        bool bad = false;
+        for(int j : d_graph->adj[eid]) {
+            for(int k : d_graph->adj[j]) {
+                if(neighbors.find(k) != neighbors.end()) {
+                    bad = true;
+                    break;
+                }
+            }
+            if(bad) break;
+        }
+
+        if(bad) {
+            Vector3 p(0.);
+            for(int j = 0; j < d_fem->elem_nb_vert; ++j) {
+                p += positions[topo[eid * d_fem->elem_nb_vert +j]];
+            }
+            p *= 1.f / static_cast<scalar>(d_fem->elem_nb_vert);
+            Debug::Cube(p, 0.001);
+        }
+    }/**/
+
+    /*
+    for(auto [vid, nb] : _t_conflict) {
+        if(_t_color[vid] != -1) {
+            const scalar t = static_cast<scalar>(_t_color[vid]) / static_cast<scalar>(_t_nb_color);
+            Color c = ColorMap::evaluate(t);
+            Debug::SetColor(c);
+        }
+        else {
+            Debug::SetColor(ColorBase::Black());
+        }
+
+        Debug::Cube(positions[vid], 0.005);
+
+        for(int j : p_graph->adj[vid]) {
+            if(_t_conflict.find(j) == _t_conflict.end()) continue;
+            if(_t_color[j] != _t_color[vid]) continue;
+            Debug::Line(positions[vid], positions[j]);
+        }
+
+    } /**/
+
+
+    /*
+    Debug::SetColor(ColorBase::Red());
+
+    for(int eid = 0; eid < d_graph->n; ++eid) {
+        Vector3 p = Vector3(0);
+        for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+            p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
+        p /= static_cast<scalar>(d_fem->elem_nb_vert);
+        for(int eid2 : d_graph->adj[eid]) {
+            Vector3 p2 = Vector3(0);
+            for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+                p2 += positions[topo[eid2 * d_fem->elem_nb_vert+ i] ];
+            p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
+            Debug::Line(p, p2);
+        }
+    }
+    /**/
 }

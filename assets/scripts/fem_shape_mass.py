@@ -132,7 +132,7 @@ def get_lumped(mat):
     return lumped
 
 rho = 1
-V = 1 * 6
+V = 10 * 6
 
 A = np.random.rand(3,3)
 B = np.random.rand(3,3)
@@ -156,12 +156,13 @@ proj_p3_p2 = get_projection(20,10,shape_p3, shape_p2, quadrature, weight, V)
 I12 = get_prolongation(mass_p1, proj_p1_p2) #restriction
 I21 = get_prolongation(mass_p2, proj_p2_p1) #prolongation
 
-I23 = get_prolongation(mass_p2, proj_p2_p3) #restriction
-I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
+#I23 = get_prolongation(mass_p2, proj_p2_p3) #restriction
+#I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
 
 #I = np.matmul(np.transpose(I21), np.transpose(I12))
 I = np.matmul(I21, I12)
-print(proj_p2_p1)
+print("proj 2 => 1", proj_p2_p1)
+print("proj 1 => 2", proj_p1_p2)
 print(np.trace(get_lumped(mass_p2)))
 print(mass_p2)
 print(I21)

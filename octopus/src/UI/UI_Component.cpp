@@ -104,7 +104,7 @@ void UI_Mesh_Display::draw(Entity* entity) {
 			case 0: new_graphic = new GL_Graphic(gl_graphic->color()); gl_display->point() = true; gl_display->surface() = false;  gl_display->wireframe() = false; break;
 			case 1: new_graphic = new GL_GraphicSurface(gl_graphic->color()); break;
 			case 2: new_graphic = new GL_GraphicHighOrder(2, gl_graphic->color()); break;
-			case 3: new_graphic = new GL_GraphicElement(gl_graphic->color()); break;
+			case 3: new_graphic = new GL_GraphicElement(gl_graphic->color(), 0.6); break;
 			default: break;
 		}
 		std::cout << gl_graphic->color().r << " " << gl_graphic->color().g << " " << gl_graphic->color().b << std::endl;

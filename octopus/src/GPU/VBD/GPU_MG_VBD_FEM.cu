@@ -21,6 +21,38 @@ __global__ void kernel_prolongation(const int n, GPU_ParticleSystem_Parameters p
     ps.p[inter.ids[tid]] = ps.last_p[inter.ids[tid]] + dt_p * inter.weight;
 }
 
+__global__ void kernel_restriction_intertia(
+    const int n, const scalar dt, const Vector3 g,
+    GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter,
+    Vector3* y) {
+
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid >= n) return;
+    const int* primitive = inter.primitives + tid * inter.nb_vert_primitives;
+    Vector3 v = Vector3(0);
+    const int vid = inter.ids[tid];
+    for(int i = 0; i < inter.nb_vert_primitives; ++i)
+    {
+        const int p_vid = primitive[i];
+        v += ps.v[p_vid] * ps.m[p_vid] / ps.m[vid];
+    }
+    v *= 1.f / inter.nb_vert_primitives;
+
+    const Vector3 a_ext = g + ps.f[vid] * ps.w[vid];
+    y[vid] = ps.last_p[vid] + (ps.v[vid] + a_ext * dt) * dt;
+}
+
+
+
+__global__ void kernel_intertia(
+        const scalar dt, const Vector3 g,
+        GPU_ParticleSystem_Parameters ps,
+        Vector3* y) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= ps.nb_particles) return;
+    const Vector3 a_ext = g + ps.f[i] * ps.w[i];
+    y[i] = ps.last_p[i] + (ps.v[i] + a_ext * dt) * dt;
+}
 
 GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                                const Material& material, const scalar& young, const scalar& poisson,
@@ -37,6 +69,9 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     it_count = 0;
     level = 1;
 
+    interias.push_back(new Cuda_Buffer(geometry));
+    interias.push_back(new Cuda_Buffer(geometry));
+    y = interias[level];
     const int nb_vert_elem = elem_nb_vertices(element);
     const int nb_elem = static_cast<int>(topology.size()) / nb_vert_elem;
 
@@ -105,6 +140,11 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
 }
 
 
+void GPU_MG_VBD_FEM::compute_intertia(GPU_ParticleSystem* ps, const scalar dt) const {
+    kernel_intertia<<<(ps->nb_particles() + 31)/32, 32>>>(dt,Dynamic::gravity(),
+        ps->get_parameters(), y->buffer);
+}
+
 void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
 {
     const auto ps_param = ps->get_parameters();
@@ -129,6 +169,7 @@ void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
     d_thread = l_threads[level];
     d_fem = l_fems[level];
     d_owners = l_owners[level];
+    y = interias[level];
 
     GPU_VBD_FEM::step(ps, dt);
 

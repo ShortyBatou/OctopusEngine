@@ -53,6 +53,7 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
                    const scalar& density, const Mass_Distribution& mass_distrib,
                    GPU_ParticleSystem* ps);
 
+    void compute_intertia(GPU_ParticleSystem* ps, scalar dt) const;
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
     [[nodiscard]] GPU_MG_Interpolation_Parameters get_interpolation_parameters(const int& i) const
@@ -70,6 +71,7 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
     int it_count;
     int level;
 
+    std::vector<Cuda_Buffer<Vector3>*> interias;
     std::vector<Cuda_Buffer<scalar>*> masses;
     std::vector<GPU_MG_Interpolation*> interpolations;
     std::vector<Thread_Data*> l_threads;

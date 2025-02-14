@@ -107,8 +107,14 @@ struct GPU_VBD_FEM : GPU_FEM
 
     GPU_Owners_Data* d_owners;
     GPU_Block_Data* d_blocks;
+
+    std::vector<int> _t_color;
+    int _t_nb_color;
+    std::map<int, int> _t_conflict;
+
     VBD_Version version;
-    Graph* graph;
+    Graph* p_graph;
+    Graph* d_graph;
     scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
