@@ -564,18 +564,26 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
         }
     }
 
+    Time::Tic();
     p_graph = new Graph(element, topology);
+    std::cout << "P Graph :" << Time::Tac() << std::endl;
     d_graph = new Graph(element, topology, false);
+    std::cout << "D Graph :" << Time::Tac() << std::endl;
     Time::Tic();
     Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(*p_graph) : GraphColoration::Greedy_LF(*p_graph);
-    //std::cout << "DSAT " << Time::Tac() << std::endl;
+    std::cout << "DSAT " << Time::Tac() << std::endl;
     //Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph) : GraphColoration::Greedy(*p_graph);
     //GraphBalance::Greedy(*p_graph, coloration);
+    Time::Tic();
     Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    std::cout << "Primal_Dual_Element " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
+    Time::Tic();
     Coloration c3 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
+    std::cout << "Primal_Dual_DSAT " << Time::Tac() << std::endl;
+
     std::cout << "PDE " << _t_nb_color << std::endl;
     std::cout << "DSAT " << coloration.nb_color << std::endl;
     std::cout << "DUAL " << c3.nb_color << std::endl;
