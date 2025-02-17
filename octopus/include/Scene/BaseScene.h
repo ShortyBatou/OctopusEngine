@@ -89,7 +89,7 @@ struct BaseScene final : Scene
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/rocker_arm_Q1.vtk";
+        args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
         args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/airplane.msh";
         //args.mesh_type = "msh";

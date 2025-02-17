@@ -576,7 +576,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     //GraphBalance::Greedy(*p_graph, coloration);
     Time::Tic();
     Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    std::cout << "Primal_Dual_Element " << Time::Tac() << std::endl;
+    std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
@@ -642,8 +642,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);
-    d_fem->cb_topology->get_data(topo);
-
+    d_fem->cb_topology->get_data(topo);/**/
 
     // display all non colored vertices
     /*Debug::SetColor(ColorBase::Black());
@@ -653,7 +652,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }/**/
 
-
+    /*
     ColorMap::Set_Type(ColorMap::Rainbow);
     for(int i = 0; i < positions.size(); i++) {
         if(_t_color[i] != -1) {
@@ -666,9 +665,9 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
         Debug::Cube(positions[i], 0.01);
     }/**/
-    /*
+
      // display bad elements
-    Debug::SetColor(ColorBase::Red());
+    std::vector<int> nb_conflict(p_graph->n,0);
     for(int eid = 0; eid < d_graph->n; ++eid) {
         std::set<int> neighbors;
         for(int j : d_graph->adj[eid]) {
@@ -688,11 +687,23 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         if(bad) {
             Vector3 p(0.);
             for(int j = 0; j < d_fem->elem_nb_vert; ++j) {
+                nb_conflict[topo[eid * d_fem->elem_nb_vert +j]]++;
                 p += positions[topo[eid * d_fem->elem_nb_vert +j]];
             }
             p *= 1.f / static_cast<scalar>(d_fem->elem_nb_vert);
-            Debug::Cube(p, 0.001);
+            //Debug::SetColor(ColorBase::Red());
+            //Debug::Cube(p, 0.01);
         }
+    }
+
+    ColorMap::Set_Type(ColorMap::R2G);
+    int m_conflict = *std::max_element(nb_conflict.begin(), nb_conflict.end());
+    for(int i = 0; i < p_graph->n; ++i) {
+        if(nb_conflict[i] == 0) continue;
+        const scalar t = static_cast<scalar>(nb_conflict[i]) / static_cast<scalar>(m_conflict);
+        Color c = ColorMap::evaluate(t);
+        Debug::SetColor(c);
+        Debug::Cube(positions[i], 0.002);
     }/**/
 
     /*

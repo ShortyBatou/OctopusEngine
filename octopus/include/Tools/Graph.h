@@ -264,7 +264,7 @@ public:
         return { *std::max_element(colors.begin(), colors.end())+1, colors};
     }
 
- static Coloration Primal_Dual_DSAT(const Element& elem, const Mesh::Topology& topo, const Graph& p_graph, const Graph& d_graph) {
+    static Coloration Primal_Dual_DSAT(const Element& elem, const Mesh::Topology& topo, const Graph& p_graph, const Graph& d_graph) {
         const int nb_vert_elem = elem_nb_vertices(elem);
         std::vector<int> colors(p_graph.n,-1);
         std::queue<int> q; // element to visit
@@ -474,6 +474,7 @@ public:
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 
+
     static int Nb_Conflict(const Graph& graph, const Coloration& coloration) {
         return static_cast<int>(Get_Conflict(graph, coloration).size());
     }
@@ -505,12 +506,28 @@ private:
         int vertex;
     };
 
+    struct Node2 {
+        int conflict;
+        int sat;
+        int deg;
+        int vertex;
+    };
+
     struct maxSat {
         bool operator()(const Node& lhs,
                         const Node& rhs) const
         {
             return std::tie(lhs.sat, lhs.deg, lhs.vertex)
                    > std::tie(rhs.sat, rhs.deg, rhs.vertex);
+        }
+    };
+
+    struct maxSat2 {
+        bool operator()(const Node2& lhs,
+                        const Node2& rhs) const
+        {
+            return std::tie(lhs.conflict, lhs.sat, lhs.deg, lhs.vertex)
+                   > std::tie(lhs.conflict, rhs.sat, rhs.deg, rhs.vertex);
         }
     };
 
