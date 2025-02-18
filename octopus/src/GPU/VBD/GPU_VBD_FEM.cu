@@ -566,6 +566,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
 
     Time::Tic();
     p_graph = new Graph(element, topology);
+    p_graph->save_as_file("graph");
     std::cout << "P Graph :" << Time::Tac() << std::endl;
     d_graph = new Graph(element, topology, false);
     std::cout << "D Graph :" << Time::Tac() << std::endl;
@@ -639,7 +640,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }
 
-    std::vector<Vector3> positions(d_graph->n);
+    /*std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);
     d_fem->cb_topology->get_data(topo);/**/
@@ -666,7 +667,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         Debug::Cube(positions[i], 0.01);
     }/**/
 
-     // display bad elements
+    /* // display bad elements
     std::vector<int> nb_conflict(p_graph->n,0);
     for(int eid = 0; eid < d_graph->n; ++eid) {
         std::set<int> neighbors;
@@ -691,11 +692,11 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                 p += positions[topo[eid * d_fem->elem_nb_vert +j]];
             }
             p *= 1.f / static_cast<scalar>(d_fem->elem_nb_vert);
-            //Debug::SetColor(ColorBase::Red());
-            //Debug::Cube(p, 0.01);
+            Debug::SetColor(ColorBase::Red());
+            Debug::Cube(p, 0.01);
         }
     }
-
+    /*
     ColorMap::Set_Type(ColorMap::R2G);
     int m_conflict = *std::max_element(nb_conflict.begin(), nb_conflict.end());
     for(int i = 0; i < p_graph->n; ++i) {
@@ -703,7 +704,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         const scalar t = static_cast<scalar>(nb_conflict[i]) / static_cast<scalar>(m_conflict);
         Color c = ColorMap::evaluate(t);
         Debug::SetColor(c);
-        Debug::Cube(positions[i], 0.002);
+        Debug::Cube(positions[i], 0.01);
     }/**/
 
     /*

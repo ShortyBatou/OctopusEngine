@@ -3,9 +3,11 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <fstream>
 #include <iso646.h>
 #include <numeric>
 #include <queue>
+#include <UI/AppInfo.h>
 
 #include "Random.h"
 
@@ -86,6 +88,19 @@ struct Graph {
 
         for(int i = 0; i < adj.size(); ++i) {
             degree[i] = adj[i].size();
+        }
+    }
+
+    void save_as_file(const std::string &filename) const {
+        const std::string f_path = AppInfo::PathToAssets() + filename + ".txt";
+        std::ofstream file;
+        file.open(f_path);
+
+        for(int i = 0; i < n; ++i) {
+            for(const int id : adj[i]) {
+                file << i << ":" << id << ", ";
+            }
+            file << std::endl;
         }
     }
 
@@ -450,18 +465,19 @@ public:
                 else v_conflict.insert(vid);
             }
 
-
-            // add neighbors elements
-            for(int e_neighbor : d_graph.adj[eid]) {
-                // if not visited => add to queue for coloring
-                if(!visited[e_neighbor]) {
-                    q.push(e_neighbor);
-                    visited[e_neighbor] = true;
+            if(!conflict) {
+                // add neighbors elements
+                for(int e_neighbor : d_graph.adj[eid]) {
+                    // if not visited => add to queue for coloring
+                    if(!visited[e_neighbor]) {
+                        q.push(e_neighbor);
+                        visited[e_neighbor] = true;
+                    }
                 }
             }
         }
 
-        for(int vid : v_conflict) {
+        /*for(int vid : v_conflict) {
             std::set<int> used_color;
             for(int j : p_graph.adj[vid]) {
                 used_color.insert(colors[j]);
@@ -469,7 +485,7 @@ public:
             int c = 0;
             while(used_color.find(c) != used_color.end()) c++;
             colors[vid] = c;
-        }
+        }*/
 
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
@@ -507,8 +523,8 @@ private:
     };
 
     struct Node2 {
-        int conflict;
         int sat;
+        int conflict;
         int deg;
         int vertex;
     };
@@ -526,8 +542,8 @@ private:
         bool operator()(const Node2& lhs,
                         const Node2& rhs) const
         {
-            return std::tie(lhs.conflict, lhs.sat, lhs.deg, lhs.vertex)
-                   > std::tie(lhs.conflict, rhs.sat, rhs.deg, rhs.vertex);
+            return std::tie(lhs.sat, lhs.conflict, lhs.deg, lhs.vertex)
+                   > std::tie(rhs.sat, lhs.conflict, rhs.deg, rhs.vertex);
         }
     };
 
