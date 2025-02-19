@@ -91,7 +91,7 @@ struct BaseScene final : Scene
         args.display = FEM_DataDisplay::Type::Displacement;
         args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
         args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        //args.mesh_file = "mesh/msh/bar_tetra_864.msh";
         //args.mesh_type = "msh";
 
 

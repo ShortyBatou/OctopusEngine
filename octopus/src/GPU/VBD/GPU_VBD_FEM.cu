@@ -575,8 +575,8 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph) : GraphColoration::Greedy_LF(*p_graph);
     std::cout << "PDE " << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    std::cout << "PDE " << Time::Tac() << std::endl;
+    Coloration c2 = GraphColoration::Greedy_SLF(*p_graph);
+    std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
@@ -605,7 +605,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration c9 = GraphColoration::DSAT(*p_graph);
     std::cout << "PD DSAT " << Time::Tac() << std::endl;
 
-    std::cout << "PDE " << c2.nb_color << std::endl;
+    std::cout << "Test " << c2.nb_color << std::endl;
     std::cout << "BFS " << c3.nb_color << std::endl;
     std::cout << "Greedy " << c4.nb_color << std::endl;
     std::cout << "Greedy RLF " << c6.nb_color << std::endl;
@@ -690,7 +690,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             else {
                 Debug::SetColor(ColorBase::Black());
             }
-            Debug::Cube(positions[i], 0.1);
+            Debug::Cube(positions[i], 0.01);
         }
     }
 
