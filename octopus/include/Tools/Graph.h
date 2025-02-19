@@ -371,8 +371,8 @@ public:
 
         // color the first element
         {
-            const int first_id = n * Random::Eval();
-            std::cout << "FIRST ID " << first_id << std::endl;
+            srand(time(NULL));
+            const int first_id = d_graph.n * Random::Eval();
             for(int i = 0; i < nb_vert_elem; i++) {
                 colors[topo[first_id * nb_vert_elem + i]] = i;
             }
@@ -445,7 +445,7 @@ public:
             }
 
             bool conflict = false;
-            for(int i = 0; i < nb_vert_elem && !conflict; i++) {
+            for(int i = 0; i < nb_vert_elem; i++) {
                 const int ci = sub_coloration[i];
                 const int vid = topo[offset+i];
                 if(colors[vid] != -1) continue; // don't touch if already colored
@@ -454,6 +454,7 @@ public:
                     conflict = true;
                     break;
                 }
+                if(conflict) sub_coloration[i] = -1;
             }
 
             // if there is a conflict ignore this coloration
@@ -461,8 +462,10 @@ public:
                 const int ci = sub_coloration[i];
                 const int vid = topo[offset+i];
                 if(colors[vid] != -1) continue; // don't touch if already colored
-                if(!conflict) colors[vid] = ci;
-                else v_conflict.insert(vid);
+                //if(!conflict) colors[vid] = ci; // only apply coloration when possible
+                //else v_conflict.insert(vid); // else add vertices in conflict
+                if(ci != -1) colors[vid] = ci; // only apply coloration when possible
+                else v_conflict.insert(vid); // else add vertices in conflict
             }
 
             if(!conflict) {
@@ -477,16 +480,85 @@ public:
             }
         }
 
-        /*for(int vid : v_conflict) {
-            std::set<int> used_color;
+        //use DSAT to finish coloration
+        std::vector<int> adjCols(p_graph.n,0);
+        std::set<Node, maxSat> max_queue; // sort vertices depending on their saturation > degree > id
+        std::vector<int> degree(p_graph.degree);
+        // generate nodes
+        for (int vid = 0; vid < p_graph.n; vid++) {
             for(int j : p_graph.adj[vid]) {
-                used_color.insert(colors[j]);
+                if(colors[j] == -1) continue;
+                adjCols[vid]++;
             }
-            int c = 0;
-            while(used_color.find(c) != used_color.end()) c++;
-            colors[vid] = c;
-        }*/
+        }
 
+        for (int c : v_conflict) {
+            max_queue.insert({adjCols[c], degree[c], c});
+        }
+
+        // while there is vertices to color
+        while (!max_queue.empty()) {
+            // get and pop the max saturation vertex
+            const auto maxPtr = max_queue.begin();
+            int vid = maxPtr->vertex;
+            max_queue.erase(maxPtr);
+
+            // get used color around vertex
+            std::set<int> used;
+            for (const int v : p_graph.adj[vid]) {
+                if (colors[v] == -1) continue;
+                used.insert(colors[v]);
+            }
+
+            // get the first color i not used
+            int i;
+            for (i = 0; i < used.size(); i++)
+                if (used.find(i) == used.end()) break;
+
+            // color vertex
+            colors[vid] = i;
+
+            // add neighbors and change saturation of vertices around current vertex
+            for (const int v : p_graph.adj[vid]) {
+                if (colors[v] == -1) {
+                    max_queue.erase({ adjCols[v], degree[v], v });
+                    adjCols[v]++;
+                    degree[v]--;
+                    max_queue.emplace(Node{ adjCols[v],degree[v], v });
+                }
+            }
+        }
+
+        return { *std::max_element(colors.begin(), colors.end())+1, colors };
+    }
+
+    static Coloration BFS(const Graph& graph) {
+        std::vector<int> colors(graph.n,-1);
+        std::queue<int> q;
+        std::vector<bool> visited(graph.n, false);
+        visited[0] = true;
+        q.push(0);
+        while (!q.empty()) {
+            const int vid = q.front();
+            q.pop();
+            std::set<int> used;
+            for (const int j : graph.adj[vid]) {
+                if(colors[j] == -1) continue;
+                used.insert(colors[j]);
+            }
+
+            int c = 0;
+            while(used.find(c) != used.end()) {
+                c++;
+            }
+
+            colors[vid] = c;
+            for (const int j : graph.adj[vid]) {
+                if(visited[j] || colors[j] != -1) continue;
+                visited[j] = true;
+                q.push(j);
+            }
+        }
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 

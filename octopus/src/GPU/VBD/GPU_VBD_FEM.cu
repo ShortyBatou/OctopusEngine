@@ -9,6 +9,7 @@
 #include <Tools/Graph.h>
 #include <GPU/GPU_FEM_Material.h>
 #include <GPU/GPU_ParticleSystem.h>
+#include <Manager/Input.h>
 #include <Manager/TimeManager.h>
 
 __device__ void compute_f_H(
@@ -571,23 +572,46 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     d_graph = new Graph(element, topology, false);
     std::cout << "D Graph :" << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(*p_graph) : GraphColoration::Greedy_LF(*p_graph);
-    std::cout << "DSAT " << Time::Tac() << std::endl;
-    //Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph) : GraphColoration::Greedy(*p_graph);
-    //GraphBalance::Greedy(*p_graph, coloration);
+    Coloration coloration = version >= Better_Coloration ? GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph) : GraphColoration::Greedy_LF(*p_graph);
+    std::cout << "PDE " << Time::Tac() << std::endl;
     Time::Tic();
     Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    std::cout << "Test " << Time::Tac() << std::endl;
+    std::cout << "PDE " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
-    Time::Tic();
-    Coloration c3 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
-    std::cout << "Primal_Dual_DSAT " << Time::Tac() << std::endl;
 
-    std::cout << "PDE " << _t_nb_color << std::endl;
-    std::cout << "DSAT " << coloration.nb_color << std::endl;
-    std::cout << "DUAL " << c3.nb_color << std::endl;
+    Time::Tic();
+    Coloration c3 = GraphColoration::BFS(*p_graph);
+    std::cout << "BFS " << Time::Tac() << std::endl;
+
+    Time::Tic();
+    Coloration c4 = GraphColoration::Greedy(*p_graph);
+    std::cout << "Greedy " << Time::Tac() << std::endl;
+
+    Time::Tic();
+    Coloration c6 = GraphColoration::Greedy_RLF(*p_graph);
+    std::cout << "Greedy RLF" << Time::Tac() << std::endl;
+
+    Time::Tic();
+    Coloration c7 = GraphColoration::Greedy_SLF(*p_graph);
+    std::cout << "Greedy SLF " << Time::Tac() << std::endl;
+
+    Time::Tic();
+    Coloration c8 = GraphColoration::DSAT(*p_graph);
+    std::cout << "DSAT " << Time::Tac() << std::endl;
+
+    Time::Tic();
+    Coloration c9 = GraphColoration::DSAT(*p_graph);
+    std::cout << "PD DSAT " << Time::Tac() << std::endl;
+
+    std::cout << "PDE " << c2.nb_color << std::endl;
+    std::cout << "BFS " << c3.nb_color << std::endl;
+    std::cout << "Greedy " << c4.nb_color << std::endl;
+    std::cout << "Greedy RLF " << c6.nb_color << std::endl;
+    std::cout << "Greedy SLF " << c7.nb_color << std::endl;
+    std::cout << "DSAT " << c8.nb_color << std::endl;
+    std::cout << "PD DSAT " << c9.nb_color << std::endl;
 
     colors = coloration.color;
     d_thread->nb_kernel = coloration.nb_color;
@@ -608,6 +632,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937());
     unsigned int s;
     for(const int c : kernels) {
+        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -640,110 +665,119 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }
 
-    /*std::vector<Vector3> positions(d_graph->n);
+    std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);
     d_fem->cb_topology->get_data(topo);/**/
 
     // display all non colored vertices
-    /*Debug::SetColor(ColorBase::Black());
-    for(int i = 0; i < positions.size(); i++) {
-        if(_t_color[i] == -1) {
-            Debug::Cube(positions[i], 0.001);
+    if(Input::Loop(Key::W)) {
+        Debug::SetColor(ColorBase::Black());
+        for(int i = 0; i < positions.size(); i++) {
+            if(_t_color[i] == -1) {
+                Debug::Cube(positions[i], 0.001);
+            }
         }
-    }/**/
+    }
+    if(Input::Loop(Key::X)) {
+        ColorMap::Set_Type(ColorMap::Rainbow);
+        for(int i = 0; i < positions.size(); i++) {
+            if(_t_color[i] != -1) {
+                const scalar t = static_cast<scalar>(_t_color[i]) / static_cast<scalar>(_t_nb_color);
+                Color c = ColorMap::evaluate(t);
+                Debug::SetColor(c);
+            }
+            else {
+                Debug::SetColor(ColorBase::Black());
+            }
+            Debug::Cube(positions[i], 0.1);
+        }
+    }
 
-    /*
-    ColorMap::Set_Type(ColorMap::Rainbow);
-    for(int i = 0; i < positions.size(); i++) {
-        if(_t_color[i] != -1) {
-            const scalar t = static_cast<scalar>(_t_color[i]) / static_cast<scalar>(_t_nb_color);
-            Color c = ColorMap::evaluate(t);
-            Debug::SetColor(c);
-        }
-        else {
-            Debug::SetColor(ColorBase::Black());
-        }
-        Debug::Cube(positions[i], 0.01);
-    }/**/
+    // display bad elements
+    if(Input::Loop(Key::C) || Input::Loop(Key::N)) {
+        std::vector<int> edges = ref_edges(get_elem_by_size(d_fem->elem_nb_vert));
+        for(int eid = 0; eid < d_graph->n; ++eid) {
+            std::set<int> neighbors;
+            for(int j : d_graph->adj[eid]) {
+                neighbors.insert(j);
+            }
+            bool bad = false;
+            for(int j : d_graph->adj[eid]) {
+                for(int k : d_graph->adj[j]) {
+                    if(neighbors.find(k) != neighbors.end()) {
+                        bad = true;
+                        break;
+                    }
+                }
+                if(bad) break;
+            }
 
-    /* // display bad elements
-    std::vector<int> nb_conflict(p_graph->n,0);
-    for(int eid = 0; eid < d_graph->n; ++eid) {
-        std::set<int> neighbors;
-        for(int j : d_graph->adj[eid]) {
-            neighbors.insert(j);
-        }
-        bool bad = false;
-        for(int j : d_graph->adj[eid]) {
-            for(int k : d_graph->adj[j]) {
-                if(neighbors.find(k) != neighbors.end()) {
-                    bad = true;
-                    break;
+            if(bad) {
+                if(Input::Loop(Key::C)) {
+                    Debug::SetColor(ColorBase::Red());
+                    for(int i = 0; i < edges.size(); i+=2) {
+                        int a = topo[eid * d_fem->elem_nb_vert + edges[i]];
+                        int b = topo[eid * d_fem->elem_nb_vert + edges[i+1]];
+                        Debug::Line(positions[a],positions[b]);
+                    }
+                }
+                else {
+                    Vector3 p = Vector3(0, 0, 0);
+                    for(int i = 0; i < d_fem->elem_nb_vert; ++i) {
+                        p += positions[topo[eid * d_fem->elem_nb_vert + i]];
+                    }
+                    p/= static_cast<scalar>(d_fem->elem_nb_vert);
+                    for(int j : d_graph->adj[eid]) {
+                        Vector3 p2 = Vector3(0, 0, 0);
+                        for(int k = 0; k < d_fem->elem_nb_vert; ++k) {
+                            p2 += positions[topo[j * d_fem->elem_nb_vert + k]];
+                        }
+                        p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
+                        Debug::Line(p, p2);
+                    }
                 }
             }
-            if(bad) break;
         }
+    }
 
-        if(bad) {
-            Vector3 p(0.);
-            for(int j = 0; j < d_fem->elem_nb_vert; ++j) {
-                nb_conflict[topo[eid * d_fem->elem_nb_vert +j]]++;
-                p += positions[topo[eid * d_fem->elem_nb_vert +j]];
+
+    if(Input::Loop(Key::V)) {
+        for(auto [vid, nb] : _t_conflict) {
+            if(_t_color[vid] != -1) {
+                const scalar t = static_cast<scalar>(_t_color[vid]) / static_cast<scalar>(_t_nb_color);
+                Color c = ColorMap::evaluate(t);
+                Debug::SetColor(c);
             }
-            p *= 1.f / static_cast<scalar>(d_fem->elem_nb_vert);
-            Debug::SetColor(ColorBase::Red());
-            Debug::Cube(p, 0.01);
+            else {
+                Debug::SetColor(ColorBase::Black());
+            }
+
+            Debug::Cube(positions[vid], 0.005);
+
+            for(int j : p_graph->adj[vid]) {
+                if(_t_conflict.find(j) == _t_conflict.end()) continue;
+                if(_t_color[j] != _t_color[vid]) continue;
+                Debug::Line(positions[vid], positions[j]);
+            }
         }
     }
-    /*
-    ColorMap::Set_Type(ColorMap::R2G);
-    int m_conflict = *std::max_element(nb_conflict.begin(), nb_conflict.end());
-    for(int i = 0; i < p_graph->n; ++i) {
-        if(nb_conflict[i] == 0) continue;
-        const scalar t = static_cast<scalar>(nb_conflict[i]) / static_cast<scalar>(m_conflict);
-        Color c = ColorMap::evaluate(t);
-        Debug::SetColor(c);
-        Debug::Cube(positions[i], 0.01);
-    }/**/
 
-    /*
-    for(auto [vid, nb] : _t_conflict) {
-        if(_t_color[vid] != -1) {
-            const scalar t = static_cast<scalar>(_t_color[vid]) / static_cast<scalar>(_t_nb_color);
-            Color c = ColorMap::evaluate(t);
-            Debug::SetColor(c);
-        }
-        else {
-            Debug::SetColor(ColorBase::Black());
-        }
+    if(Input::Loop(Key::B)) {
+        Debug::SetColor(ColorBase::Red());
 
-        Debug::Cube(positions[vid], 0.005);
-
-        for(int j : p_graph->adj[vid]) {
-            if(_t_conflict.find(j) == _t_conflict.end()) continue;
-            if(_t_color[j] != _t_color[vid]) continue;
-            Debug::Line(positions[vid], positions[j]);
-        }
-
-    } /**/
-
-
-    /*
-    Debug::SetColor(ColorBase::Red());
-
-    for(int eid = 0; eid < d_graph->n; ++eid) {
-        Vector3 p = Vector3(0);
-        for(int i = 0; i < d_fem->elem_nb_vert; ++i)
-            p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
-        p /= static_cast<scalar>(d_fem->elem_nb_vert);
-        for(int eid2 : d_graph->adj[eid]) {
-            Vector3 p2 = Vector3(0);
+        for(int eid = 0; eid < d_graph->n; ++eid) {
+            Vector3 p = Vector3(0);
             for(int i = 0; i < d_fem->elem_nb_vert; ++i)
-                p2 += positions[topo[eid2 * d_fem->elem_nb_vert+ i] ];
-            p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
-            Debug::Line(p, p2);
+                p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
+            p /= static_cast<scalar>(d_fem->elem_nb_vert);
+            for(int eid2 : d_graph->adj[eid]) {
+                Vector3 p2 = Vector3(0);
+                for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+                    p2 += positions[topo[eid2 * d_fem->elem_nb_vert+ i] ];
+                p2 /= static_cast<scalar>(d_fem->elem_nb_vert);
+                Debug::Line(p, p2);
+            }
         }
     }
-    /**/
 }
