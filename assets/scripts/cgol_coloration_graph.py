@@ -2,7 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import gcol
 
-f = open("graph_plain.txt", "r")
+f = open("graph.txt", "r")
 
 data = []
 for line in f:
@@ -13,14 +13,13 @@ for line in f:
         
 G = nx.Graph(data)
 
-for strategy in ["random", "welsh_powell", "dsatur", "rlf"]:
+for strategy in ["random", "welsh_powell", "dsatur"]:
     c = gcol.node_coloring(G, strategy)
     print(strategy, " ", max(c.values()) + 1)
     
 
-
-c = gcol.node_coloring(G, opt_alg=2, it_limit=len(G)*100)
+c = gcol.node_coloring(G, opt_alg=2, it_limit=len(G))
 print("opt2 ", max(c.values()) + 1)
 
-c = gcol.node_coloring(G, opt_alg=3, it_limit=len(G)*100)
+c = gcol.node_coloring(G, opt_alg=3, it_limit=len(G))
 print("opt3 ", max(c.values()) + 1)

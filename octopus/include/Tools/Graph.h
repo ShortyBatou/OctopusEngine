@@ -479,7 +479,7 @@ public:
                 }
             }
         }
-
+        /*
         //use DSAT to finish coloration
         std::vector<int> adjCols(p_graph.n,0);
         std::set<Node, maxSat> max_queue; // sort vertices depending on their saturation > degree > id
@@ -527,7 +527,7 @@ public:
                     max_queue.emplace(Node{ adjCols[v],degree[v], v });
                 }
             }
-        }
+        }*/
 
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }

@@ -89,14 +89,14 @@ struct BaseScene final : Scene
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
+        args.mesh_file = "mesh/vtk/armadillo6_Tetra.vtk";
         args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_864.msh";
+        //args.mesh_file = "mesh/msh/airplane.msh";
         //args.mesh_type = "msh";
 
 
         const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(48, 8, 8);
+        Vector3I cells = Vector3I(128, 32, 32);
         args.iteration = 10;
         args.sub_iteration = 20;
         //build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.5,0.), Hexa27, args, 0, 0.5, true);
