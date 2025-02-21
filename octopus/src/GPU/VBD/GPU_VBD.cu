@@ -55,9 +55,11 @@ void GPU_VBD::step(const scalar dt) {
             constraint->step(this, dt);
 
         // Acceleration (Chebychev)
-        if(j == 1) omega = 2.f / (2.f - _rho * _rho);
-        else if(j > 1) omega = 4.f / (4.f - _rho * _rho * omega);
-        kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(j, omega, get_parameters(), prev_it_p->buffer, prev_it2_p->buffer);
+        if(_rho > eps) {
+            if(j == 1) omega = 2.f / (2.f - _rho * _rho);
+            else if(j > 1) omega = 4.f / (4.f - _rho * _rho * omega);
+            kernel_chebychev_acceleration<<<(n + 255)/256, 256>>>(j, omega, get_parameters(), prev_it_p->buffer, prev_it2_p->buffer);
+        }
     }
     // velocity update
     kernel_velocity_update<<<(n + 255)/256, 256>>>(dt,get_parameters());

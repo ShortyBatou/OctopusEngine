@@ -575,7 +575,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration coloration = version >= Better_Coloration ? GraphColoration::Greedy_SLF(*p_graph) : GraphColoration::Greedy(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    Coloration c2 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
     std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
@@ -630,7 +630,8 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
 void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::vector<int> kernels(d_thread->nb_kernel);
     std::iota(kernels.begin(), kernels.end(), 0);
-    std::shuffle(kernels.begin(), kernels.end(), std::mt19937());
+    unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
         switch(version) {
@@ -664,6 +665,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
         }
     }
+
     /*
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
