@@ -575,7 +575,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration coloration = version >= Better_Coloration ? GraphColoration::Greedy_SLF(*p_graph) : GraphColoration::Greedy(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration c2 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
+    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
     std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
@@ -634,6 +634,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
+        //break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -650,7 +651,6 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
             case Reduction_Symmetry : case Better_Coloration :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
-                //std::cout << d_thread->block_size[c] * d_fem->nb_quadrature * 9 << " " << d_thread->block_size[c] << " " << d_fem->nb_quadrature << std::endl;
                 kernel_vbd_solve_v3<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
                     y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
@@ -658,14 +658,13 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
             case Block_Merge :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
-            kernel_vbd_solve_v4<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
-                d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_block_parameters()
-            );
+                kernel_vbd_solve_v4<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
+                    d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
+                    y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_block_parameters()
+                );
             break;
         }
     }
-
     /*
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
