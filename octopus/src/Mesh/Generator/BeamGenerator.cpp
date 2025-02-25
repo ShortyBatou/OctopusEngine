@@ -446,7 +446,7 @@ MeshMap *tetra_to_linear(Mesh *mesh, const Element elem, const int subdivision) 
     Mesh::Topology ref_tetra_edges = tetra_converter->get_elem_topo_edges();
     const Mesh::Geometry ref_tetra_geom = tetra_converter->geo_ref();
 
-    int nb_tetra = static_cast<int>(tetras.size()) / nb_vert;
+    const int nb_tetra = static_cast<int>(tetras.size()) / nb_vert;
 
     // rebuild the mesh as linear tetrahedron mesh but with only position in reference element
     std::vector<int> v_ids(mesh->geometry().size(), -1); // permit to check if vertices allready defined or not

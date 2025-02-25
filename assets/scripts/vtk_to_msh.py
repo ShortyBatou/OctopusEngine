@@ -1,8 +1,8 @@
 import meshio
 #path = "../result/vtk/Flexion/"
 path = ""
-file = "Hexa_16_8_8_2x1x1"
+file = "mesh"
 
-mesh = meshio.read(path+"{}.vtk".format(file))
-mesh.write("{}.gmsh".format(file), file_format="gmsh")
+mesh = meshio.read(path+"{}.msh".format(file))
+mesh.write("{}.vtk".format(file), file_format="vtk")
 
