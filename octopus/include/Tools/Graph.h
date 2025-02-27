@@ -372,7 +372,9 @@ public:
         // color the first element
         {
             srand(time(NULL));
-            const int first_id = d_graph.n * Random::Eval();
+            //const int first_id = d_graph.n * Random::Eval();
+            const int first_id = 15803;
+            std::cout << "ID " << first_id << std::endl;
             for(int i = 0; i < nb_vert_elem; i++) {
                 colors[topo[first_id * nb_vert_elem + i]] = i;
             }

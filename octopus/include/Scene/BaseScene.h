@@ -67,12 +67,12 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        root->add_behaviour(new MeshDiff(1, {2}));
+        //root->add_behaviour(new MeshDiff(1, {2}));
     }
 
     // build scene's entities
@@ -91,24 +91,24 @@ struct BaseScene final : Scene
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/miniature_1_P1.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
 
         const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(64, 16, 16);
+        Vector3I cells = Vector3I(32, 8, 8);
         args.sub_iteration = 300;
         args.damping = 1e-6;
-        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Tetra10, args, true);
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Tetra10, args, true);
 
         //build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.5,0.), Tetra, args, 0, 0.5, true);
         //build_vbd_entity(Vector3(0,0.5,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0.94, true);
         args.damping = 1e-6;
-        args.iteration = 20;
-        args.sub_iteration = 1;
-        build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0.95, true);
+        args.iteration = 1;
+        args.sub_iteration = 200;
+        build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
         args.iteration = 1;
         args.sub_iteration = 100;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
@@ -230,9 +230,9 @@ struct BaseScene final : Scene
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
 
-        MeshMap* map = tetra_to_linear(mesh, element, 2);
-        map->apply_to_mesh(mesh);
-        delete map;
+        //MeshMap* map = tetra_to_linear(mesh, element, 2);
+        //map->apply_to_mesh(mesh);
+        //delete map;
 
         mesh->set_dynamic_geometry(true);
         return mesh;

@@ -575,7 +575,8 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration coloration = version >= Better_Coloration ? GraphColoration::Greedy_SLF(*p_graph) : GraphColoration::Greedy(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    //Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    Coloration c2 = coloration;
     std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
@@ -742,7 +743,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }
 
-
+    // display conflict in coloration
     if(Input::Loop(Key::V)) {
         for(auto [vid, nb] : _t_conflict) {
             if(_t_color[vid] != -1) {
@@ -764,13 +765,19 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }
 
+    // display graph dual
     if(Input::Loop(Key::B)) {
         Debug::SetColor(ColorBase::Red());
 
         for(int eid = 0; eid < d_graph->n; ++eid) {
             Vector3 p = Vector3(0);
-            for(int i = 0; i < d_fem->elem_nb_vert; ++i)
+            bool colored = false;
+            for(int i = 0; i < d_fem->elem_nb_vert; ++i) {
                 p += positions[topo[eid * d_fem->elem_nb_vert + i] ];
+                if(_t_color[topo[eid * d_fem->elem_nb_vert + i]] != -1) colored = true;
+            }
+            if(!colored) continue;
+
             p /= static_cast<scalar>(d_fem->elem_nb_vert);
             for(int eid2 : d_graph->adj[eid]) {
                 Vector3 p2 = Vector3(0);
