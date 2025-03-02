@@ -93,8 +93,8 @@ struct BaseScene final : Scene
         args.display = FEM_DataDisplay::Type::Displacement;
         //args.mesh_file = "mesh/vtk/miniature_1_P1.vtk";
         //args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        //args.mesh_type = "msh";
+        args.mesh_file = "mesh/msh/airplane.msh";
+        args.mesh_type = "msh";
 
 
         const Vector3 size(4, 1, 1);
@@ -107,8 +107,8 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0.5,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0.94, true);
         args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 200;
-        build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
+        args.sub_iteration = 1;
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
         args.iteration = 1;
         args.sub_iteration = 100;
         //build_vbd_entity(Vector3(0,0.,0),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, 0, true);
