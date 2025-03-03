@@ -40,6 +40,7 @@ __global__ void kernel_constraint_plane_crush(const Vector3 origin, const Vector
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= ps.nb_particles) return;
+    if(ps.mask[i] == 0) return;
     //const Vector3 p_init = com + rot * (ps.p[i] - com);
     //ps.p[i] = p_init - glm::dot(p_init - origin, normal) * normal + offset;
     ps.p[i].y = 0;

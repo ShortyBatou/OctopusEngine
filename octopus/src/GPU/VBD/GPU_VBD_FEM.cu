@@ -572,7 +572,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     d_graph = new Graph(element, topology, false);
     std::cout << "D Graph :" << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration coloration = version >= Better_Coloration ? GraphColoration::Greedy_SLF(*p_graph) : GraphColoration::Greedy(*p_graph);
+    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(*p_graph) : GraphColoration::Greedy(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
     //Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
