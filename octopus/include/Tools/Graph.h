@@ -12,6 +12,8 @@
 #include "Random.h"
 
 struct Graph {
+    Graph() : n(0) {}
+
     Graph(const Element element, const Mesh::Topology& topology, const bool primal = true) {
         if(primal) build_primal(element, topology);
         else build_dual(element, topology);
@@ -102,6 +104,22 @@ struct Graph {
             }
             file << std::endl;
         }
+    }
+
+    void add_edge(const int a, const int b)
+    {
+        adj[a].insert(b);
+        adj[b].insert(a);
+        degree[a]++;
+        degree[b]++;
+    }
+
+    int new_vertice()
+    {
+        n++;
+        degree.push_back(0);
+        adj.push_back({});
+        return n - 1;
     }
 
     int n;

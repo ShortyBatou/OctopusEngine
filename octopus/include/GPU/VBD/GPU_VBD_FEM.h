@@ -111,6 +111,7 @@ struct GPU_VBD_FEM : GPU_FEM
     std::vector<int> _t_color;
     int _t_nb_color;
     std::map<int, int> _t_conflict;
+    std::vector<std::vector<int>> t_neighbors;
 
     VBD_Version version;
     Graph* p_graph;
