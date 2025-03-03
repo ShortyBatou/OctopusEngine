@@ -376,6 +376,8 @@ void tetra_refine(
     Mesh::Geometry &ref_tetra_geometry,
     Mesh::Topology &ref_tetra_edges,
     std::vector<int> &t_ids) {
+
+    // all new tetraedron after subdivision of reference element
     int tetra_10_topo[32] = {
         0, 4, 6, 7, 1, 5, 4, 8, 7, 8, 9, 3, 2, 6, 5, 9, 6, 4, 5, 7, 7, 4, 5, 8, 6, 5, 9, 7, 7, 8, 5, 9
     };
@@ -433,6 +435,76 @@ void tetra_refine(
     t_ids = new_tid;
 }
 
+void hexa_refine(
+    MeshMap *map,
+    Mesh::Geometry &ref_hexa_geometry,
+    Mesh::Topology &ref_hexa_edges,
+    std::vector<int> &t_ids) {
+    int hexa_27_topo[64] = {
+        0,8,20,11,12,21,26,24,
+        8,1,9,20,21,13,22,26,
+        20,9,2,10,26,22,14,23,
+        11,20,10,3,24,26,23,15,
+        12,21,26,24,4,16,25,19,
+        21,13,22,26,16,5,17,25,
+        26,22,14,23,25,17,6,18,
+        24,26,23,15,19,25,18,7
+    };
+    std::map<Face<2>, int> edges;
+    Mesh::Topology new_hexa_topology;
+    std::vector<Vector3> new_ref_hexa_geometry;
+
+    Mesh::Topology e_topo(2);
+    std::vector<int> ids(27);
+    std::vector<Vector3> ids_geometry(27);
+    std::vector<int> new_tid;
+
+    for (int i = 0; i < map->elem_topo.size(); i += 8) {
+        int t_id = t_ids[i / 8];
+        for (int j = 0; j < 8; ++j) {
+            ids[j] = map->elem_topo[i + j];
+            ids_geometry[j] = ref_hexa_geometry[i + j];
+        }
+
+        for (int j = 0; j < ref_hexa_edges.size(); j += 2) {
+            e_topo[0] = map->elem_topo[i + ref_hexa_edges[j]];
+            e_topo[1] = map->elem_topo[i + ref_hexa_edges[j + 1]];
+
+            Vector3 pa = ref_hexa_geometry[i + ref_hexa_edges[j]];
+            Vector3 pb = ref_hexa_geometry[i + ref_hexa_edges[j + 1]];
+            Vector3 p = 0.5f * (pa + pb);
+
+            Face<2> e(e_topo);
+            int id;
+            // edge found in map
+            if (edges.find(e) != edges.end()) {
+                id = edges[e];
+            } else {
+                id = static_cast<int>(map->ref_geometry.size());
+                map->ref_geometry.push_back(p);
+                map->v_elem.push_back(t_id);
+                edges[e] = id;
+            }
+            ids_geometry[8 + j / 2] = p;
+            ids[8 + j / 2] = id;
+        }
+
+        for (int k: hexa_27_topo) {
+            new_hexa_topology.push_back(ids[k]);
+            new_ref_hexa_geometry.push_back(ids_geometry[k]);
+        }
+
+        for (int k = 0; k < 8; ++k) {
+            new_tid.push_back(t_id);
+        }
+    }
+
+    map->elem_topo = new_hexa_topology;
+    ref_hexa_geometry = new_ref_hexa_geometry;
+    t_ids = new_tid;
+}
+
+
 
 /// Create a mapping of a Tetra mesh into linear Tetra (that can be refined)
 MeshMap *tetra_to_linear(Mesh *mesh, const Element elem, const int subdivision) {
@@ -485,6 +557,63 @@ MeshMap *tetra_to_linear(Mesh *mesh, const Element elem, const int subdivision) 
     //Subdivide
     for (int i = 0; i < subdivision; ++i) {
         tetra_refine(map, ref_tetra_geometry, ref_tetra_edges, t_ids);
+    }
+
+    return map;
+}
+
+
+MeshMap *hexa_to_linear(Mesh *mesh, const Element elem, const int subdivision) {
+    if (elem != Hexa && elem != Hexa27) return nullptr;
+
+    const Mesh::Topology hexa = mesh->topologies()[elem];
+    const int nb_vert = elem_nb_vertices(elem);
+
+    HexaConverter *hexa_converter = new HexaConverter();
+    hexa_converter->init();
+    Mesh::Topology ref_hexa_edges = hexa_converter->get_elem_topo_edges();
+    ref_hexa_edges.insert(ref_hexa_edges.end(), {0,2,0,5,1,6,2,7,3,4,4,6,0,6});
+    const Mesh::Geometry ref_hexa_geom = hexa_converter->geo_ref();
+
+    const int nb_hexa = static_cast<int>(hexa.size()) / nb_vert;
+
+    // rebuild the mesh as linear tetrahedron mesh but with only position in reference element
+    std::vector<int> v_ids(mesh->geometry().size(), -1); // permit to check if vertices allready defined or not
+    std::vector<int> t_ids(nb_hexa); // in which tetrahedron is defined each tetrahedron t_id = [0,nb_tetra-1]
+
+    std::vector<int> v_hexa; // in which element the vertices is valid
+    Mesh::Geometry ref_geometry; // vertices position in reference element
+
+    Mesh::Geometry ref_hexa_geometry(nb_hexa * 8); // vertices position of all linear tetra (in ref element)
+    Mesh::Topology hexa_topology(nb_hexa * 8); // topology of linear tetra
+
+    int v_id = 0;
+    for (int i = 0; i < hexa.size(); i += nb_vert) {
+        int t_id = i / nb_vert;
+        t_ids[t_id] = t_id;
+        for (int j = 0; j < 8; ++j) // we only needs the first 4 vertices
+        {
+            const int k = t_id * 8 + j;
+            ref_hexa_geometry[k] = ref_hexa_geom[j];
+            int id = hexa[i + j];
+            if (v_ids[id] == -1) {
+                v_hexa.push_back(t_id);
+                ref_geometry.push_back(ref_hexa_geom[j]);
+                hexa_topology[k] = v_id;
+
+                v_ids[id] = v_id;
+                v_id++;
+            } else {
+                hexa_topology[i / nb_vert * 8 + j] = v_ids[id];
+            }
+        }
+    }
+
+    MeshMap *map = new MeshMap(elem, Hexa, ref_geometry, hexa_topology, v_hexa);
+
+    //Subdivide
+    for (int i = 0; i < subdivision; ++i) {
+        hexa_refine(map, ref_hexa_geometry, ref_hexa_edges, t_ids);
     }
 
     return map;

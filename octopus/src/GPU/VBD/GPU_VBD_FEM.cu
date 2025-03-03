@@ -583,7 +583,7 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
 
-    Time::Tic();
+    /*Time::Tic();
     Coloration c3 = GraphColoration::BFS(*p_graph);
     std::cout << "BFS " << Time::Tac() << std::endl;
 
@@ -614,9 +614,13 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     std::cout << "Greedy RLF " << c6.nb_color << std::endl;
     std::cout << "Greedy SLF " << c7.nb_color << std::endl;
     std::cout << "DSAT " << c8.nb_color << std::endl;
-    std::cout << "PD DSAT " << c9.nb_color << std::endl;
+    std::cout << "PD DSAT " << c9.nb_color << std::endl;*/
+
+    //coloration.nb_color += 2;
+    //GraphBalance::Greedy(*p_graph, coloration, 100000);
 
     colors = coloration.color;
+
     d_thread->nb_kernel = coloration.nb_color;
 
     std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
@@ -636,7 +640,6 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
-        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -667,7 +670,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
         }
     }
-
+    /*
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);

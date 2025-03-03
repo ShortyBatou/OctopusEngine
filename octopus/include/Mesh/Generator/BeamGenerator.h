@@ -109,3 +109,4 @@ void tetra_refine(MeshMap *map, Mesh::Geometry &ref_tetra_geometry, Mesh::Topolo
 
 /// Create a mapping of a Tetra mesh into linear Tetra (that can be refined)
 MeshMap *tetra_to_linear(Mesh *mesh, Element elem, int subdivision);
+MeshMap *hexa_to_linear(Mesh *mesh, Element elem, int subdivision);

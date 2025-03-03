@@ -664,8 +664,13 @@ private:
 };
 
 struct GraphBalance  {
-    static void Greedy(const Graph& graph, Coloration& coloration, int nb_iteration = 1000000) {
+    static void Greedy(const Graph& graph, Coloration& coloration, const int nb_iteration = 1000000) {
+        int nb_it = 0;
         std::map<int, std::set<int>> c_verts;
+        for(int c = 0; c < coloration.nb_color; ++c) {
+            c_verts[c] = std::set<int>();
+        }
+
         for (int i = 0; i < graph.n; ++i) {
             int c = coloration.color[i];
             c_verts[c].insert(i);
@@ -681,7 +686,10 @@ struct GraphBalance  {
             else under_represented.push_back(color);
         }
         bool color_change = true;
-        while(color_change) {
+        while(color_change && nb_it < nb_iteration) {
+            if(nb_it % 10000) std::cout << static_cast<scalar>(nb_it) / nb_iteration * 100.f<< "%" << std::endl;
+            nb_it++;
+
             color_change = false;
             for(int i = 0; i < over_represented.size(); ++i) {
                 int over_color = over_represented[i];

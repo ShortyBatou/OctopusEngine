@@ -169,6 +169,7 @@ void VTK_Loader::load(std::ifstream& inputFile, Mesh::Geometry& vertices, std::m
     elemTypeFromVTKMap[13] = Prism; //VTK_WEDGE
     elemTypeFromVTKMap[14] = Pyramid; //VTK_PYRAMID
     elemTypeFromVTKMap[24] = Tetra10; //VTK_QUADRATIC_TETRA
+    elemTypeFromVTKMap[29] = Hexa27; // VTK_QUADRATIC_HEXA
     elemTypeFromVTKMap[71] = Tetra20; //VTK_LAGRANGE_TETRAHEDRON (technically any order but it's not supported beyond T20)
 
     std::istringstream stream_elem(line, std::istringstream::in);
@@ -203,7 +204,48 @@ void VTK_Loader::load(std::ifstream& inputFile, Mesh::Geometry& vertices, std::m
         Element elem = elemTypeFromVTKMap[cellType];
         // Moving element info to connectivity
         for (int i = 0; i < elem_nb_vertices(elem); ++i) {
-            topologies[elem].push_back(ids[i + count]);
+            int vid;
+            if(elem == Hexa27 && i == 20) {
+                vid = ids[24 + count];
+            }
+            else if(elem == Hexa27 && i == 21) {
+                vid = ids[22 + count];
+            }
+            else if(elem == Hexa27 && i == 22) {
+                vid = ids[21 + count];
+            }
+            else if(elem == Hexa27 && i == 24) {
+                vid = ids[20 + count];
+            }
+            else if(elem == Hexa27 && i == 16) {
+                vid = ids[12 + count];
+            }
+            else if(elem == Hexa27 && i == 12) {
+                vid = ids[16 + count];
+            }
+            else if(elem == Hexa27 && i == 17) {
+                vid = ids[13 + count];
+            }
+            else if(elem == Hexa27 && i == 13) {
+                vid = ids[17 + count];
+            }
+            else if(elem == Hexa27 && i == 18) {
+                vid = ids[14 + count];
+            }
+            else if(elem == Hexa27 && i == 14) {
+                vid = ids[18 + count];
+            }
+            else if(elem == Hexa27 && i == 19) {
+                vid = ids[15 + count];
+            }
+            else if(elem == Hexa27 && i == 15) {
+                 vid = ids[19 + count];
+            }
+            else {
+                vid = ids[i + count];
+            }
+
+            topologies[elem].push_back(vid);
 
         }
         count += elem_nb_vertices(elem);

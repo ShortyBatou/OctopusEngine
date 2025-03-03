@@ -67,7 +67,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -81,39 +81,37 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = Shape;
-        args.young = 1e8;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.49;
         args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_1 = 1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Volume_Diff;
-        //args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
+        //rgs.mesh_file = "1_Hexa27_1_1_1_1x1x1_1.vtk";
         //args.mesh_type = "vtk";
-        args.mesh_file = "mesh/msh/airplane.msh";
-        args.mesh_type = "msh";
+        //args.mesh_file = "mesh/msh/airplane.msh";
+        //args.mesh_type = "msh";
 
 
-        const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(32, 8, 8);
+        const Vector3 size(2, 1, 1);
+        Vector3I cells = Vector3I(96, 48, 48);
         args.sub_iteration = 300;
         args.damping = 1e-6;
         //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.3,0.), Hexa, args, true);
 
         //build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.8,.3,0.5,0.), Tetra, args, 0, 0.5, true);
         //build_vbd_entity(Vector3(0,0.5,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0.94, true);
-        cells = Vector3I(64, 16, 16);
-        args.damping = 1e-6;
-
-        args.iteration = 2;
-        args.sub_iteration = 50;
-        build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
-        cells = Vector3I(32, 8, 8);
-        build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
+        args.damping = 5e-6;
+        args.iteration = 0;
+        args.sub_iteration = 0;
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa27, args, 0., true);
+        //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
+        //cells = Vector3I(32, 8, 8);
+        //build_vbd_entity(Vector3(0,0,2),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
         //build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
 
         args.iteration = 1;
@@ -126,13 +124,11 @@ struct BaseScene final : Scene
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, true);
 
-        args.damping = 5e-7;
+        args.damping = 5e-6;
         args.iteration = 1;
-        args.sub_iteration = 50;
+        args.sub_iteration = 500;
         //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
-        //build_vbd_entity(Vector3(0,0,3.3),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, 0, true);
-
-
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -237,10 +233,6 @@ struct BaseScene final : Scene
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
-
-        //MeshMap* map = tetra_to_linear(mesh, element, 2);
-        //map->apply_to_mesh(mesh);
-        //delete map;
 
         mesh->set_dynamic_geometry(true);
         return mesh;
