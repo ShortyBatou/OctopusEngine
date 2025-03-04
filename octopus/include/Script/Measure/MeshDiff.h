@@ -41,6 +41,7 @@ struct MeshDiff : public Behaviour {
             for(int i = 0; i < r_mesh->geometry().size(); ++i) {
                 diff += glm::length2(r_mesh->geometry()[i] - mesh->geometry()[i] - init_offset[id]);
             }
+            diff /= r_mesh->geometry().size();
             DebugUI::Value(std::to_string(id) + " = ", diff);
 
         }

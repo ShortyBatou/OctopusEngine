@@ -107,8 +107,8 @@ struct Cuda_XPBD_Scene final : Scene
         Entity* e = Engine::CreateEnity();
         e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.damping));
-        if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + args.dir * 0.01f, -args.dir, args.scenario_1));
-        if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(pos + size - args.dir * 0.01f , args.dir, args.scenario_2 ));
+        if(args.scenario_1!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(new Plane(args.dir * 0.01f, -args.dir), -args.dir, args.scenario_1));
+        if(args.scenario_2!=-1) e->add_component(new Cuda_Constraint_Rigid_Controller(new Plane(pos + size - args.dir * 0.01f, args.dir), args.dir, args.scenario_2 ));
         e->add_component(build_graphic(color, element));
         e->add_component(build_display());
     }

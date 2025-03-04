@@ -71,6 +71,7 @@ void FEM_VTK_Recorder::add_data_json(std::ofstream &json) {
 void FEM_VTK_Recorder::save() {
     // get particle saved data
     std::vector<Vector3> displacements = _ps_dynamic->get_displacement();
+
     std::vector<Vector3> init_pos = _ps_dynamic->get_init_positions();
     std::vector<scalar> massses = _ps_dynamic->get_masses();
 
@@ -95,6 +96,11 @@ void FEM_VTK_Recorder::save() {
         }
     }
 
+    std::vector<scalar> displacements_norm(displacements.size());
+    for(int i = 0; i < displacements.size(); ++i) {
+        displacements_norm[i] = glm::length(displacements[i]);
+    }
+
     std::vector<scalar> smooth_stress = _fem_dynamic->get_stress_vertices();
 
     VTK_Formater vtk;
@@ -102,6 +108,7 @@ void FEM_VTK_Recorder::save() {
     vtk.save_mesh(init_pos, _mesh->topologies());
     vtk.start_point_data();
     vtk.add_scalar_data(massses, "weights");
+    vtk.add_scalar_data(displacements_norm, "u_norm");
     vtk.add_vector_data(displacements, "u");
     vtk.add_scalar_data(smooth_stress, "smooth_stress");
     vtk.start_cell_data();

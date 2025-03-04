@@ -21,14 +21,17 @@ void GPU_MG_VBD:: step(const scalar dt) {
         get_parameters());
 
     for(GPU_MG_VBD_FEM* fem : fems)
-        fem->compute_intertia(this, dt);
+        if(fem->active)
+            fem->compute_intertia(this, dt);
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)
-            dynamic->step(this, dt);
+            if(dynamic->active)
+                dynamic->step(this, dt);
 
         for(GPU_Dynamic * constraint : _constraints)
-            constraint->step(this, dt);
+            if(constraint->active)
+                constraint->step(this, dt);
     }
     // velocity update
     kernel_velocity_update<<<(n + 31)/32, 32>>>(dt,get_parameters());

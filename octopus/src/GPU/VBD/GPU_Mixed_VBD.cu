@@ -109,7 +109,9 @@ void GPU_Mixed_VBD::step(const scalar dt) {
     {
         // eval forces
         // integrations Euler semi-implicit
-        for(const GPU_Mixed_VBD_FEM* fem : _fems) fem->explicit_step(this, w_max, dt_exp);
+        for(const GPU_Mixed_VBD_FEM* fem : _fems)
+            if(fem->active)
+                fem->explicit_step(this, w_max, dt_exp);
         kenerl_semi_exicit_integration3<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), last_v->buffer);/**/
         //kenerl_semi_exicit_integration2<<<(n+31) / 32, 32>>>(n, dt_exp, Dynamic::gravity(), get_parameters(), w_max->buffer);/**/
 
@@ -124,10 +126,12 @@ void GPU_Mixed_VBD::step(const scalar dt) {
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)
-            dynamic->step(this, dt);
+            if(dynamic->active)
+                dynamic->step(this, dt);
 
         for(GPU_Dynamic * constraint : _constraints)
-            constraint->step(this, dt);
+            if(constraint->active)
+                constraint->step(this, dt);
     }
 
     // velocity update

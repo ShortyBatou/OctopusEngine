@@ -19,7 +19,8 @@ struct Axis
     [[nodiscard]] Matrix4x4 t() const { return _t; }
     void setRotation(const Matrix3x3& rot) { setTransform(_pos, rot); }
     void setPosition(const Vector3& position) { setTransform(position, _rot); }
-    [[nodiscard]] const Matrix4x4& rotationMatrix() const { return _rot; }
+    [[nodiscard]] Matrix3x3 rotation() const { return _rot; }
+    [[nodiscard]] const Matrix4x4& rotation4x4() const { return _rot; }
     [[nodiscard]] const Vector3& position() const { return _pos; }
     [[nodiscard]] const Vector3& normal() const { return _forward; }
     [[nodiscard]] const Vector3& right() const { return _right; }

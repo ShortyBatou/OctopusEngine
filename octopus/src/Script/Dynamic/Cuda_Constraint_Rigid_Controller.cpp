@@ -3,13 +3,19 @@
 #include <Manager/Debug.h>
 #include <Manager/TimeManager.h>
 #include <Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h>
+#include <GPU/GPU_Constraint.h>
 #include <Manager/Input.h>
 
 void Cuda_Constraint_Rigid_Controller::late_init() {
     const Cuda_ParticleSystem_Dynamics *cuda_dynamic = _entity->get_component<Cuda_ParticleSystem_Dynamics>();
     Mesh* mesh = _entity->get_component<Mesh>();
-    _fixation = new GPU_Plane_Fix(mesh->geometry(), _plane_pos, _plane_normal);
+    _fixation = new GPU_Fix_Constraint(mesh->geometry(), _area);
+    _crush = new GPU_Crush(); _crush->active = false;
+    _random_sphere = new GPU_RandomSphere(Vector3(0.,1.,0.), 1.); _random_sphere->active = false;
     cuda_dynamic->get_particle_system()->add_constraint(_fixation);
+    cuda_dynamic->get_particle_system()->add_constraint(_crush);
+    cuda_dynamic->get_particle_system()->add_constraint(_random_sphere);
+    cuda_dynamic->get_particle_system()->add_constraint(new GPU_Box_Limit(Vector3(-1.5,-1.5,-1.5), Vector3(1.5,3,1.5)));
     _timer = 0;
     _smooth_step = _smooth_iterations;
 }
@@ -43,36 +49,46 @@ void Cuda_Constraint_Rigid_Controller::update() {
     if(Input::Up(Key::NUM_9))
     {
         _mode = 0;
-        _fixation->set_for_all(false);
+        _crush->active = false;
     }
 
     if (Input::Down(Key::NUM_9)) {
         _mode = 9;
-        _fixation->set_for_all(true);
+        _crush->active = true;
     }
 
+    if(Input::Up(Key::P))
+    {
+        _mode = 0;
+        _random_sphere->active = false;
+    }
+
+    if (Input::Down(Key::P)) {
+        _mode = 10;
+        _random_sphere->active = true;
+    }
 
 
     if (_mode == 1) {
-        const Matrix4x4 rot = _fixation->rot;
-        _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
+        const Matrix4x4 rot = _fixation->axis.rotation4x4();
+        _fixation->axis.setRotation(glm::rotate(rot, glm::radians(_rot_speed) * Time::Fixed_DeltaTime(), _rot_normal));
     }
     if (_mode == 2) {
-        const Matrix4x4 rot = _fixation->rot;
-        _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed) * Time::Fixed_DeltaTime(), _plane_normal);
+        const Matrix4x4 rot = _fixation->axis.rotation4x4();
+        _fixation->axis.setRotation(glm::rotate(rot, glm::radians(-_rot_speed) * Time::Fixed_DeltaTime(), _rot_normal));
     }
     if (_mode == 3) {
-        _fixation->offset += _plane_normal * Time::Fixed_DeltaTime() * _move_speed;
+        _fixation->axis.move(_rot_normal * Time::Fixed_DeltaTime() * _move_speed);
     }
     if (_mode == 4) {
-        _fixation->offset -= _plane_normal * Time::Fixed_DeltaTime() * _move_speed;
+        _fixation->axis.move(-_rot_normal * Time::Fixed_DeltaTime() * _move_speed);
     }
     if (_mode == 5) {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            const Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->axis.rotation4x4();
+            _fixation->axis.setRotation(glm::rotate(rot, glm::radians(_rot_speed / static_cast<scalar>(_smooth_iterations)), _rot_normal));
             _smooth_step++;
             _timer = 0;
         }
@@ -81,8 +97,8 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            const Matrix4x4 rot = _fixation->rot;
-            _fixation->rot = glm::rotate(rot, glm::radians(-_rot_speed / static_cast<scalar>(_smooth_iterations)), _plane_normal);
+            const Matrix4x4 rot = _fixation->axis.rotation4x4();
+            _fixation->axis.setRotation(glm::rotate(rot, glm::radians(-_rot_speed / static_cast<scalar>(_smooth_iterations)), _rot_normal));
             _smooth_step++;
             _timer = 0;
         }
@@ -92,7 +108,7 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            _fixation->offset += _plane_normal * _move_speed / static_cast<scalar>(_smooth_iterations);
+            _fixation->axis.move(_rot_normal * _move_speed / static_cast<scalar>(_smooth_iterations));
             _smooth_step++;
             _timer = 0;
         }
@@ -101,11 +117,24 @@ void Cuda_Constraint_Rigid_Controller::update() {
         _timer += Time::Fixed_DeltaTime();
         if (_timer >= _event_rate) _smooth_step = 0;
         if (_smooth_step < _smooth_iterations) {
-            _fixation->offset -= _plane_normal * _move_speed / static_cast<scalar>(_smooth_iterations);
+            _fixation->axis.move(-_rot_normal * _move_speed / static_cast<scalar>(_smooth_iterations));
             _smooth_step++;
             _timer = 0;
         }
     }
+    if(_mode == 9) {
+        _crush->active = true;
+    }
+    else {
+        _crush->active = false;
+    }
 
-    Debug::Line(_fixation->com + _fixation->offset, _fixation->com + _fixation->offset + _fixation->normal);
+    if(_mode == 10) {
+        _random_sphere->active = true;
+    }
+    else {
+        _random_sphere->active = false;
+    }
+    Debug::SetColor(ColorBase::Red());
+    _area->draw();
 }

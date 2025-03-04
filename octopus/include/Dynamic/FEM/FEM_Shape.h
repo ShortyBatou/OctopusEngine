@@ -689,6 +689,6 @@ void get_fem_const(const Element& elem, const Mesh::Geometry& geometry, const Me
 
 enum Mass_Distribution
 {
-    Uniform, Shape
+    Uniform, FemShape
 };
 std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar density, Mass_Distribution distrib = Mass_Distribution::Uniform);

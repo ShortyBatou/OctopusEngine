@@ -40,7 +40,8 @@ void GPU_VBD::step(const scalar dt) {
     scalar omega = 1;
 
     for(GPU_Dynamic* dynamic : _dynamics)
-        dynamic->start(this, dt);
+        if(dynamic->active)
+            dynamic->start(this, dt);
 
     // integration / first guess
     kernel_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
@@ -49,10 +50,12 @@ void GPU_VBD::step(const scalar dt) {
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)
-            dynamic->step(this, dt);
+            if(dynamic->active)
+                dynamic->step(this, dt);
 
         for(GPU_Dynamic * constraint : _constraints)
-            constraint->step(this, dt);
+            if(constraint->active)
+                constraint->step(this, dt);
 
         // Acceleration (Chebychev)
         if(_rho > eps) {

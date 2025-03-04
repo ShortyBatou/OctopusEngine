@@ -3,6 +3,8 @@
 #include <Dynamic/FEM/ContinuousMaterial.h>
 #include <Dynamic/FEM/FEM_Shape.h>
 #include <Mesh/Mesh.h>
+#include <Tools/Area.h>
+
 #include "Mesh/Elements.h"
 #include "GPU/Cuda_Buffer.h"
 #include "GPU/GPU_ParticleSystem.h"
@@ -56,15 +58,6 @@ struct GPU_FEM_Pameters
     Vector3* dN;
 };
 
-struct GPU_Plane_Fix final : GPU_Dynamic {
-    GPU_Plane_Fix(const std::vector<Vector3>& positions, const Vector3& o, const Vector3& n);
-    Vector3 com, offset, origin, normal;
-    bool all;
-    Matrix3x3 rot;
-    void set_for_all(bool state) { all = state; }
-    void step(GPU_ParticleSystem *ps, scalar dt) override;
-};
-
 struct GPU_FEM : GPU_Dynamic {
     GPU_FEM(Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
                          scalar young, scalar poisson, Material material);
@@ -105,10 +98,5 @@ struct GPU_FEM : GPU_Dynamic {
 private:
     Cuda_Buffer<scalar> *cb_elem_data;
 };
-
-
-
-__global__ void kernel_constraint_plane(int n, float dt, Vector3 origin, Vector3 normal, Vector3 *p, Vector3 *v,
-                                        Vector3 *f);
 
 __device__ Matrix3x3 compute_transform(int nb_vert_elem, const Vector3 *pos, const int *topology, const Vector3 *dN);

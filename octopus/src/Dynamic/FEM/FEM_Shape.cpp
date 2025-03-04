@@ -90,7 +90,7 @@ std::vector<scalar> compute_fem_mass(const Element& elem, const Mesh::Geometry& 
     const FEM_Shape* shape = get_fem_shape(elem);
 
     std::vector<scalar> mass(geometry.size());
-    if (distrib == Mass_Distribution::Shape)
+    if (distrib == Mass_Distribution::FemShape)
     {
         const scalar v_density = density / static_cast<scalar>(nb_vert_elem);
         for (int i = 0; i < topology.size(); i += nb_vert_elem)

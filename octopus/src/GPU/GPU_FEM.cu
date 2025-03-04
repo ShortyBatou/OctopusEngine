@@ -17,38 +17,6 @@ __device__ Matrix3x3 compute_transform(const int nb_vert_elem, const Vector3* po
     return Jx;
 }
 
-__global__ void kernel_constraint_plane(const Vector3 origin, const Vector3 normal, const Vector3 com,
-                                        const Vector3 offset, const Matrix3x3 rot,
-                                        GPU_ParticleSystem_Parameters ps)
-{
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= ps.nb_particles) return;
-    scalar s = dot(ps.init_p[i] - origin, normal);
-    if (s > 0)
-    {
-        const Vector3 target = offset + com + rot * (ps.init_p[i] - com);
-        ps.p[i] = target;
-        ps.v[i] = Vector3(0, 0, 0);
-        ps.f[i] = Vector3(0, 0, 0);
-        ps.mask[i] = 0;
-    }
-}
-
-__global__ void kernel_constraint_plane_crush(const Vector3 origin, const Vector3 normal, const Vector3 com,
-                                        const Vector3 offset, const Matrix3x3 rot,
-                                        GPU_ParticleSystem_Parameters ps)
-{
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= ps.nb_particles) return;
-    if(ps.mask[i] == 0) return;
-    //const Vector3 p_init = com + rot * (ps.p[i] - com);
-    //ps.p[i] = p_init - glm::dot(p_init - origin, normal) * normal + offset;
-    ps.p[i].y = 0;
-    ps.last_p[i] = ps.p[i];
-    ps.v[i] = Vector3(0, 0, 0);
-    ps.f[i] = Vector3(0, 0, 0);
-}
-
 __global__ void kernel_compute_stress(
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps,
@@ -150,27 +118,6 @@ std::vector<scalar> GPU_FEM::get_volume_diff(const GPU_ParticleSystem* ps) const
     return volumes_diff;
 }
 
-void GPU_Plane_Fix::step(GPU_ParticleSystem* ps, const scalar dt)
-{
-    if(all) kernel_constraint_plane_crush<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
-    else kernel_constraint_plane<<<(ps->nb_particles() + 31) / 32, 32>>>(origin, normal, com, offset, rot, ps->get_parameters());
-
-}
-
-GPU_Plane_Fix::GPU_Plane_Fix(const Mesh::Geometry& positions, const Vector3& o, const Vector3& n)
-: com(Unit3D::Zero()), offset(Unit3D::Zero()), origin(o), normal(n), rot(Matrix::Identity3x3()) {
-    int count = 0;
-    for(auto& p : positions) {
-        const Vector3 dir = p - origin;
-        const scalar d = dot(dir, normal);
-        if(d > 0.f) {
-            count++;
-            com += p;
-        }
-    }
-    com /= count;
-    all = false;
-}
 
 GPU_FEM::GPU_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
                  const scalar young, const scalar poisson, const Material material) : d_material(nullptr), d_fem(nullptr)
