@@ -81,17 +81,17 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.49;
         args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 10;
-        args.scenario_2 = -1;
+        args.scenario_1 = 0;
+        args.scenario_2 = 9;
         args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/armadillo4.vtk";
+        args.mesh_file = "mesh/vtk/armadilo_low_poly_tetra.vtk";
         args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/airplane.msh";
         //args.mesh_type = "msh";
@@ -99,11 +99,11 @@ struct BaseScene final : Scene
 
         const Vector3 size(1, 1, 1);
         Vector3I cells = Vector3I(48, 24, 24);
-        args.damping = 5e-6;
+        args.damping = 1e-6;
         args.iteration = 2;
-        args.sub_iteration = 50;
-        cells = Vector3I(16, 16, 16);
-        build_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
+        args.sub_iteration = 100;
+        cells = Vector3I(6, 6, 6);
+        build_vbd_entity(Vector3(0,0.75, 0),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
 
         args.iteration = 1;
         args.sub_iteration = 60;
@@ -163,8 +163,8 @@ struct BaseScene final : Scene
         {
             if(args.scenario_1!=-1)
             {
-                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
-                //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0,0),0.1), -args.dir, args.scenario_1);
+                //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
+                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
                 rd_constraint_1->_smooth_iterations = 5;
                 e->add_component(rd_constraint_1);
             }

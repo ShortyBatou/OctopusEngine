@@ -65,7 +65,7 @@ struct MeshScene final : Scene
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.3, 0.3, 0.8, 1.), Tetra, false, false);
         //cells = Vector3I(8, 3, 3);
         //build_vtk_mesh(Vector3(0, 0, 0), cells, size, Color(0.3, 0.3, 0.8, 1.), "mesh/vtk/beam-s-3-1-1-n-6-2-2-tetra.vtk");
-        convert_vtk_mesh("1_Hexa27_8_4_4_2x1x1_721.vtk", "Q2_Torsion_", Hexa27, 3);
+        convert_vtk_mesh("1_Tetra10_6_6_6_1x1x1_302.vtk", "P2_HardTwist_", Tetra10, 3);
         //cells = Vector3I(6, 2, 2);
         //build_xpbd_entity(Vector3(0, 0, 2), cells, size, Color(0.8, 0.3, 0.3, 1.), Tetra, false, true);
         //build_xpbd_entity(Vector3(0, 0, 1), cells, size, Color(0.8, 0.3, 0.8, 1.), Tetra10, true, false);
