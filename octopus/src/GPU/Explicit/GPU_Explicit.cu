@@ -75,7 +75,8 @@ __global__ void kernel_explicit_fem_eval_force(
 void GPU_Explicit::step(const scalar dt)
 {
     for (GPU_Dynamic* dynamic : _dynamics)
-        dynamic->step(this, dt);
+        if(dynamic->active)
+            dynamic->step(this, dt);
 
     _integrator->step(this, dt);
 }

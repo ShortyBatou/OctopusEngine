@@ -53,9 +53,11 @@ GPU_ParticleSystem_Parameters GPU_ParticleSystem::get_parameters() const
 
 void GPU_ParticleSystem::step(const scalar dt)
 {
-    for(GPU_Dynamic* dynamic : _dynamics) dynamic->step(this, dt);
+    for(GPU_Dynamic* dynamic : _dynamics)
+        if(dynamic->active) dynamic->step(this, dt);
     _integrator->step(this, dt);
-    for(GPU_Dynamic* constraint : _constraints) constraint->step(this, dt);
+    for(GPU_Dynamic* constraint : _constraints)
+        if(constraint->active) constraint->step(this, dt);
 
 }
 

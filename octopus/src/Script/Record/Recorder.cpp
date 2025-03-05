@@ -137,16 +137,12 @@ void Graphic_VTK_Recorder::save() {
 
 
 void FEM_Flexion_error_recorder::init(Entity *entity) {
-    const auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
-    assert(fem_dynamic != nullptr);
-    _ps = fem_dynamic->getParticleSystem();
-
-
+    _ps = entity->get_component<ParticleSystemDynamics_Getters>();
+    assert(_ps != nullptr);
+    const std::vector<Vector3> positions = _ps->get_init_positions();
     bool found = false;
-    for (int i = 0; i < _ps->nb_particles(); ++i) {
-        Particle *p = _ps->get(i);
-
-        if (glm::length2(p->init_position - _p_follow) >= 1e-6) continue;
+    for (int i = 0; i < positions.size(); ++i) {
+        if (glm::length2(positions[i] - _p_follow) >= 1e-6) continue;
         found = true;
         p_id = i;
         break;
@@ -161,11 +157,11 @@ void FEM_Flexion_error_recorder::init(Entity *entity) {
 
 
 void FEM_Flexion_error_recorder::add_data_json(std::ofstream &json) {
-    const Particle *p = _ps->get(p_id);
+    const Vector3 p = _ps->get_positions()[p_id];
     json <<
             "{"
-            << "\"error\" : " << glm::length2(_p_target - p->position) << ","
-            << "\"p\" : [" << p->position.x << ", " << p->position.y << ", " << p->position.z << "],"
+            << "\"error\" : " << glm::length2(_p_target - p) << ","
+            << "\"p\" : [" << p.x << ", " << p.y << ", " << p.z << "],"
             << "\"target\" : [" << _p_target.x << ", " << _p_target.y << ", " << _p_target.z << "]"
             <<
             "}";

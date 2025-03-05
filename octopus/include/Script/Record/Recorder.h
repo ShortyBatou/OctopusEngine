@@ -191,17 +191,17 @@ private:
 };
 
 
-class FEM_Flexion_error_recorder : public Recorder {
+class FEM_Flexion_error_recorder final : public Recorder {
 public:
-    FEM_Flexion_error_recorder(Vector3 p_follow, Vector3 p_target) : _p_follow(p_follow), _p_target(p_target), p_id(0),
-                                                                     _ps(nullptr) {
+    FEM_Flexion_error_recorder(const Vector3& p_follow, const Vector3& p_target) : _p_follow(p_follow), _p_target(p_target), p_id(0),
+                                                                                 _ps(nullptr) {
     }
 
     void init(Entity *entity) override;
 
     void print() override {
-        Particle *p = _ps->get(p_id);
-        std::cout << "[f_err = " << glm::length2(_p_target - p->position) << "]";
+        const Vector3 p = _ps->get_positions()[p_id];
+        std::cout << "[f_err = " << glm::length2(_p_target - p) << "]";
     }
 
     std::string get_name() override {
@@ -213,7 +213,7 @@ public:
 private:
     int p_id;
     Vector3 _p_follow, _p_target;
-    ParticleSystem *_ps;
+    ParticleSystemDynamics_Getters *_ps;
 };
 
 

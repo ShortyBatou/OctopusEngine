@@ -15,7 +15,7 @@ void Cuda_Constraint_Rigid_Controller::late_init() {
     cuda_dynamic->get_particle_system()->add_constraint(_fixation);
     cuda_dynamic->get_particle_system()->add_constraint(_crush);
     cuda_dynamic->get_particle_system()->add_constraint(_random_sphere);
-    cuda_dynamic->get_particle_system()->add_constraint(new GPU_Box_Limit(Vector3(-1.5,-1.5,-1.5), Vector3(1.5,3,1.5)));
+    cuda_dynamic->get_particle_system()->add_constraint(new GPU_Box_Limit(Vector3(-4,-4,-4), Vector3(4,4,4)));
     _timer = 0;
     _smooth_step = _smooth_iterations;
 }
@@ -128,7 +128,6 @@ void Cuda_Constraint_Rigid_Controller::update() {
     else {
         _crush->active = false;
     }
-
     if(_mode == 10) {
         _random_sphere->active = true;
     }

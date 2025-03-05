@@ -67,12 +67,12 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        //root->add_behaviour(new MeshDiff(1, {2}));
+        root->add_behaviour(new MeshDiff(1, {2}));
     }
 
     // build scene's entities
@@ -81,29 +81,28 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.49;
         args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 10;
+        args.scenario_1 = 0;
         args.scenario_2 = -1;
-        args.dir = Unit3D::up();
+        args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/armadillo4.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-12-3-3-tetra.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/airplane.msh";
         //args.mesh_type = "msh";
 
 
-        const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(48, 24, 24);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(12, 3, 3);
         args.damping = 5e-6;
         args.iteration = 2;
-        args.sub_iteration = 50;
-        cells = Vector3I(16, 16, 16);
-        build_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
+        args.sub_iteration = 40;
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa27, args, 0., true);
 
         args.iteration = 1;
         args.sub_iteration = 60;
@@ -112,10 +111,10 @@ struct BaseScene final : Scene
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, true);
         //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
 
-        args.damping = 1e-6;
+        args.damping = 5e-6;
         args.iteration = 1;
-        args.sub_iteration = 500;
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Tetra10, args, true);
+        args.sub_iteration = 400;
+        build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa27, args, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -210,6 +209,7 @@ struct BaseScene final : Scene
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new FEM_VTK_Recorder(file_name));
         data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4, 1, 1), Vector3(3.34483, -1.86949, 1.0009)));
         return data_recorder;
     }
 
@@ -221,6 +221,12 @@ struct BaseScene final : Scene
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
+
+        MeshMap* map = tetra_to_linear(mesh, Tetra10, 1);
+        map->apply_to_mesh(mesh);
+        tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+        //tetra4_to_tetra10(mesh->geometry(), mesh->topologies());/**/
+        std::cout << "NB VERTICES" << mesh->nb_vertices() << std::endl;
 
         mesh->set_dynamic_geometry(true);
         return mesh;
