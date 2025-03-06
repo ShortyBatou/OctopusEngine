@@ -15,6 +15,7 @@ struct Box final : Area {
    ~Box() override = default;
 
    bool inside(const Vector3& p) const override {
+
       return   p.x >= pmin.x && p.y >= pmin.y && p.z >= pmin.z &&
                p.x <= pmax.x && p.y <= pmax.y && p.z <= pmax.z;
    }
