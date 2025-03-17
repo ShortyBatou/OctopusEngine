@@ -7,6 +7,6 @@ T linear_interpolation(scalar t, const T& min, const T& max) {
 }
 
 template<typename T>
-T range(float t, const T& min, const T& max) {
+T range(scalar t, const T& min, const T& max) {
     return linear_interpolation(t, min, max);
 }

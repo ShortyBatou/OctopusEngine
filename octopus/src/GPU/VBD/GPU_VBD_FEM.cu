@@ -573,48 +573,14 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     d_graph = new Graph(element, topology, false);
     std::cout << "D Graph :" << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration coloration = version >= Better_Coloration ? GraphColoration::DSAT(*p_graph) : GraphColoration::DSAT(*p_graph);
+    Coloration coloration = GraphColoration::DSAT(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-    //Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    Coloration c2 = coloration;
+    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
     std::cout << "Test " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
-
-    /*Time::Tic();
-    Coloration c3 = GraphColoration::BFS(*p_graph);
-    std::cout << "BFS " << Time::Tac() << std::endl;
-
-    Time::Tic();
-    Coloration c4 = GraphColoration::Greedy(*p_graph);
-    std::cout << "Greedy " << Time::Tac() << std::endl;
-
-    Time::Tic();
-    Coloration c6 = GraphColoration::Greedy_RLF(*p_graph);
-    std::cout << "Greedy RLF" << Time::Tac() << std::endl;
-
-    Time::Tic();
-    Coloration c7 = GraphColoration::Greedy_SLF(*p_graph);
-    std::cout << "Greedy SLF " << Time::Tac() << std::endl;
-
-    Time::Tic();
-    Coloration c8 = GraphColoration::DSAT(*p_graph);
-    std::cout << "DSAT " << Time::Tac() << std::endl;
-
-    Time::Tic();
-    Coloration c9 = GraphColoration::Primal_Dual_DSAT(element, topology, *p_graph, *d_graph);
-    std::cout << "PD DSAT " << Time::Tac() << std::endl;
-
-    std::cout << "Test " << c2.nb_color << std::endl;
-    std::cout << "Coloration " << coloration.nb_color << std::endl;
-    std::cout << "BFS " << c3.nb_color << std::endl;
-    std::cout << "Greedy " << c4.nb_color << std::endl;
-    std::cout << "Greedy RLF " << c6.nb_color << std::endl;
-    std::cout << "Greedy SLF " << c7.nb_color << std::endl;
-    std::cout << "DSAT " << c8.nb_color << std::endl;
-    std::cout << "PD DSAT " << c9.nb_color << std::endl;*/
 
     //coloration.nb_color += 2;
     //GraphBalance::Greedy(*p_graph, coloration, 100000);

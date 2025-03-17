@@ -365,6 +365,36 @@ public:
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 
+    static Coloration BFS(const Graph& graph) {
+        std::vector<int> colors(graph.n,-1);
+        std::queue<int> q;
+        std::vector<bool> visited(graph.n, false);
+        visited[0] = true;
+        q.push(0);
+        while (!q.empty()) {
+            const int vid = q.front();
+            q.pop();
+            std::set<int> used;
+            for (const int j : graph.adj[vid]) {
+                if(colors[j] == -1) continue;
+                used.insert(colors[j]);
+            }
+
+            int c = 0;
+            while(used.find(c) != used.end()) {
+                c++;
+            }
+
+            colors[vid] = c;
+            for (const int j : graph.adj[vid]) {
+                if(visited[j] || colors[j] != -1) continue;
+                visited[j] = true;
+                q.push(j);
+            }
+        }
+        return { *std::max_element(colors.begin(), colors.end())+1, colors };
+    }
+
     static Coloration Primal_Dual_Element(const Element& elem, const Mesh::Topology& topo, const Graph& p_graph, const Graph& d_graph) {
         const int nb_vert_elem = elem_nb_vertices(elem);
         int n = p_graph.n;
@@ -389,19 +419,8 @@ public:
 
         // color the first element
         {
-            srand(time(NULL));
-            //const int first_id = d_graph.n * Random::Eval();
-            const int first_id = 15803;
-            std::cout << "ID " << first_id << std::endl;
-            for(int i = 0; i < nb_vert_elem; i++) {
-                colors[topo[first_id * nb_vert_elem + i]] = i;
-            }
-
-            // adds its neighbors to queue
-            for(int neighbor : d_graph.adj[first_id]) {
-                visited[neighbor] = true;
-                q.push(neighbor);
-            }
+            int eid = color_first_element(nb_vert_elem, d_graph.n, topo, colors);
+            add_neighbors(eid, d_graph, visited, q);
         }
 
         // while there is element to color
@@ -411,58 +430,20 @@ public:
             const int offset = eid * nb_vert_elem;
             q.pop();
 
-            // get all colored vertices in element
+            // get coloration and saturation in element graph
+            // get all vertices  to color
             std::vector<int> sub_coloration(nb_vert_elem);
             std::vector<int> sub_saturation(nb_vert_elem, 0);
-            std::vector<int> not_saturate; // colored vertices that doesn't have all their neighbors colored
-            int nb_color = 0;
-            // get coloration and saturation in element graph
             for(int i = 0; i < nb_vert_elem; ++i) {
                 sub_coloration[i] = colors[topo[offset + i]];
-                if(sub_coloration[i] != -1) nb_color++;
-
+                // get saturation of this vertice in the element graph
                 for(const int j : e_graph.adj[i]) {
                     if(colors[topo[offset+j]] == -1) continue;
                     sub_saturation[i]++;
                 }
-                int diff = e_graph.degree[i] - sub_saturation[i];
-                if(diff == 1 && sub_coloration[i] != -1) not_saturate.push_back(i);
             }
 
-            if(nb_color == 0) {
-                for(int i = 0; i < nb_vert_elem; ++i) {
-                    sub_coloration[i] = i;
-                }
-            }
-
-            while(!not_saturate.empty()) {
-                const int& rid = not_saturate.back();
-                not_saturate.pop_back();
-                if(sub_saturation[rid] == e_graph.degree[rid]) continue;
-
-                const int c_i = sub_coloration[rid];
-
-                std::set<int> available_color;
-                for(int c_j : e_graph.adj[c_i]) {
-                    available_color.insert(c_j);
-                }
-
-                int last_j = -1;
-                for(int j : e_graph.adj[rid]) {
-                    int c_j = sub_coloration[j];
-                    if(c_j == -1) last_j = j;
-                    available_color.erase(c_j);
-                }
-
-                int c_j = *available_color.begin();
-                sub_coloration[last_j] = c_j;
-
-                for(const int k : e_graph.adj[last_j]) {
-                    sub_saturation[k]++;
-                    int diff = e_graph.degree[k] - sub_saturation[k];
-                    if(diff == 1 && sub_coloration[k] != -1) not_saturate.push_back(k);
-                }
-            }
+            complete_ref_element_coloration(nb_vert_elem, e_graph, sub_saturation, sub_coloration);
 
             bool conflict = false;
             for(int i = 0; i < nb_vert_elem; i++) {
@@ -499,7 +480,7 @@ public:
                 }
             }
         }
-        /*
+
         //use DSAT to finish coloration
         std::vector<int> adjCols(p_graph.n,0);
         std::set<Node, maxSat> max_queue; // sort vertices depending on their saturation > degree > id
@@ -547,40 +528,179 @@ public:
                     max_queue.emplace(Node{ adjCols[v],degree[v], v });
                 }
             }
-        }*/
+        }
 
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 
-    static Coloration BFS(const Graph& graph) {
-        std::vector<int> colors(graph.n,-1);
-        std::queue<int> q;
-        std::vector<bool> visited(graph.n, false);
-        visited[0] = true;
-        q.push(0);
-        while (!q.empty()) {
-            const int vid = q.front();
+    static Coloration Primal_Dual_Element_Split(const Element& elem, const Mesh::Topology& topo, Graph& p_graph, Graph& d_graph) {
+        const int nb_vert_elem = elem_nb_vertices(elem);
+        const int n = p_graph.n;
+        std::map<int, std::vector<std::pair<int, int>>> v_conflict;
+
+        std::vector<int> colors(n,-1);
+        std::vector<int> elem_color(nb_vert_elem,0);
+        std::iota(elem_color.begin(), elem_color.end(), 0);
+
+        // get the graph of the reference element
+        Mesh::Topology edges = ref_edges(elem);
+        {
+            // edges go in both direction
+            Mesh::Topology edges2 = ref_edges(elem); // A => B
+            std::reverse(edges2.begin(), edges2.end()); // B => A
+            edges.insert(edges.end(), edges2.begin(), edges2.end());
+        }
+        const Graph e_graph(Line, edges);
+
+        std::queue<int> q; // element to visit
+        std::vector<bool> visited(d_graph.n, false);
+        {
+            const int eid = color_first_element(nb_vert_elem, d_graph.n, topo, colors);
+            add_neighbors(eid, d_graph, visited, q);
+        }
+
+        // while there is element to color
+        while(!q.empty()) {
+            // get element id and offset in topo array
+            const int eid = q.front();
+            const int* e_topo = topo.data() + eid * nb_vert_elem;
             q.pop();
-            std::set<int> used;
-            for (const int j : graph.adj[vid]) {
-                if(colors[j] == -1) continue;
-                used.insert(colors[j]);
-            }
 
-            int c = 0;
-            while(used.find(c) != used.end()) {
-                c++;
-            }
+            // get coloration and saturation in element graph
+            std::vector<int> local_coloration = get_local_coloration(nb_vert_elem, e_topo, colors);
+            std::vector<int> local_saturation = get_local_staturation(nb_vert_elem, e_topo, e_graph, colors);
 
-            colors[vid] = c;
-            for (const int j : graph.adj[vid]) {
-                if(visited[j] || colors[j] != -1) continue;
-                visited[j] = true;
-                q.push(j);
+            // complete the local_coloration to match ref element coloration
+            complete_ref_element_coloration(nb_vert_elem, e_graph, local_saturation, local_coloration);
+
+            // check if this coloration create conflicts (return rid of vertices in conflinct)
+            const std::vector<int> conflicts = get_local_conflicts(nb_vert_elem, e_topo, p_graph, local_coloration, colors);
+
+            // apply coloration if no conflict
+            if(conflicts.empty()) {
+                for(int i = 0; i < nb_vert_elem; i++) {
+                    colors[e_topo[i]] = local_coloration[i];
+                }
+            }
+            else {
+                for(const int rid : conflicts) {
+                    const int vid = e_topo[rid];
+
+
+                }
+                // if there is a conflict mark the vertices to say that it is splited (-2) (as multiple color)
+                // when splited the vertex is owned by one element only map[vid] = vector<pair<color, eid>>
+
+                // is it necessary ?
+                // needs to modify primal graph (remove edges that are contains in the current element only (how ?)
+                //      => edges that are not in the ref element graph !
+                // needs to modify dual graph (remove edges that link elements that shared conflict vertex)
+            }
+            add_neighbors(eid, d_graph, visited, q);
+        }
+
+        return { *std::max_element(colors.begin(), colors.end())+1, colors };
+    }
+
+    static int color_first_element(const int nb, const int nb_elem, const Mesh::Topology& topo, std::vector<int>& colors)
+    {
+        srand(time(NULL));
+        const int first_id = nb_elem * Random::Eval();
+        //const int first_id = 15803;
+        std::cout << "ID " << first_id << std::endl;
+        for(int i = 0; i < nb; i++) {
+            colors[topo[first_id * nb + i]] = i;
+        }
+        return first_id;
+    }
+
+    static void add_neighbors(const int id, const Graph& graph, std::vector<bool>& visited, std::queue<int>& q) {
+        for(int neighbor : graph.adj[id]) {
+            // if not visited => add to queue for coloring
+            if(!visited[neighbor]) {
+                q.push(neighbor);
+                visited[neighbor] = true;
             }
         }
-        return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
+
+    static void complete_ref_element_coloration(int nb, const Graph& e_graph, std::vector<int>& saturation, std::vector<int>& coloration) {
+        std::vector<int> not_saturated; // colored vertices that doesn't have all their neighbors colored
+        for(int i = 0; i < nb; ++i) {
+            // if there is only one color missing, we add the vertex ref id to color
+            int diff = e_graph.degree[i] - saturation[i];
+            if(diff == 1 && coloration[i] != -1) not_saturated.push_back(i);
+        }
+
+        // while there is that are not fully saturated
+        // do an indirect coloration. We are on a vertex that have one neighbor that is not colored.
+        // With the reference element coloration, we can deduce the color of the vertex.
+        while(!not_saturated.empty()) {
+            // get the vertex id (in the reference element) and color
+            const int& rid = not_saturated.back();
+            const int c_i = coloration[rid];
+            not_saturated.pop_back();
+
+            // happens often (many vertex can be saturated at the same time when one vertex is colored)
+            if(saturation[rid] == e_graph.degree[rid]) continue;
+
+            // get the color which is not used
+            std::set<int> available_color;
+            for(int c_j : e_graph.adj[c_i]) {
+                available_color.insert(c_j);
+            }
+
+            int last_j = -1;
+            for(const int j : e_graph.adj[rid]) {
+                int c_j = coloration[j];
+                if(c_j == -1) last_j = j;
+                available_color.erase(c_j);
+            }
+            // only one color remains
+            const int c_j = *available_color.begin();
+            coloration[last_j] = c_j;
+            // update staturation, and add new vertices that can be saturated
+            for(const int k : e_graph.adj[last_j]) {
+                saturation[k]++;
+                int diff = e_graph.degree[k] - saturation[k];
+                if(diff == 1 && coloration[k] != -1) not_saturated.push_back(k);
+            }
+        }
+    }
+
+    static std::vector<int> get_local_coloration(const int nb, const int* e_topo, const std::vector<int>& colors) {
+        std::vector<int> local_coloration(nb, 0);
+        for(int i = 0; i < nb; ++i) {
+            local_coloration[i] = colors[e_topo[i]];
+        }
+        return local_coloration;
+    }
+
+    static std::vector<int> get_local_staturation(const int nb, const int* e_topo, const Graph& e_graph, const std::vector<int>& colors) {
+        std::vector<int> local_saturation(nb, 0);
+        for(int i = 0; i < nb; ++i) {
+            for(const int j : e_graph.adj[i]) {
+                if(colors[e_topo[j]] == -1) continue;
+                local_saturation[i]++;
+            }
+        }
+        return local_saturation;
+    }
+
+    static std::vector<int> get_local_conflicts(const int nb, const int* e_topo, const Graph& p_graph, const std::vector<int>& sub_coloration, const std::vector<int> &colors) {
+        std::vector<int> conflicts;
+        for(int i = 0; i < nb; i++) {
+            const int ci = sub_coloration[i];
+            const int vid = e_topo[i];
+            if(colors[vid] != -1) continue; // don't touch if already colored
+            for(int j : p_graph.adj[vid]) {
+                if(colors[j] != ci) continue;
+                conflicts.push_back(i);
+            }
+        }
+        return conflicts;
+    }
+
 
 
     static int Nb_Conflict(const Graph& graph, const Coloration& coloration) {

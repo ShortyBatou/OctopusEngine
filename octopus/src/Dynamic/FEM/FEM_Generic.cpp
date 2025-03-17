@@ -22,8 +22,6 @@ Matrix3x3 FEM_Generic::get_jacobian(const std::vector<Vector3> &p, const std::ve
     return J;
 }
 
-
-
 scalar FEM_Generic::compute_volume(const FEM_Shape *shape, const Mesh::Geometry &geometry, const Mesh::Topology &topology) {
     const size_t nb_w = shape->weights.size();
     std::vector<Vector3> verts(shape->nb);
@@ -83,7 +81,6 @@ scalar FEM_Generic::compute_stress(const std::vector<Vector3> &p) const {
     }
     return stress;
 }
-
 
 // particles : element's particles only and in the right order
 void FEM_Generic::build(const std::vector<Particle *> &p) {
