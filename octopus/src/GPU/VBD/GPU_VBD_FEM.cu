@@ -576,8 +576,11 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     Coloration coloration = GraphColoration::DSAT(*p_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    std::cout << "Test " << Time::Tac() << std::endl;
+
+    std::vector<std::vector<int>> owners = e_neighbors;
+    Coloration c2 = GraphColoration::Primal_Dual_Element_Split(element, topology, *p_graph, *d_graph, owners);
+    //Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    std::cout << "Primal_Dual_Element_Split " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
     _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
@@ -606,6 +609,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
+        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -636,7 +640,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             break;
         }
     }
-    /*
+
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);

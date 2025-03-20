@@ -87,21 +87,21 @@ struct BaseScene final : Scene
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = 5;
+        args.scenario_2 = 0;
         args.dir = Unit3D::forward();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        //args.mesh_file = "mesh/vtk/mesh.vtk";
-        //args.mesh_type = "vtk";
-        args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        args.mesh_type = "msh";
+        args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
+        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        //args.mesh_type = "msh";
 
-        const Vector3 size(2, 2, 4);
-        Vector3I cells = Vector3I(16, 4, 4);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(1, 1, 1);
         args.damping = 1e-6;
-        args.iteration = 2;
-        args.sub_iteration = 100;
-        build_vbd_entity(Vector3(1,1,4),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
+        args.iteration = 1;
+        args.sub_iteration = 1;
+        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
 
         args.iteration = 1;
         args.sub_iteration = 60;
@@ -149,7 +149,7 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = true;
+        display->surface() = false;
         display->wireframe() = false;
         display->point() = false;
         return display;
@@ -234,10 +234,6 @@ struct BaseScene final : Scene
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
-
-        tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
-        MeshMap* map =  tetra_to_linear(mesh, Tetra10, 1);
-        map->apply_to_mesh(mesh);
 
         std::cout << "NB VERTICES " << mesh->nb_vertices() << " -------------------" << std::endl;
         std::cout << "NB Element " << mesh->topologies()[element].size() / elem_nb_vertices(element) <<  " -------------------" << std::endl;
