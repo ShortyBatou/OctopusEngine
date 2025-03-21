@@ -546,16 +546,38 @@ public:
         // while there is element to color
         while(!q.empty() || !remaining.empty()) {
             // color a random element
-            int eid = q.empty() ? get_random_element(remaining) : q.front();
-            remaining.erase(eid);
-            if (!q.empty()) q.pop();
+            int eid;
+            if(q.empty()) {
+                eid = get_random_element(remaining);
+            }
+            else {
+                eid = q.front();
+                q.pop();
+            }
+
             const int* e_topo = topo.data() + eid * nb_vert_elem;
+            remaining.erase(eid);
 
-            // get coloration and saturation in element graph
-            std::vector<int> local_coloration = get_local_coloration(nb_vert_elem, e_topo, colors);
-
-            // complete the local_coloration to match ref element coloration
-            color_ref_element(nb_vert_elem, e_graph, local_coloration);
+            // get coloration in element graph
+            std::vector<int> local_coloration;
+            if (q.empty()) {
+                // need a better strategy when we have new element / conflict
+                local_coloration = get_local_coloration(nb_vert_elem, e_topo, colors);
+                bool has_color = false;
+                for(int i = 0; i < nb_vert_elem; i++) {
+                    if(local_coloration[i] == -1) continue;
+                    has_color = true;
+                }
+                if(has_color) continue;
+                for(int i = 0; i < nb_vert_elem; i++) {
+                    local_coloration[i] = i;
+                }
+            }
+            else {
+                local_coloration = get_local_coloration(nb_vert_elem, e_topo, colors);
+                std::vector<int> local_saturation = get_local_staturation(nb_vert_elem, e_topo, e_graph, colors);
+                complete_ref_element_coloration(nb_vert_elem, e_graph, local_saturation, local_coloration);
+            }
 
             // check if this coloration create conflicts (return rid of vertices in conflinct)
             const std::set<int> conflicts = get_local_conflicts(nb_vert_elem, e_topo, p_graph, local_coloration, colors);
@@ -566,6 +588,7 @@ public:
                 const int vid = e_topo[rid];
                 // create a conflicted vertex with its own color
                 v_conflict[vid].push_back({local_coloration[rid], eid, rid});
+                continue;
                 // remove element from vertex owners
                 owners[vid].erase(std::remove(owners[vid].begin(), owners[vid].end(), eid), owners[vid].end());
 
@@ -724,6 +747,7 @@ public:
             // check all color around i
             for(int j : e_graph.adj[i]) {
                 int cj = local_coloration[j];
+                std::cout << cj << std::endl;
                 // of
                 if(possible.find(cj) == possible.end()) {
                     std::cout << "err" << std::endl;

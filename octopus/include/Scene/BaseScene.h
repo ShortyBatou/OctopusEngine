@@ -91,10 +91,10 @@ struct BaseScene final : Scene
         args.dir = Unit3D::forward();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
-        args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        //args.mesh_type = "msh";
+        //args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
+        //args.mesh_type = "vtk";
+        args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        args.mesh_type = "msh";
 
         const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(1, 1, 1);
