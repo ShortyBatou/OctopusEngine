@@ -116,6 +116,7 @@ struct GPU_VBD_FEM : GPU_FEM
     VBD_Version version;
     Graph* p_graph;
     Graph* d_graph;
+    std::vector<scalar> weights;
     scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve

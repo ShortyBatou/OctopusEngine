@@ -573,13 +573,15 @@ void GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology 
     d_graph = new Graph(element, topology, false);
     std::cout << "D Graph :" << Time::Tac() << std::endl;
     Time::Tic();
-    Coloration coloration = GraphColoration::DSAT(*p_graph);
+    Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
     std::cout << "Coloration " << Time::Tac() << std::endl;
     Time::Tic();
-
+    int nb_before = coloration.color.size();
+    weights = GraphReduction::Color_Split_Primal_Dual(element, topology, *p_graph, coloration.color, e_neighbors, e_ref_id);
+    std::cout << nb_before << " " << coloration.color.size() << std::endl;
     std::vector<std::vector<int>> owners = e_neighbors;
-    Coloration c2 = GraphColoration::Primal_Dual_Element_Split(element, topology, *p_graph, *d_graph, owners);
-    //Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    //Coloration c2 = GraphColoration::Primal_Dual_Element_2(element, topology, *p_graph, *d_graph, owners);
+    Coloration c2 = coloration;
     std::cout << "Primal_Dual_Element_Split " << Time::Tac() << std::endl;
     _t_nb_color = c2.nb_color;
     _t_color = c2.color;
@@ -652,10 +654,10 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     if(Input::Down(Key::M)) v++;
     
     // display all non colored vertices
-    if(Input::Loop(Key::W)) {
-        Debug::SetColor(ColorBase::Black());
+    if(Input::Loop(Key::Z)) {
+        Debug::SetColor(ColorBase::Red());
         for(int i = 0; i < positions.size(); i++) {
-            if(_t_color[i] == -1) {
+            if(weights[i] < 1.f - eps) {
                 Debug::Cube(positions[i], 0.001);
             }
         }
