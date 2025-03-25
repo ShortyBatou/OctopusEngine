@@ -651,7 +651,6 @@ void GPU_VBD_FEM::create_buffers(
             owners_offset.push_back(static_cast<int>(owners.size()));
             owners.insert(owners.end(), e_owners[id].begin(), e_owners[id].end());
             ref_id.insert(ref_id.end(), e_ref_id[id].begin(), e_ref_id[id].end());
-            if(version >= Better_Coloration) weights.push_back(w[id]);
         }
 
         // multi-threading data
