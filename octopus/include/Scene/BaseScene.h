@@ -67,7 +67,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -82,7 +82,7 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.distribution = FemShape;
         args.young = 1e6;
-        args.poisson = 0.49;
+        args.poisson = 0.45;
         args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
@@ -91,17 +91,17 @@ struct BaseScene final : Scene
         args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
-        args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        //args.mesh_type = "msh";
+        //args.mesh_file = "mesh/vtk/fertility_Q1.vtk";
+        //args.mesh_type = "vtk";
+        args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        args.mesh_type = "msh";
 
         const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(1, 1, 1);
+        Vector3I cells = Vector3I(16, 4, 4);
         args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 1;
-        build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
+        args.sub_iteration = 25;
+        build_vbd_entity(Vector3(1,1,4),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
 
         args.iteration = 1;
         args.sub_iteration = 60;
@@ -149,7 +149,7 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = false;
+        display->surface() = true;
         display->wireframe() = false;
         display->point() = false;
         return display;

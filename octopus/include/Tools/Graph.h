@@ -136,7 +136,7 @@ struct Graph {
 
 struct Coloration {
     int nb_color;
-    std::vector<int> color;
+    std::vector<int> colors;
 };
 
 class GraphColoration {
@@ -789,9 +789,9 @@ public:
     static std::map<int, int> Get_Conflict(const Graph& graph, const Coloration& coloration) {
         std::map<int, int> conflict;
         for(int i = 0; i < graph.n; i++) {
-            int c = coloration.color[i];
+            int c = coloration.colors[i];
             for(int neighbor : graph.adj[i]) {
-                int n_c = coloration.color[neighbor];
+                int n_c = coloration.colors[neighbor];
                 if(n_c != c) continue;
                 if(conflict.find(i) == conflict.end()) {
                     conflict[i] = 0;
@@ -863,18 +863,37 @@ private:
 };
 
 struct GraphReduction {
-    static std::vector<scalar> Color_Split_Primal_Dual(
+    struct Map {
+        Map(const int nb_vert, const Mesh::Topology& topo) {
+            weights.resize(nb_vert);
+            true_id.resize(nb_vert);
+            nb_split.resize(nb_vert);
+            topology = topo;
+        }
+        std::vector<int> topology;
+        std::vector<int> true_id;
+
+        std::vector<int> nb_split;
+        std::vector<int> id_split;
+        std::vector<int> off_split;
+        std::vector<scalar> weights;
+    };
+
+    static Map Color_Split_Primal_Dual(
         const Element elem,
         const Mesh::Topology& topo,
         const Graph& graph,
-        std::vector<int>& colors,
+        Coloration& coloration,
         std::vector<std::vector<int>>& owners,
         std::vector<std::vector<int>>& r_ids
         )
     {
-        std::vector<scalar> weights(graph.n, 1.f);
-        // get all vertices with a color >= nb
         const int e_nb_vert = elem_nb_vertices(elem);
+        std::vector<int>& colors = coloration.colors;
+        coloration.nb_color = e_nb_vert;
+        Map map(colors.size(), topo);
+
+        // get all vertices with a color >= nb
         std::set<int> to_color;
         for(int i = 0; i < graph.n; ++i) {
             if(colors[i] >= e_nb_vert) {
@@ -925,18 +944,33 @@ struct GraphReduction {
                 }
             }
 
-            // update colors and weights
+            // update data and map
             colors[vid] = s_colors[0];
             owners[vid] = v_owners[0];
             r_ids[vid] = v_rid[0];
-            weights[vid] = static_cast<scalar>(v_owners[0].size()) / static_cast<scalar>(nb_owners);
+            map.true_id[vid] = vid;
+
+            map.off_split.push_back(map.weights.size());
+            map.nb_split.push_back(used_color.size());
+            map.weights.push_back(static_cast<scalar>(v_owners[0].size()) / static_cast<scalar>(nb_owners));
+            map.id_split.push_back(vid);
             for(int i = 1; i < used_color.size(); ++i) {
+                int new_id = colors.size();
                 colors.push_back(s_colors[i]);
                 owners.push_back(v_owners[i]);
                 r_ids.push_back(v_rid[i]);
+
+                map.weights.push_back(static_cast<scalar>(v_owners[0].size()) / static_cast<scalar>(nb_owners));
+                map.id_split.push_back(vid);
+
+                map.true_id.push_back(vid);
+                for(int j = 0; j < v_owners[i].size(); j++) {
+                    int index = v_owners[i][j] * e_nb_vert + v_rid[i][j];
+                    map.topology[index] = new_id;
+                }
             }
         }
-        return weights;
+        return map;
     }
 };
 
@@ -949,7 +983,7 @@ struct GraphBalance  {
         }
 
         for (int i = 0; i < graph.n; ++i) {
-            int c = coloration.color[i];
+            int c = coloration.colors[i];
             c_verts[c].insert(i);
         }
 
@@ -974,13 +1008,13 @@ struct GraphBalance  {
                 for (int vid : c_verts[over_color]) {
                     std::set<int> used_colors;
                     for (const int neighbor : graph.adj[vid]) {
-                        used_colors.insert(coloration.color[neighbor]);
+                        used_colors.insert(coloration.colors[neighbor]);
                     }
 
                     for(int j = 0; j < under_represented.size(); ++j) {
                         int under_color = under_represented[j];
                         if (used_colors.count(under_color)) continue;
-                        coloration.color[vid] = under_color;
+                        coloration.colors[vid] = under_color;
                         c_verts[over_color].erase(vid);
                         c_verts[under_color].insert(vid);
                         color_change = true;

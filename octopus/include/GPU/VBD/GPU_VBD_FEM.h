@@ -33,6 +33,35 @@ struct GPU_Block_Data {
     }
 };
 
+struct GPU_Split_Parameters {
+    Vector3* position; // N + S
+    int* true_id; // N + S
+
+    int* nb_split; // S
+    int* off_split; // S
+    int* id_split; //
+    scalar* weight; //
+};
+
+struct GPU_Split_Data {
+    Cuda_Buffer<Vector3>* cb_position;
+    Cuda_Buffer<int>* cb_true_id;
+    Cuda_Buffer<int>* cb_nb_split;
+    Cuda_Buffer<int>* cb_off_split;
+    Cuda_Buffer<int>* cb_id_split;
+    Cuda_Buffer<scalar>* cb_weight;
+
+    ~GPU_Split_Data()
+    {
+        delete cb_position;
+        delete cb_true_id;
+        delete cb_nb_split;
+        delete cb_off_split;
+        delete cb_id_split;
+        delete cb_weight;
+    }
+};
+
 struct GPU_Owners_Parameters
 {
     int* offset; // offset to the first neighbors for each vertice
@@ -68,18 +97,16 @@ struct GPU_VBD_FEM : GPU_FEM
 
     std::vector<Vector3> get_forces(const GPU_ParticleSystem *ps, scalar dt) const override;
 
-    void build_graph_color(
-        Element element,
+    Coloration build_graph_color(Element element, const Mesh::Topology& topology);
+
+    void create_buffers(Element element,
         const Mesh::Topology& topology,
-        int nb_vertices,
-        std::vector<int>& colors,
-        std::vector<std::vector<int>>& e_neighbors,
-        std::vector<std::vector<int>>& ref_id);
+        Coloration& coloration,
+        std::vector<std::vector<int>>& e_owners,
+        std::vector<std::vector<int>>& e_ref_id
+    );
 
-
-    void GPU_VBD_FEM::sort_by_color(int nb_vertices, const std::vector<int>& colors, const std::vector<std::vector<int>>& e_owners,
-                                            const std::vector<std::vector<int>>& e_ref_id);
-
+    void build_owner_data(int nb_vertices, const Mesh::Topology &topology, std::vector<std::vector<int>>& e_neighbors, std::vector<std::vector<int>>& e_ref_id) const;
     [[nodiscard]] GPU_Owners_Parameters get_owners_parameters() const
     {
         GPU_Owners_Parameters params{};
@@ -99,6 +126,18 @@ struct GPU_VBD_FEM : GPU_FEM
         return params;
     }
 
+    [[nodiscard]] GPU_Split_Parameters get_Split_parameters() const
+    {
+        GPU_Split_Parameters params{};
+        params.position = d_splits->cb_position->buffer;
+        params.true_id = d_splits->cb_true_id->buffer;
+        params.nb_split = d_splits->cb_nb_split->buffer;
+        params.off_split = d_splits->cb_off_split->buffer;
+        params.id_split = d_splits->cb_id_split->buffer;
+        params.weight = d_splits->cb_weight->buffer;
+        return params;
+    }
+
     ~GPU_VBD_FEM() override {
         delete d_owners;
         delete d_blocks;
@@ -106,17 +145,16 @@ struct GPU_VBD_FEM : GPU_FEM
     }
 
     GPU_Owners_Data* d_owners;
+    GPU_Split_Data* d_splits;
     GPU_Block_Data* d_blocks;
 
     std::vector<int> _t_color;
     int _t_nb_color;
     std::map<int, int> _t_conflict;
-    std::vector<std::vector<int>> t_neighbors;
 
     VBD_Version version;
     Graph* p_graph;
     Graph* d_graph;
-    std::vector<scalar> weights;
     scalar damping;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve

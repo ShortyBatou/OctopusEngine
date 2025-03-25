@@ -111,8 +111,8 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     std::vector<std::vector<int>> e_neighbors;
     std::vector<std::vector<int>> e_ref_id;
     std::vector<int> colors;
-    build_graph_color(lin_elem, lin_topo, lin_nb_vertices, colors, e_neighbors, e_ref_id);
-    sort_by_color(lin_nb_vertices, colors, e_neighbors, e_ref_id);
+    //build_graph_color(lin_elem, lin_topo, lin_nb_vertices, colors, e_neighbors, e_ref_id);
+    //sort_by_color(lin_nb_vertices, colors, e_neighbors, e_ref_id);
 
     masses.push_back(ps->_data->_cb_mass);
     std::vector<scalar> lin_masses = compute_fem_mass(lin_elem, geometry, lin_topo, density, mass_distrib);
