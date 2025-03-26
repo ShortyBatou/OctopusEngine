@@ -332,6 +332,7 @@ __global__ void kernel_vbd_solve_v4(
     vec_reduction(tid, size_of_block, 0, 9, s_f_H);
 
     if (threadIdx.x == 0) {
+
         fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
         H[0][0] = s_f_H[3];
         H[1][0] = s_f_H[4]; H[1][1] = s_f_H[6];
@@ -349,29 +350,35 @@ __global__ void kernel_vbd_solve_v4(
 
         //scalar detH = glm::determinant(s_H);
         const scalar detH = abs(glm::determinant(H));
-        split.position[vid] += detH > 1e-6f ? glm::inverse(H) * fi : Vector3(0.f);
+        //split.position[vid] += detH > 1e-6f ? glm::inverse(H) * fi : Vector3(0.f);
     }
 }
 
 __global__ void kernel_copy_in_splited_position(const int n, GPU_ParticleSystem_Parameters ps, GPU_Split_Parameters split) {
     const int vid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(vid < n) return;
+    if(vid >= n) return;
     const int true_id = split.true_id[vid];
-    split.position[vid] = split.position[true_id];
+    split.position[vid] = ps.p[true_id];
 }
 
 __global__ void kernel_merge_splited_position(const int n, GPU_ParticleSystem_Parameters ps, GPU_Split_Parameters split) {
     const int id = blockIdx.x * blockDim.x + threadIdx.x;
-    if(id < n) return;
+    if(id >= n) return;
     const int nb = split.nb_split[id];
     const int off = split.off_split[id];
 
     Vector3 p(0.f);
     int vid = 0;
+    scalar w = 0;
     for(int i = 0; i < nb; ++i) {
         vid = split.id_split[off + i];
+        w += split.weight[off + i];
         p += split.position[vid] * split.weight[off + i];
     }
+    if(abs(ps.init_p[vid].x - p.x) > 0.1) {
+        printf("(%d/%d) %d %d %f %f\n", id, n, nb, off, abs(ps.init_p[vid].x - p.x), w);
+    }
+
     ps.p[split.true_id[vid]] = p;
 }
 
@@ -728,6 +735,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
+        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);

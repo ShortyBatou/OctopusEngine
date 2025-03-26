@@ -100,7 +100,7 @@ struct BaseScene final : Scene
         Vector3I cells = Vector3I(16, 4, 4);
         args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 25;
+        args.sub_iteration = 1;
         build_vbd_entity(Vector3(1,1,4),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
 
         args.iteration = 1;

@@ -865,9 +865,7 @@ private:
 struct GraphReduction {
     struct Map {
         Map(const int nb_vert, const Mesh::Topology& topo) {
-            weights.resize(nb_vert);
-            true_id.resize(nb_vert);
-            nb_split.resize(nb_vert);
+            true_id.resize(nb_vert); std::iota(true_id.begin(), true_id.end(), 0);
             topology = topo;
         }
         std::vector<int> topology;
@@ -960,8 +958,8 @@ struct GraphReduction {
                 owners.push_back(v_owners[i]);
                 r_ids.push_back(v_rid[i]);
 
-                map.weights.push_back(static_cast<scalar>(v_owners[0].size()) / static_cast<scalar>(nb_owners));
-                map.id_split.push_back(vid);
+                map.weights.push_back(static_cast<scalar>(v_owners[i].size()) / static_cast<scalar>(nb_owners));
+                map.id_split.push_back(new_id);
 
                 map.true_id.push_back(vid);
                 for(int j = 0; j < v_owners[i].size(); j++) {
