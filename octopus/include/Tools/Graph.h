@@ -863,21 +863,7 @@ private:
 };
 
 struct GraphReduction {
-    struct Map {
-        Map(const int nb_vert, const Mesh::Topology& topo) {
-            true_id.resize(nb_vert); std::iota(true_id.begin(), true_id.end(), 0);
-            topology = topo;
-        }
-        std::vector<int> topology;
-        std::vector<int> true_id;
-
-        std::vector<int> nb_split;
-        std::vector<int> id_split;
-        std::vector<int> off_split;
-        std::vector<scalar> weights;
-    };
-
-    static Map Color_Split_Primal_Dual(
+    static void MinimalColorationConflict(
         const Element elem,
         const Mesh::Topology& topo,
         const Graph& graph,
@@ -889,7 +875,6 @@ struct GraphReduction {
         const int e_nb_vert = elem_nb_vertices(elem);
         std::vector<int>& colors = coloration.colors;
         coloration.nb_color = e_nb_vert;
-        Map map(colors.size(), topo);
 
         // get all vertices with a color >= nb
         std::set<int> to_color;
@@ -900,75 +885,27 @@ struct GraphReduction {
         }
 
         // for each vertex
-        for(const int vid : to_color) {
+        for(int vid : to_color) {
             const int nb_owners = owners[vid].size();
             std::vector<std::set<int>> color_available(nb_owners);
             std::vector<int> nb_occurence(e_nb_vert, 0); // count the number of occurrence to choose the most common color
             // get all possible color for each element for this vertex
             for(int j = 0; j < nb_owners; ++j) {
                 const int* e_topo = topo.data() + owners[vid][j] * e_nb_vert;
-                int rid = r_ids[vid][j]; // id in the current element
                 for(int c = 0; c < e_nb_vert; ++c) color_available[j].insert(c);
                 for(int k = 0; k < e_nb_vert; ++k) color_available[j].erase(colors[e_topo[k]]);
                 for(const int c : color_available[j]) nb_occurence[c]++;
             }
 
-            // select the most reccurent color for each split
-            std::vector<int> s_colors(nb_owners, -1);
-            for(int j = 0; j < nb_owners; ++j) {
-                int c_max = -1, nb_max = 0;
-                for(const int c : color_available[j]) {
-                    if(nb_occurence[c] <= nb_max) continue;
-                    nb_max = nb_occurence[c];
-                    c_max = c;
-                }
-                s_colors[j] = c_max;
+            int c_max = -1, nb_max = 0;
+            for(int i = 0; i < e_nb_vert; ++i) {
+                if(nb_occurence[i] <= nb_max) continue;
+                nb_max = nb_occurence[i];
+                c_max = i;
             }
 
-            // get the list of used color (with no duplicates)
-            std::vector<int> used_color(s_colors.begin(), s_colors.end());
-            std::sort( used_color.begin(), used_color.end() );
-            used_color.erase( std::unique( used_color.begin(), used_color.end() ), used_color.end() );
-
-            // merge the color
-            std::vector<std::vector<int>> v_owners(used_color.size());
-            std::vector<std::vector<int>> v_rid(used_color.size());
-            for(int i = 0; i < used_color.size(); ++i) {
-                const int c = used_color[i];
-                for(int j = 0; j < nb_owners; ++j) {
-                    if(c != s_colors[j]) continue;
-                    v_owners[i].push_back(owners[vid][j]);
-                    v_rid[i].push_back(r_ids[vid][j]);
-                }
-            }
-
-            // update data and map
-            colors[vid] = s_colors[0];
-            owners[vid] = v_owners[0];
-            r_ids[vid] = v_rid[0];
-            map.true_id[vid] = vid;
-
-            map.off_split.push_back(map.weights.size());
-            map.nb_split.push_back(used_color.size());
-            map.weights.push_back(static_cast<scalar>(v_owners[0].size()) / static_cast<scalar>(nb_owners));
-            map.id_split.push_back(vid);
-            for(int i = 1; i < used_color.size(); ++i) {
-                int new_id = colors.size();
-                colors.push_back(s_colors[i]);
-                owners.push_back(v_owners[i]);
-                r_ids.push_back(v_rid[i]);
-
-                map.weights.push_back(static_cast<scalar>(v_owners[i].size()) / static_cast<scalar>(nb_owners));
-                map.id_split.push_back(new_id);
-
-                map.true_id.push_back(vid);
-                for(int j = 0; j < v_owners[i].size(); j++) {
-                    int index = v_owners[i][j] * e_nb_vert + v_rid[i][j];
-                    map.topology[index] = new_id;
-                }
-            }
+            colors[vid] = c_max;
         }
-        return map;
     }
 };
 

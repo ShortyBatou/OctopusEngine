@@ -33,35 +33,6 @@ struct GPU_Block_Data {
     }
 };
 
-struct GPU_Split_Parameters {
-    Vector3* position; // N + S
-    int* true_id; // N + S
-
-    int* nb_split; // S
-    int* off_split; // S
-    int* id_split; //
-    scalar* weight; //
-};
-
-struct GPU_Split_Data {
-    Cuda_Buffer<Vector3>* cb_position;
-    Cuda_Buffer<int>* cb_true_id;
-    Cuda_Buffer<int>* cb_nb_split;
-    Cuda_Buffer<int>* cb_off_split;
-    Cuda_Buffer<int>* cb_id_split;
-    Cuda_Buffer<scalar>* cb_weight;
-
-    ~GPU_Split_Data()
-    {
-        delete cb_position;
-        delete cb_true_id;
-        delete cb_nb_split;
-        delete cb_off_split;
-        delete cb_id_split;
-        delete cb_weight;
-    }
-};
-
 struct GPU_Owners_Parameters
 {
     int* offset; // offset to the first neighbors for each vertice
@@ -126,17 +97,6 @@ struct GPU_VBD_FEM : GPU_FEM
         return params;
     }
 
-    [[nodiscard]] GPU_Split_Parameters get_Split_parameters() const
-    {
-        GPU_Split_Parameters params{};
-        params.position = d_splits->cb_position->buffer;
-        params.true_id = d_splits->cb_true_id->buffer;
-        params.nb_split = d_splits->cb_nb_split->buffer;
-        params.off_split = d_splits->cb_off_split->buffer;
-        params.id_split = d_splits->cb_id_split->buffer;
-        params.weight = d_splits->cb_weight->buffer;
-        return params;
-    }
 
     ~GPU_VBD_FEM() override {
         delete d_owners;
@@ -145,7 +105,6 @@ struct GPU_VBD_FEM : GPU_FEM
     }
 
     GPU_Owners_Data* d_owners;
-    GPU_Split_Data* d_splits;
     GPU_Block_Data* d_blocks;
 
     std::vector<int> _t_color;
@@ -156,6 +115,8 @@ struct GPU_VBD_FEM : GPU_FEM
     Graph* p_graph;
     Graph* d_graph;
     scalar damping;
+
+    Cuda_Buffer<Vector3>* p_new;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
     std::vector<int> _colors; // mesh coloration (used for debug)
@@ -178,6 +139,16 @@ __global__ void kernel_vbd_solve_v3(
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
 );
+
+__global__ void kernel_vbd_solve_v4(
+    int n, scalar damping, scalar dt, int offset,const Vector3* y, const Vector3* p_new,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
+);
+
+__global__ void kernel_copy_in_position(int n, int offset, const Vector3* p_new,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners);
+
 
 __global__ void kernel_vbd_compute_residual(
     int n, scalar damping, scalar dt, int offset,const Vector3* y, Vector3* r,

@@ -98,7 +98,6 @@ __device__ void store_f_H_in_shared_sym(const int tid, const Vector3& fi, const 
     }
 }
 
-
 __device__ Vector3 compute_correction(const int vid, const scalar damping, const scalar dt,
         GPU_ParticleSystem_Parameters ps, const Vector3* y,
         Vector3& fi, Matrix3x3& H) {
@@ -289,11 +288,11 @@ __global__ void kernel_vbd_solve_v4(
     const scalar dt,
     const int offset,
     const Vector3* y,
+    Vector3* p_new,
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps,
     GPU_FEM_Pameters fem,
-    GPU_Owners_Parameters owners,
-    GPU_Split_Parameters split
+    GPU_Owners_Parameters owners
 ) {
     // global id
     const int gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -313,16 +312,14 @@ __global__ void kernel_vbd_solve_v4(
 
     const int *topo = fem.topology + eid * fem.elem_nb_vert; // offset the pointer at the start of the element's topology
     const int vid = topo[r_vid];
-    const int true_vid = split.true_id[vid];
-
-    if(ps.mask[true_vid] == 0) return;
+    if(ps.mask[vid] == 0) return;
 
     const int qe_off = eid * fem.nb_quadrature + qid;
     const int qv_off = qid * fem.elem_nb_vert;
     Vector3 fi(0.f);
     Matrix3x3 H(0.f);
     compute_f_H_sym(fem.elem_nb_vert, r_vid,
-                mt, split.position, topo, fem.JX_inv[qe_off], fem.V[qe_off], fem.dN + qv_off,
+                mt, ps.p, topo, fem.JX_inv[qe_off], fem.V[qe_off], fem.dN + qv_off,
                 fi, H);
 
 
@@ -332,56 +329,28 @@ __global__ void kernel_vbd_solve_v4(
     vec_reduction(tid, size_of_block, 0, 9, s_f_H);
 
     if (threadIdx.x == 0) {
-
         fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
         H[0][0] = s_f_H[3];
         H[1][0] = s_f_H[4]; H[1][1] = s_f_H[6];
         H[2][0] = s_f_H[5]; H[2][1] = s_f_H[7];  H[2][2] = s_f_H[8];
         // symmetry
         H[0][1] = H[1][0]; H[1][2] = H[2][1]; H[0][2] = H[2][0];
-        // damping (velocity)
-        fi -= damping / dt * H * (split.position[vid] - ps.last_p[true_vid]);
-        H  += damping / dt * H;
-
-        // inertia (acceleration)
-        const scalar mh2 = ps.m[true_vid] / (dt*dt);
-        fi -= mh2 * (split.position[vid] - y[true_vid]);
-        H[0][0] += mh2; H[1][1] += mh2; H[2][2] += mh2;
-
-        //scalar detH = glm::determinant(s_H);
-        const scalar detH = abs(glm::determinant(H));
-        //split.position[vid] += detH > 1e-6f ? glm::inverse(H) * fi : Vector3(0.f);
+        p_new[vid] = ps.p[vid] + compute_correction(vid, damping, dt, ps, y, fi, H);
     }
 }
 
-__global__ void kernel_copy_in_splited_position(const int n, GPU_ParticleSystem_Parameters ps, GPU_Split_Parameters split) {
-    const int vid = blockIdx.x * blockDim.x + threadIdx.x;
-    if(vid >= n) return;
-    const int true_id = split.true_id[vid];
-    split.position[vid] = ps.p[true_id];
+__global__ void kernel_copy_in_position(const int n, const int offset, const Vector3* p_new,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners) {
+    const int gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= n) return;
+    const int cid = offset + gid;
+    const int e_off = owners.offset[cid];
+    const int r_vid = owners.ref_vid[e_off];
+    const int *topo = fem.topology + owners.eids[e_off] * fem.elem_nb_vert;
+    const int vid = topo[r_vid];
+    if(ps.mask[vid] == 0) return;
+    ps.p[vid] = p_new[vid];
 }
-
-__global__ void kernel_merge_splited_position(const int n, GPU_ParticleSystem_Parameters ps, GPU_Split_Parameters split) {
-    const int id = blockIdx.x * blockDim.x + threadIdx.x;
-    if(id >= n) return;
-    const int nb = split.nb_split[id];
-    const int off = split.off_split[id];
-
-    Vector3 p(0.f);
-    int vid = 0;
-    scalar w = 0;
-    for(int i = 0; i < nb; ++i) {
-        vid = split.id_split[off + i];
-        w += split.weight[off + i];
-        p += split.position[vid] * split.weight[off + i];
-    }
-    if(abs(ps.init_p[vid].x - p.x) > 0.1) {
-        printf("(%d/%d) %d %d %f %f\n", id, n, nb, off, abs(ps.init_p[vid].x - p.x), w);
-    }
-
-    ps.p[split.true_id[vid]] = p;
-}
-
 
 __global__ void kernel_vbd_solve_v5(
     const int n,
@@ -574,16 +543,15 @@ void GPU_VBD_FEM::create_buffers(
     // need to remake topology and geometry to take in count ghost particles
     // get the mapping between the modified mesh and the true mesh
     if(version >= Better_Coloration) {
-        GraphReduction::Map map = GraphReduction::Color_Split_Primal_Dual(element, topology, *p_graph, coloration, e_owners, e_ref_id);
-        d_fem->cb_topology->load_data(map.topology);
-        d_splits = new GPU_Split_Data();
-        d_splits->cb_position = new Cuda_Buffer<Vector3>(std::vector(coloration.colors.size(), Vector3(0)));
-        d_splits->cb_true_id = new Cuda_Buffer<int>(map.true_id);
-
-        d_splits->cb_id_split = new Cuda_Buffer<int>(map.id_split);
-        d_splits->cb_nb_split = new Cuda_Buffer<int>(map.nb_split);
-        d_splits->cb_off_split = new Cuda_Buffer<int>(map.off_split);
-        d_splits->cb_weight = new Cuda_Buffer<scalar>(map.weights);
+        GraphReduction::MinimalColorationConflict(element, topology, *p_graph, coloration, e_owners, e_ref_id);
+        p_new = new Cuda_Buffer<Vector3>(std::vector<Vector3>(coloration.colors.size(), Unit3D::Zero()));
+        std::map<int, int> _t_conflict = GraphColoration::Get_Conflict(*p_graph, coloration);
+        int nb_conflict = 0;
+        for(auto [_, nb] : _t_conflict) {
+            nb_conflict += nb;
+        }
+        std::cout << "NB CONFLICT : " << nb_conflict << std::endl;
+        std::cout << "Coloration : nb = " << coloration.nb_color << std::endl;
     }
 
     int total_thread = 0;
@@ -704,10 +672,10 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     Time::Tic();
     p_graph = new Graph(element, topology);
     d_graph = new Graph(element, topology, false);
-    //Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    Coloration coloration = GraphColoration::DSAT(*p_graph);
+    Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    //Coloration coloration = GraphColoration::DSAT(*p_graph);
 
-    std::cout << "Coloration " << Time::Tac() << std::endl;
+    std::cout << "Coloration : t = " << Time::Tac() << "  " << " nb = " << coloration.nb_color << std::endl;
 
     {   // test / debug
         //std::vector<std::vector<int>> owners = e_neighbors;
@@ -724,18 +692,12 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
 
 
 void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
-    if(version >= Better_Coloration) {
-        const int n = d_splits->cb_position->nb;
-        kernel_copy_in_splited_position<<<n / 32 + 1, 32>>>(n, ps->get_parameters(), get_Split_parameters());
-    }
-
     std::vector<int> kernels(d_thread->nb_kernel);
     std::iota(kernels.begin(), kernels.end(), 0);
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
-        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -761,8 +723,12 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
                 kernel_vbd_solve_v4<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                    y->buffer, *d_material,
-                    ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_Split_parameters()
+                    y->buffer, p_new->buffer, *d_material,
+                    ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
+                );
+                kernel_copy_in_position<<<d_thread->grid_size[c] / 32 + 1, 32>>>(
+                    d_thread->grid_size[c], d_thread->offsets[c], p_new->buffer,
+                    ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
                 );
                 break;
             case Block_Merge :
@@ -773,11 +739,6 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                 );
             break;
         }
-    }
-
-    if(version >= Better_Coloration) {
-        const int n = d_splits->cb_nb_split->nb;
-        kernel_merge_splited_position<<<n / 32 + 1, 32>>>(n, ps->get_parameters(), get_Split_parameters());
     }
 
     /*
