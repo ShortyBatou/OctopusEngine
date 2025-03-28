@@ -672,18 +672,23 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     Time::Tic();
     p_graph = new Graph(element, topology);
     d_graph = new Graph(element, topology, false);
-    Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    //Coloration coloration = GraphColoration::DSAT(*p_graph);
+    //Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+    Coloration coloration = GraphColoration::DSAT(*p_graph);
 
     std::cout << "Coloration : t = " << Time::Tac() << "  " << " nb = " << coloration.nb_color << std::endl;
 
     {   // test / debug
-        //std::vector<std::vector<int>> owners = e_neighbors;
-        //Coloration c2 = GraphColoration::Primal_Dual_Element_2(element, topology, *p_graph, *d_graph, owners);
-        Coloration c2 = coloration;
+        Coloration c2 = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
+        //Coloration c2 = coloration;
         _t_nb_color = c2.nb_color;
         _t_color = c2.colors;
         _t_conflict = GraphColoration::Get_Conflict(*p_graph, c2);
+        int nb_conflict = 0;
+        for(auto [_, nb] : _t_conflict) {
+            nb_conflict += nb;
+        }
+        std::cout << "Test NB CONFLICT : " << nb_conflict << std::endl;
+        std::cout << "Test Coloration : nb = " << c2.nb_color << std::endl;/**/
     }
 
     return coloration;
@@ -698,6 +703,7 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
     for(const int c : kernels) {
+        break;
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
@@ -741,24 +747,21 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         }
     }
 
-    /*
+
     std::vector<Vector3> positions(d_graph->n);
     ps->get_position(positions);
     std::vector<int> topo(d_fem->cb_topology->nb);
     d_fem->cb_topology->get_data(topo);
 
 
-    Debug::SetColor(ColorBase::Green());
     static int v = 1;
     if(Input::Down(Key::M)) v++;
     
     // display all non colored vertices
     if(Input::Loop(Key::Z)) {
-        Debug::SetColor(ColorBase::Red());
+        Debug::SetColor(ColorBase::Black());
         for(int i = 0; i < positions.size(); i++) {
-            if(weights[i] < 1.f - eps) {
-                Debug::Cube(positions[i], 0.001);
-            }
+            if(_t_color[i] == -1) Debug::Cube(positions[i], 0.001);
         }
     }
     if(Input::Loop(Key::X)) {

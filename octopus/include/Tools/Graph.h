@@ -508,18 +508,15 @@ public:
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 
-
-
     static Coloration Primal_Dual_Element_2(
         const Element& elem, const Mesh::Topology& topo,
-        const Graph& p_graph, const Graph& d_graph, const std::vector<std::vector<int>>& owners)
+        const Graph& p_graph, const Graph& d_graph)
     {
         const int nb_vert_elem = elem_nb_vertices(elem);
         const int n = p_graph.n;
 
         std::vector<int> colors(n,-1);
         std::set<int> v_conflict;
-        std::set<int> e_conflict;
 
         // get the graph of the reference element and coloration
         const Graph e_graph(Line, get_ref_element_edges(elem));
@@ -529,13 +526,18 @@ public:
         // element visit information
         std::queue<int> q_tile; // element to visit
         std::queue<int> q_conflict;
-        q_conflict.push(Random::Range(0, d_graph.n - 1));
+        std::set<int> to_visit;
+        for(int i = 0; i < d_graph.n; i++) to_visit.insert(i);
+
         std::vector<bool> visited(d_graph.n, false); // visited elements
         // while there is element to color
-        while(!q_tile.empty() || !q_conflict.empty()) {
+        while(!q_tile.empty() || !q_conflict.empty() || !to_visit.empty()) {
             // color a random element
             int eid;
-            if(q_tile.empty()) {
+            if(q_tile.empty() && q_conflict.empty()) {
+                eid = get_random_element(to_visit);
+            }
+            else if(q_tile.empty()) {
                 eid = q_conflict.front();
                 q_conflict.pop();
             }
@@ -543,47 +545,104 @@ public:
                 eid = q_tile.front();
                 q_tile.pop();
             }
+            to_visit.erase(eid);
 
             const int* e_topo = topo.data() + eid * nb_vert_elem;
-
             // get coloration in element graph
             std::vector<int> local_coloration;
             local_coloration = get_local_coloration(nb_vert_elem, e_topo, colors);
             color_ref_element(nb_vert_elem, e_graph, local_coloration);
-            //std::vector<int> local_saturation = get_local_staturation(nb_vert_elem, e_topo, e_graph, colors);
-            //complete_ref_element_coloration(nb_vert_elem, e_graph, local_saturation, local_coloration);
+
+            // check if the coloration has changed, if not, the element is considered as not visited
+            bool no_coloration = true;
+            for(int i = 0; i < nb_vert_elem && no_coloration; i++) {
+                if(colors[e_topo[i]] == local_coloration[i]) continue;
+                no_coloration = false;
+            }
+            if(no_coloration) {
+                visited[eid] = false;
+                continue;
+            }
 
             // check if this coloration create conflicts (return rid of vertices in conflinct)
             const std::set<int> conflicts = get_local_conflicts(nb_vert_elem, e_topo, p_graph, local_coloration, colors);
 
-            // handle conflicts and try to find the lower color
+            // remove color and save conflicted vertices
             for(const int rid : conflicts) {
                 int vid = e_topo[rid];
+                local_coloration[rid] = -1;
                 v_conflict.insert(vid);
-                for(int own : owners[vid]) {
-                    e_conflict.insert(own);
-                }
             }
 
             for(int i = 0; i < nb_vert_elem; i++) {
                 colors[e_topo[i]] = local_coloration[i];
             }
 
-            if(conflicts.empty()) {
-                // only add neighbors that does not have conflict vertices
-                for(int neighbor : d_graph.adj[eid]) {
-                    if(visited[neighbor]) continue;
+            for(int neighbor : d_graph.adj[eid]) {
+                if(visited[neighbor]) continue;
+                // check if the element as a conflict
+                bool has_conflict = false;
+                for(int i = 0; i < nb_vert_elem && !has_conflict; i++) {
+                    const int vid = topo[neighbor * nb_vert_elem + i];
+                    if(v_conflict.find(vid) == v_conflict.end()) continue;
+                    has_conflict = true;
+                }
+                if(has_conflict) q_conflict.push(neighbor);
+                else q_tile.push(neighbor);
+                visited[neighbor] = true;
+            }
+        }
+        return { *std::max_element(colors.begin(), colors.end())+1, colors };
 
-                    if(e_conflict.find(neighbor) != e_conflict.end()) q_conflict.push(neighbor);
-                    else q_tile.push(neighbor);
-                    visited[neighbor] = true;
+        //use DSAT to finish coloration
+        std::vector<int> adjCols(p_graph.n,0);
+        std::set<Node, maxSat> max_queue; // sort vertices depending on their saturation > degree > id
+        std::vector<int> degree(p_graph.degree);
+        // generate nodes
+        for (int vid = 0; vid < p_graph.n; vid++) {
+            for(int j : p_graph.adj[vid]) {
+                if(colors[j] == -1) continue;
+                adjCols[vid]++;
+            }
+        }
+
+        for (int c : v_conflict) {
+            max_queue.insert({adjCols[c], degree[c], c});
+        }
+
+        // while there is vertices to color
+        while (!max_queue.empty()) {
+            // get and pop the max saturation vertex
+            const auto maxPtr = max_queue.begin();
+            int vid = maxPtr->vertex;
+            max_queue.erase(maxPtr);
+
+            // get used color around vertex
+            std::set<int> used;
+            for (const int v : p_graph.adj[vid]) {
+                if (colors[v] == -1) continue;
+                used.insert(colors[v]);
+            }
+
+            // get the first color i not used
+            int i;
+            for (i = 0; i < used.size(); i++)
+                if (used.find(i) == used.end()) break;
+
+            // color vertex
+            colors[vid] = i;
+
+            // add neighbors and change saturation of vertices around current vertex
+            for (const int v : p_graph.adj[vid]) {
+                if (colors[v] == -1) {
+                    max_queue.erase({ adjCols[v], degree[v], v });
+                    adjCols[v]++;
+                    degree[v]--;
+                    max_queue.emplace(Node{ adjCols[v],degree[v], v });
                 }
             }
         }
 
-        // handle conflict at the end by coloring them by "importance"
-
-        std::cout << "NB Conflict = " << v_conflict.size() << std::endl;
         return { *std::max_element(colors.begin(), colors.end())+1, colors };
     }
 
@@ -616,25 +675,30 @@ public:
         }
     }
 
-    static void color_ref_element(int nb, const Graph& e_graph, std::vector<int>& local_coloration) {
+    static void color_ref_element(const int nb, const Graph& e_graph, std::vector<int>& local_coloration) {
         std::set<int> to_color; // colored vertices that doesn't have all their neighbors colored
         std::vector<int> c = local_coloration;
-        std::vector<std::set<int>> availables(nb);
+        std::vector<std::set<int>> availables(nb); // all color available per vertices
+
+        // first all color is available
         for(int i = 0; i < nb; ++i) {
             if(local_coloration[i] == -1) to_color.insert(i);
-
             for(int j = 0; j < nb; ++j)
                 availables[i].insert(j);
         }
 
+        // for each vertices that has color remove other vertices possible colors depending on constrained coloration
         for(int i = 0; i < nb; ++i) {
             const int ci = local_coloration[i];
             if(ci == -1) continue;
-            std::set<int> n_color; // all color that can appear in neighbors
+
+            // get all color that can appear in neighbors
+            std::set<int> n_color;
             for(int j : e_graph.adj[ci]) {
                 n_color.insert(j);
             }
 
+            // for each neighbor vertices remove all color that are not possible
             for(const int j : e_graph.adj[i]) {
                 std::set<int> intersect;
                 std::set_intersection(
@@ -644,6 +708,7 @@ public:
                 availables[j] = intersect;
             }
 
+            // remove the vertex color for everyone
             for(int j = 0; j < nb; ++j) availables[j].erase(ci);
         }
 
@@ -652,21 +717,23 @@ public:
             int nb_color = nb;
             // get the vertex with the minimum coloration possibility
             for(const int i : to_color) {
-                if(availables[i].size() == 0 || availables[i].size() >= nb_color) continue;
+                if(availables[i].size() >= nb_color) continue;
                 id = i;
                 nb_color = availables[i].size();
             }
             to_color.erase(id);
-            int ci = -1;
-            if(availables[id].size() > 0) {
-                auto it = std::begin(availables[id]);
-                const int r = Random::Range(0, static_cast<int>(availables[id].size()-1));
-                std::advance(it, r);
-                ci = *it;
-            }
+            // if there is no possible coloration, let it to -1
+            if(nb_color == 0) continue;
+
+            // else, we pick a random color in available colors
+            auto it = std::begin(availables[id]);
+            const int r = Random::Range(0, static_cast<int>(availables[id].size()-1));
+            std::advance(it, r);
+            int ci = *it;
 
             local_coloration[id] = ci;
 
+            // and constrains all remaining colors
             std::set<int> n_color; // all color that can appear in neighbors
             for(int j : e_graph.adj[ci]) {
                 n_color.insert(j);
@@ -682,23 +749,6 @@ public:
             }
 
             for(int j = 0; j < nb; ++j) availables[j].erase(ci);
-        }
-
-        for(int i = 0; i < nb; ++i) {
-            std::set<int> possible;
-            int ci = local_coloration[i];
-            // all color we are supposed to find around i
-            for(int j : e_graph.adj[ci]) {
-                possible.insert(j);
-            }
-
-            // check all color around i
-            for(int j : e_graph.adj[i]) {
-                int cj = local_coloration[j];
-                if(possible.find(cj) == possible.end()) {
-                    std::cout << "err" << std::endl;
-                }
-            }
         }
     }
 

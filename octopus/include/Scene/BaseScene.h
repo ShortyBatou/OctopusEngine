@@ -67,7 +67,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -86,12 +86,12 @@ struct BaseScene final : Scene
         args.damping = 1e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 0;
+        args.scenario_1 = -1;
         args.scenario_2 = -1;
         args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
+        args.mesh_file = "mesh/vtk/armadillo6.vtk";
         args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
@@ -100,8 +100,8 @@ struct BaseScene final : Scene
         Vector3I cells = Vector3I(32, 8, 8);
         args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 50;
-        //build_vbd_entity(Vector3(1,1,4),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
+        args.sub_iteration = 1;
+        //build_vbd_entity(Vector3(1,1,4),cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0., true);
         build_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0., true);
         args.iteration = 1;
         args.sub_iteration = 60;
