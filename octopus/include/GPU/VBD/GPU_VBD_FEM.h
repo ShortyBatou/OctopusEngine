@@ -62,7 +62,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
                 const scalar& young, const scalar& poisson, const scalar& damping,
-                const VBD_Version& v = VBD_Version::Better_Coloration);
+                const VBD_Version& v = VBD_Version::Reduction_Symmetry);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
@@ -107,19 +107,12 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_Owners_Data* d_owners;
     GPU_Block_Data* d_blocks;
 
-    std::vector<int> _t_color;
-    int _t_nb_color;
-    std::map<int, int> _t_conflict;
-
     VBD_Version version;
-    Graph* p_graph;
-    Graph* d_graph;
     scalar damping;
 
     Cuda_Buffer<Vector3>* p_new;
     Cuda_Buffer<Vector3>* r;
     Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
-    std::vector<int> _colors; // mesh coloration (used for debug)
 };
 
 __global__ void kernel_vbd_solve_v1(

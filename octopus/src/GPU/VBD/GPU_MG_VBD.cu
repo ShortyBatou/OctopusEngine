@@ -17,12 +17,12 @@ __global__ void kernel_mg_integration(
 void GPU_MG_VBD:: step(const scalar dt) {
     const int n = nb_particles();
     // integration / first guess
-    kernel_mg_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
-        get_parameters());
+    kernel_mg_integration<<<(n + 31)/32, 32>>>(dt, Dynamic::gravity(), get_parameters());
 
     for(GPU_MG_VBD_FEM* fem : fems)
         if(fem->active)
             fem->compute_intertia(this, dt);
+
     for(int j = 0; j < iteration; ++j) {
         // solve
         for(GPU_Dynamic* dynamic : _dynamics)

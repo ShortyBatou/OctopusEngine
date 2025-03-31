@@ -4,8 +4,7 @@
 #include <Manager/Debug.h>
 #include <random>
 #include <numeric>
-
-
+#include <GPU/CUMatrix.h>
 
 
 __global__ void kernel_prolongation(const int n, GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter) {
@@ -42,8 +41,6 @@ __global__ void kernel_restriction_intertia(
     y[vid] = ps.last_p[vid] + (ps.v[vid] + a_ext * dt) * dt;
 }
 
-
-
 __global__ void kernel_intertia(
         const scalar dt, const Vector3 g,
         GPU_ParticleSystem_Parameters ps,
@@ -76,7 +73,7 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     const int nb_elem = static_cast<int>(topology.size()) / nb_vert_elem;
 
     // get linear topology (could be nice to have that in a global function)
-    const Element lin_elem = element == Tetra10 ? Tetra : Hexa;
+    const Element lin_elem = get_linear_element(element);
     const int lin_nb_vert_elem = elem_nb_vertices(lin_elem);
     std::set<int> vids;
     std::vector<int> lin_topo(nb_elem * lin_nb_vert_elem);
@@ -88,10 +85,7 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
             lin_topo[i * lin_nb_vert_elem + j] = vid;
             vids.insert(vid);
         }
-
     }
-    int lin_nb_vertices = static_cast<int>(vids.size());
-
 
     // fem data of quadratic and linear element
     l_fems.push_back(d_fem);
@@ -108,11 +102,12 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     d_fem = l_fems.back();
     d_owners = l_owners.back();
 
-    std::vector<std::vector<int>> e_neighbors;
+    // create linear data (modify d_thread, d_owners and d_block <== this one is useless for now)
+    std::vector<std::vector<int>> e_owners;
     std::vector<std::vector<int>> e_ref_id;
-    std::vector<int> colors;
-    //build_graph_color(lin_elem, lin_topo, lin_nb_vertices, colors, e_neighbors, e_ref_id);
-    //sort_by_color(lin_nb_vertices, colors, e_neighbors, e_ref_id);
+    build_owner_data(vids.size(), lin_topo, e_owners, e_ref_id);
+    Coloration coloration = build_graph_color(lin_elem, lin_topo); // get coloration
+    create_buffers(lin_elem, lin_topo, coloration, e_owners, e_ref_id);
 
     masses.push_back(ps->_data->_cb_mass);
     std::vector<scalar> lin_masses = compute_fem_mass(lin_elem, geometry, lin_topo, density, mass_distrib);
@@ -165,6 +160,7 @@ void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
             kernel_prolongation<<<(inter_param.nb_ids+31)/32,32>>>(inter_param.nb_ids, ps_param, inter_param);
         }
     }
+
     ps->_data->_cb_mass = masses[level];
     d_thread = l_threads[level];
     d_fem = l_fems[level];
