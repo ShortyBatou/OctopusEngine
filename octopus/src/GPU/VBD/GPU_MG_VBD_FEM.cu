@@ -4,6 +4,7 @@
 #include <Manager/Debug.h>
 #include <random>
 #include <numeric>
+#include <Dynamic/FEM/FEM_Generic.h>
 #include <GPU/CUMatrix.h>
 
 
@@ -51,6 +52,7 @@ __global__ void kernel_intertia(
     y[i] = ps.last_p[i] + (ps.v[i] + a_ext * dt) * dt;
 }
 
+
 GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                                const Material& material, const scalar& young, const scalar& poisson,
                                const scalar& damping, const scalar& linear, const int& nb_iteration,
@@ -65,6 +67,7 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     nb_iterations = std::vector<int>({it_quad, it_linear});
     it_count = 0;
     level = 1;
+
 
     interias.push_back(new Cuda_Buffer(geometry));
     interias.push_back(new Cuda_Buffer(geometry));
@@ -132,6 +135,48 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
         auto* i_mid_volume = new GPU_MG_Interpolation(8,0.125,inter.ids_volumes, inter.volume);
         interpolations.push_back(i_mid_volume);
     }
+
+    FEM_Shape* q_shape = get_fem_shape(Tetra20);
+    FEM_Shape* shape = get_fem_shape(element);
+    FEM_Shape* lin_shape = get_fem_shape(lin_elem);
+    std::vector<scalar> masses = compute_fem_mass(element, geometry, topology, density, mass_distrib);
+    std::vector<scalar> quad_coord = q_shape->get_quadrature_coordinates();
+    std::vector<Vector3> verts(shape->nb);
+
+    // sparse matrix
+    std::map<std::pair<int, int>, scalar> proj;
+
+    // compute the projection matrix with Gauss quadratures
+    for(int q = 0; q < q_shape->nb_quadratures(); ++q) {
+        scalar w = q_shape->weights[q];
+        scalar x = quad_coord[q * 3], y = quad_coord[q * 3 + 1], z = quad_coord[q * 3 + 2];
+        std::vector<scalar> shape_func = shape->build_shape(x,y,z);
+        std::vector<scalar> lin_shape_func = lin_shape->build_shape(x,y,z);
+        std::vector<Vector3> dN = shape->build_shape_derivatives(x, y, z);
+
+        // get the projection for each element
+        for (int i = 0; i < topology.size(); i += nb_vert_elem)
+        {
+            std::vector<int> e_topo(topology.begin() + i, topology.begin() + i + nb_vert_elem);
+            for(int j = 0; j < shape->nb; j++) verts[j] = geometry[e_topo[j]];
+            const scalar v = glm::determinant(FEM_Generic::get_jacobian(verts, dN));
+            const scalar volume = abs(v) * w;
+
+            // compute each value in projection matrix
+            for(int k = 0; k < shape->nb; ++k) {
+                int vid = e_topo[k];
+                for(int l = 0; l < lin_shape->nb; ++l) {
+                    std::pair<int, int> pair(vid, e_topo[l]);
+                    scalar p = shape_func[k] * lin_shape_func[l] * volume  / (masses[vid] / density);
+                    if(proj.find(pair) != proj.end()) proj[pair] += p;
+                    else proj[pair] = p;
+                }
+            }
+        }
+    }
+
+    delete shape;
+    delete lin_shape;
 }
 
 

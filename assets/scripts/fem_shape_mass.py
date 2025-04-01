@@ -1,5 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
+import math
+
 '''
 quadrature = np.array([
     0.162001491698524457962804490307462401688098907470703125,
@@ -34,6 +36,13 @@ weight = np.array([
     0.224415166917557418191364604354021139442920684814453125 / 6.,
     0.252003980809502314830439217985258437693119049072265625 / 6.])
 '''
+'''
+aT = (5. - math.sqrt(5.)) / 20.
+bT = (5. + 3. * math.sqrt(5.)) / 20.
+quadrature = np.array([bT,aT,aT, aT,bT,aT, aT,aT,bT, aT,aT,aT])
+weight =  np.array([1./ 32.]*4)
+'''
+
 quadrature = np.array([ 0.04049050672759042790449512949635391123592853546142578125, 0.0135607018798028812478495552795720868743956089019775390625,  0.77125473269537614395829905333812348544597625732421875, 
                         0.75250850700965499218142440440715290606021881103515625, 0.06809937093820665754417831294631469063460826873779296875, 0.09798720364927911152808093220301088877022266387939453125,
                         0.06722329489338339791881793416905566118657588958740234375, 0.0351839297735987155402170856177690438926219940185546875, 0.1563638932393952851729324038387858308851718902587890625,
@@ -59,6 +68,7 @@ weight = np.array([
     0.1549761160162460849054610889652394689619541168212890625 / 6.,
     0.193410812049634450726642853624070994555950164794921875 / 6.
 ])
+
 
 def shape_p1_sym(x,y,z):
     return np.array([-1.0*(1.0*x + 0.577350269189626*y + 0.408248290463863*z - 1.0), 1.0*(1.0*x - 0.577350269189626*y - 0.408248290463863*z), 1.15470053837925*(1.0*y - 0.353553390593274*z), 1.22474487139159*z])
@@ -106,7 +116,7 @@ def get_mass(n, f_shape, q, w, V, rho):
     for i in range(len(w)):
         x,y,z = q[i*3],q[i*3+1],q[i*3+2]
         shape = f_shape(x,y,z)
-        mass += np.outer(shape, shape) * w[i] * V * rho
+        mass += np.outer(shape, shape) * w[i] 
     return mass
 
 def get_projection(n,m, f_shape1, f_shape2, q, w, V):
@@ -117,7 +127,7 @@ def get_projection(n,m, f_shape1, f_shape2, q, w, V):
         shape2 = f_shape2(x,y,z)
         for x in range(n):
             for y in range(m):
-                proj[x][y] += shape1[x] * shape2[y] * w[i] * V
+                proj[x][y] += shape1[x] * shape2[y] * w[i] 
     return proj
 
 def get_prolongation(mass, projection):
@@ -131,15 +141,16 @@ def get_lumped(mat):
             lumped[i,i] += mat[i,j] 
     return lumped
 
+def get_lumped_2(mat):
+    lumped = 0
+    n = len(mat[0])
+    for i in range(n):
+        for j in range(n):
+            lumped += mat[i,j]
+    return np.identity(n) * lumped / n
+
 rho = 1
-V = 10 * 6
-
-A = np.random.rand(3,3)
-B = np.random.rand(3,3)
-v = np.random.rand(3)
-
-print("T ",np.matmul(A, v) + np.matmul(B, v))
-print("T ",np.matmul(A+B,v))
+V = 1000 # 6 à cause des poids après, le volume de l'élément n'a pas d'importance
 
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 mass_p1_sym = get_mass(4, shape_p1_sym, quadrature, weight, V, rho)
@@ -153,19 +164,21 @@ proj_p2_p1 = get_projection(10,4,shape_p2, shape_p1, quadrature, weight, V)
 proj_p2_p3 = get_projection(10,20,shape_p2, shape_p3, quadrature, weight, V)
 proj_p3_p2 = get_projection(20,10,shape_p3, shape_p2, quadrature, weight, V)
 
-I12 = get_prolongation(mass_p1, proj_p1_p2) #restriction
-I21 = get_prolongation(mass_p2, proj_p2_p1) #prolongation
-
+I12 = get_prolongation(get_lumped_2(mass_p1), proj_p1_p2) #restriction
+I21 = get_prolongation(get_lumped_2(mass_p2), proj_p2_p1) #prolongation
+ 
 #I23 = get_prolongation(mass_p2, proj_p2_p3) #restriction
 #I32 = get_prolongation(mass_p3, proj_p3_p2) #prolongation
 
 #I = np.matmul(np.transpose(I21), np.transpose(I12))
 I = np.matmul(I21, I12)
-print("proj 2 => 1", proj_p2_p1)
-print("proj 1 => 2", proj_p1_p2)
-print(np.trace(get_lumped(mass_p2)))
+print(get_lumped_2(mass_p2))
+print("proj 2 => 1 \n", proj_p2_p1)
+print("proj 1 => 2 \n", proj_p1_p2)
 print(mass_p2)
+print("\n Restriction")
 print(I21)
+print("\n Prolongation")
 print(I12)
 '''
 v = np.random.randn(4)
