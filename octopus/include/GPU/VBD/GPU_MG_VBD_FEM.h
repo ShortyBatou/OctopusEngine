@@ -9,6 +9,35 @@
 #include "GPU/GPU_Dynamic.h"
 #include "GPU/VBD/GPU_VBD_FEM.h"
 
+struct GPU_Adjacence_Parameters
+{
+    int* nb; // [N] the number of adjacent vertices per vertices
+    int* offset; // [N] the offset per vertices to read the first value
+    int* ids; // [N] the vertex id
+    int* adj; // [Sum(nb)] adjacent vertices' id
+    scalar* values; // [Sum(nb)] their corresponding weights
+};
+
+struct GPU_Adjacence
+{
+    GPU_Adjacence() = default;
+
+    Cuda_Buffer<int>* cb_nb; // vertices that will be interpolated
+    Cuda_Buffer<int>* cb_offset; // vertices that will be interpolated
+    Cuda_Buffer<int>* cb_ids; // vertices that will be interpolated
+    Cuda_Buffer<int>* cb_adj; // vertices that will be interpolated
+    Cuda_Buffer<scalar>* cb_values; // vertices that will be interpolated
+
+    ~GPU_Adjacence()
+    {
+        delete cb_nb;
+        delete cb_offset;
+        delete cb_ids;
+        delete cb_adj;
+        delete cb_values;
+    }
+};
+
 struct GPU_MG_Interpolation_Parameters
 {
     int nb_ids;
@@ -67,9 +96,31 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
         return params;
     }
 
+    [[nodiscard]] GPU_Adjacence_Parameters get_adj_parameters() const
+    {
+        GPU_Adjacence_Parameters params{};
+        params.nb = gpu_adjacence->cb_nb->buffer;
+        params.ids = gpu_adjacence->cb_ids->buffer;
+        params.offset = gpu_adjacence->cb_offset->buffer;
+        params.adj = gpu_adjacence->cb_adj->buffer;
+        params.values = gpu_adjacence->cb_values->buffer;
+        return params;
+    }
+
+     GPU_Adjacence* compute_interpolation_adj_matrix(
+        const FEM_Shape* from_shape, const FEM_Shape* target_shape,
+        const Mesh::Topology& topology, const Mesh::Geometry& geometry,
+        const std::vector<scalar>& masses, scalar density);
+
+    ~GPU_MG_VBD_FEM() override {
+        delete gpu_adjacence;
+    }
+
     std::vector<int> nb_iterations;
     int it_count;
     int level;
+
+    GPU_Adjacence* gpu_adjacence;
 
     std::vector<Cuda_Buffer<Vector3>*> interias;
     std::vector<Cuda_Buffer<scalar>*> masses;
