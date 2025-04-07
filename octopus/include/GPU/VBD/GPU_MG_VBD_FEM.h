@@ -85,25 +85,27 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
     void compute_intertia(GPU_ParticleSystem* ps, scalar dt) const;
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
-    [[nodiscard]] GPU_MG_Interpolation_Parameters get_interpolation_parameters(const int& i) const
+
+    [[nodiscard]] GPU_Adjacence_Parameters get_prolongation_parameters(const int i) const
     {
-        GPU_MG_Interpolation_Parameters params{};
-        params.nb_ids = interpolations[i]->nb_ids;
-        params.nb_vert_primitives = interpolations[i]->nb_vert_primitives;
-        params.weight = interpolations[i]->weight;
-        params.ids = interpolations[i]->cb_ids->buffer;
-        params.primitives = interpolations[i]->cb_primitives->buffer;
+        GPU_Adjacence_Parameters params{};
+        params.nb = prolongations[i]->cb_nb->buffer;
+        params.ids = prolongations[i]->cb_ids->buffer;
+        params.offset = prolongations[i]->cb_offset->buffer;
+        params.adj = prolongations[i]->cb_adj->buffer;
+        params.values = prolongations[i]->cb_values->buffer;
         return params;
     }
 
-    [[nodiscard]] GPU_Adjacence_Parameters get_adj_parameters() const
+    [[nodiscard]] GPU_Adjacence_Parameters get_restriction_parameters(const int i) const
     {
         GPU_Adjacence_Parameters params{};
-        params.nb = gpu_adjacence->cb_nb->buffer;
-        params.ids = gpu_adjacence->cb_ids->buffer;
-        params.offset = gpu_adjacence->cb_offset->buffer;
-        params.adj = gpu_adjacence->cb_adj->buffer;
-        params.values = gpu_adjacence->cb_values->buffer;
+        params.nb = restrictions[i]->cb_nb->buffer;
+        params.ids = restrictions[i]->cb_ids->buffer;
+        params.ids = restrictions[i]->cb_ids->buffer;
+        params.offset = restrictions[i]->cb_offset->buffer;
+        params.adj = restrictions[i]->cb_adj->buffer;
+        params.values = restrictions[i]->cb_values->buffer;
         return params;
     }
 
@@ -113,18 +115,32 @@ struct GPU_MG_VBD_FEM final : public GPU_VBD_FEM
         const std::vector<scalar>& masses, scalar density);
 
     ~GPU_MG_VBD_FEM() override {
-        delete gpu_adjacence;
+        for(int i = 0; i < prolongations.size(); ++i) {
+            delete prolongations[i];
+            delete restrictions[i];
+        }
+
+        for(int i = 0; i < l_threads.size(); ++i) {
+            if(i == level) continue;
+            delete l_threads[i];
+            delete masses[i];
+            delete interias[i];
+            delete l_fems[i];
+            delete l_owners[i];
+        }
+
+        delete cb_prev_state;
     }
 
     std::vector<int> nb_iterations;
     int it_count;
     int level;
 
-    GPU_Adjacence* gpu_adjacence;
-
+    Cuda_Buffer<Vector3>* cb_prev_state;
     std::vector<Cuda_Buffer<Vector3>*> interias;
     std::vector<Cuda_Buffer<scalar>*> masses;
-    std::vector<GPU_MG_Interpolation*> interpolations;
+    std::vector<GPU_Adjacence*> prolongations;
+    std::vector<GPU_Adjacence*> restrictions;
     std::vector<Thread_Data*> l_threads;
     std::vector<GPU_FEM_Data*> l_fems;
     std::vector<GPU_Owners_Data*> l_owners;

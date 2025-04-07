@@ -8,20 +8,13 @@
 #include <GPU/CUMatrix.h>
 
 
-__global__ void kernel_prolongation(const int n, GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter) {
-    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid >= n) return;
-    const int* primitive = inter.primitives + tid * inter.nb_vert_primitives;
-    Vector3 dt_p = Vector3(0);
-    for(int i = 0; i < inter.nb_vert_primitives; ++i)
-    {
-        const int vid = primitive[i];
-        dt_p += ps.p[vid] - ps.last_p[vid];
-    }
-    ps.p[inter.ids[tid]] = ps.last_p[inter.ids[tid]] + dt_p * inter.weight;
+__global__ void kernel_save_state(const int n, GPU_ParticleSystem_Parameters ps, Vector3* state) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i >= n) return;
+    state[i] = ps.p[i];
 }
 
-__global__ void kernel_interpolation(const int n, GPU_ParticleSystem_Parameters ps, GPU_Adjacence_Parameters adjacence) {
+__global__ void kernel_interpolation(const int n, Vector3* prev_state, GPU_ParticleSystem_Parameters ps, GPU_Adjacence_Parameters adjacence) {
     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
     const int vid = adjacence.ids[tid];
@@ -31,31 +24,12 @@ __global__ void kernel_interpolation(const int n, GPU_ParticleSystem_Parameters 
     const scalar* vals = adjacence.values + off;
 
     Vector3 dt_p = Vector3(0);
-    for(int i = 0; i < nb; ++i)
-        dt_p += (ps.p[adj[i]] - ps.last_p[adj[i]]) * vals[i]; // place holder
-
-    ps.p[vid] += dt_p; // place holder
-}
-
-__global__ void kernel_restriction_intertia(
-    const int n, const scalar dt, const Vector3 g,
-    GPU_ParticleSystem_Parameters ps, GPU_MG_Interpolation_Parameters inter,
-    Vector3* y) {
-
-    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid >= n) return;
-    const int* primitive = inter.primitives + tid * inter.nb_vert_primitives;
-    Vector3 v = Vector3(0);
-    const int vid = inter.ids[tid];
-    for(int i = 0; i < inter.nb_vert_primitives; ++i)
-    {
-        const int p_vid = primitive[i];
-        v += ps.v[p_vid] * ps.m[p_vid] / ps.m[vid];
+    for(int i = 0; i < nb; ++i) {
+        const int id = adj[i];
+        dt_p += (ps.p[id] - prev_state[id]) * vals[i]; // error correction
     }
-    v *= 1.f / inter.nb_vert_primitives;
-
-    const Vector3 a_ext = g + ps.f[vid] * ps.w[vid];
-    y[vid] = ps.last_p[vid] + (ps.v[vid] + a_ext * dt) * dt;
+    prev_state[vid] = ps.p[vid];
+    ps.p[vid] += dt_p; // place holder
 }
 
 __global__ void kernel_intertia(
@@ -129,45 +103,25 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     create_buffers(lin_elem, lin_topo, coloration, e_owners, e_ref_id);
 
     masses.push_back(ps->_data->_cb_mass);
-    std::vector<scalar> lin_masses = compute_fem_mass(lin_elem, geometry, lin_topo, density, mass_distrib);
+    const std::vector<scalar> lin_masses = compute_fem_mass(lin_elem, geometry, lin_topo, density, mass_distrib);
     masses.push_back(new Cuda_Buffer<scalar>(lin_masses));
-
-    // build interpolations
-    if(element == Tetra10)
-    {
-        P1_to_P2 inter(topology);
-        auto* i_mid_edge = new GPU_MG_Interpolation(2,0.5, inter.ids, inter.edges);
-        interpolations.push_back(i_mid_edge);
-    }
-    else
-    {
-        Q1_to_Q2 inter(topology);
-        auto* i_mid_edge = new GPU_MG_Interpolation(2,0.5, inter.ids_edges, inter.edges);
-        interpolations.push_back(i_mid_edge);
-
-        auto* i_mid_face = new GPU_MG_Interpolation(4,0.25,inter.ids_faces, inter.faces);
-        interpolations.push_back(i_mid_face);
-
-        auto* i_mid_volume = new GPU_MG_Interpolation(8,0.125,inter.ids_volumes, inter.volume);
-        interpolations.push_back(i_mid_volume);
-    }
 
     FEM_Shape* lin_shape = get_fem_shape(lin_elem);
     FEM_Shape* shape = get_fem_shape(element);
+
     std::vector<scalar> masses = compute_fem_mass(element, geometry, topology, density, mass_distrib);
-
-
-    gpu_adjacence = compute_interpolation_adj_matrix(lin_shape, shape, topology, geometry, masses, density);
-
-    delete shape;
+    prolongations.push_back(compute_interpolation_adj_matrix(lin_shape, shape, topology, geometry, masses, density));
+    restrictions.push_back(compute_interpolation_adj_matrix(shape, lin_shape, topology, geometry, lin_masses, density));
+    cb_prev_state = new Cuda_Buffer<Vector3>(geometry);
     delete lin_shape;
+    delete shape;
 }
 
  GPU_Adjacence* GPU_MG_VBD_FEM::compute_interpolation_adj_matrix(
     const FEM_Shape* from_shape, const FEM_Shape* target_shape,
     const Mesh::Topology& topology, const Mesh::Geometry& geometry,
     const std::vector<scalar>& masses, const scalar density) {
-    int nb_vert_elem = target_shape->nb;
+    int nb_vert_elem = std::max(from_shape->nb, target_shape->nb);
     FEM_Shape* q_shape = get_fem_shape(Tetra20);
     std::vector<scalar> quad_coord = q_shape->get_quadrature_coordinates();
     std::vector<Vector3> verts(target_shape->nb);
@@ -179,8 +133,8 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
     for(int q = 0; q < q_shape->nb_quadratures(); ++q) {
         scalar w = q_shape->weights[q];
         scalar x = quad_coord[q * 3], y = quad_coord[q * 3 + 1], z = quad_coord[q * 3 + 2];
-        std::vector<scalar> shape_func = target_shape->build_shape(x,y,z);
-        std::vector<scalar> lin_shape_func = from_shape->build_shape(x,y,z);
+        std::vector<scalar> target_shape_func = target_shape->build_shape(x,y,z);
+        std::vector<scalar> from_shape_func = from_shape->build_shape(x,y,z);
         std::vector<Vector3> dN = target_shape->build_shape_derivatives(x, y, z);
 
         // get the projection for each element
@@ -196,7 +150,7 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
                 int vid = e_topo[k];
                 for(int l = 0; l < from_shape->nb; ++l) {
                     std::pair<int, int> pair(vid, e_topo[l]);
-                    scalar p = shape_func[k] * lin_shape_func[l] * volume  / (masses[vid] / density);
+                    scalar p = target_shape_func[k] * from_shape_func[l] * volume / masses[vid] * density;
                     if(proj.find(pair) != proj.end()) proj[pair] += p;
                     else proj[pair] = p;
                 }
@@ -204,6 +158,7 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
         }
     }
 
+    // build all data for gpu buffer
     std::vector<int> nb, off, ids, adj;
     std::vector<scalar> values;
     int current_id = proj.begin()->first.first;
@@ -235,12 +190,14 @@ GPU_MG_VBD_FEM::GPU_MG_VBD_FEM(const Element& element, const Mesh::Topology& top
 
 
 void GPU_MG_VBD_FEM::compute_intertia(GPU_ParticleSystem* ps, const scalar dt) const {
-    kernel_intertia<<<(ps->nb_particles() + 31)/32, 32>>>(dt,Dynamic::gravity(),
-        ps->get_parameters(), y->buffer);
+    const int nb_thread = ps->nb_particles();
+    kernel_intertia<<<(nb_thread+ 31)/32, 32>>>(dt,Dynamic::gravity(), ps->get_parameters(), y->buffer);
+    kernel_save_state<<<(nb_thread + 31) / 32, 32>>>(nb_thread, ps->get_parameters(), cb_prev_state->buffer);
 }
 
 void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
 {
+
     const auto ps_param = ps->get_parameters();
 
     it_count++;
@@ -251,14 +208,19 @@ void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
         level = (level + 1) % static_cast<int>(nb_iterations.size());
     }
 
-    if (last_level != level && level == 1)
+    if (last_level != level)
     {
-        for(int i = 0; i < interpolations.size(); ++i)
-        {
-            const auto inter_param = get_interpolation_parameters(i);
-            kernel_prolongation<<<(inter_param.nb_ids+31)/32,32>>>(inter_param.nb_ids, ps_param, inter_param);
-            //int nb_thread = gpu_adjacence->cb_nb->nb;
-            //kernel_interpolation<<<nb_thread / 32 + 1, 32>>>(nb_thread, ps_param, get_adj_parameters());
+        if(last_level == 1) {
+            const GPU_Adjacence* gpu_adj = prolongations[level];
+            const GPU_Adjacence_Parameters gpu_adj_param = get_prolongation_parameters(level);
+            const int nb_thread = gpu_adj->cb_nb->nb;
+            //kernel_interpolation<<<nb_thread / 32 + 1, 32>>>(nb_thread, cb_prev_state->buffer, ps_param, gpu_adj_param);
+        }
+        else {
+            const GPU_Adjacence* gpu_adj = restrictions[level-1];
+            const GPU_Adjacence_Parameters gpu_adj_param = get_restriction_parameters(level-1);
+            const int nb_thread = gpu_adj->cb_nb->nb;
+            //kernel_interpolation<<<nb_thread / 32 + 1, 32>>>(nb_thread, cb_prev_state->buffer, ps_param, gpu_adj_param);
         }
     }
 
@@ -269,15 +231,4 @@ void GPU_MG_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt)
     y = interias[level];
 
     GPU_VBD_FEM::step(ps, dt);
-
-    if (level == 1)
-    {
-        for(int i = 0; i < interpolations.size(); ++i)
-        {
-            const auto inter_param = get_interpolation_parameters(i);
-            kernel_prolongation<<<(inter_param.nb_ids+31)/32,32>>>(inter_param.nb_ids, ps_param, inter_param);
-            //int nb_thread = gpu_adjacence->cb_nb->nb;
-            //kernel_interpolation<<<nb_thread / 32 + 1, 32>>>(nb_thread, ps_param, get_adj_parameters());
-        }
-    }
 }

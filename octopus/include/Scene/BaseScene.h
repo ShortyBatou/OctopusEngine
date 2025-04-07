@@ -67,7 +67,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -96,12 +96,12 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(4, 1, 1);
+        const Vector3 size(1, 1, 1);
+        Vector3I cells = Vector3I(1, 1, 1);
         args.damping = 1e-6;
         args.iteration = 10;
         args.sub_iteration = 10;
-        build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, 0.5, true);
+        build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, 1, true);
         args.iteration = 1;
         args.sub_iteration = 100;
         //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
