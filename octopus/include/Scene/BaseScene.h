@@ -81,39 +81,57 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
-        args.damping = 1e-6;
+        args.young = 1e6;
+        args.poisson = 0.49;
+        args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 0;
+        args.scenario_1 = 9;
         args.scenario_2 = -1;
-        args.dir = Unit3D::right();
+        args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
-        //args.mesh_file = "mesh/vtk/armadillo6.vtk";
+        //args.mesh_file = "mesh/vtk/armadilo_low_poly_hexa.vtk";
         //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(1, 1, 1);
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(4, 1, 1);
+
         args.damping = 1e-6;
-        args.iteration = 10;
-        args.sub_iteration = 10;
-        build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, 1, true);
-        args.iteration = 1;
+        args.iteration = 2;
         args.sub_iteration = 100;
-        //build_vbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0., true);
+        build_vbd_entity(Vector3(0,0.75,0), cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0.0, true);
+        //cells = Vector3I(32, 8, 8);
+        //build_vbd_entity(Vector3(0,0.,-3.2), cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, true);
+        //cells = Vector3I(24, 6, 6);
+        //build_vbd_entity(Vector3(0,0.,-1.6), cells, size, Color(0.2,.2,0.8,0.), Tetra20, args, 0, true);
+        //cells = Vector3I(64, 16, 16);
+        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0, true);
+        //cells = Vector3I(32, 8, 8);
+        //build_vbd_entity(Vector3(0,0.,1.6), cells, size, Color(0.2,.2,0.8,0.), Hexa27, args, 0, true);
+        //cells = Vector3I(48, 12, 12);
+        //build_vbd_entity(Vector3(0,0.,3.2), cells, size, Color(0.2,.2,0.8,0.), Pyramid, args, 0, true);
+        //cells = Vector3I(64, 16, 16);
+        //build_vbd_entity(Vector3(0,0.,4.8), cells, size, Color(0.2,.2,0.8,0.), Prism, args, 0, true);
+
         args.damping = 5;
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, true);
         //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
 
-        args.damping = 1e-5;
+
+        args.damping = 5e-5;
         args.iteration = 1;
-        args.sub_iteration = 400;
-        //build_fem_entity(Vector3(1,1,4),cells, size, Color(0.3,.3,0.7,0.), Tetra, args, true);
+        args.sub_iteration = 2000;
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Tetra, args, true);
+
+
+        args.damping = 1e-6;
+        args.iteration = 200;
+        args.sub_iteration = 1;
+        //build_mg_vbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, 1, true);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
@@ -150,7 +168,7 @@ struct BaseScene final : Scene
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
         display->surface() = true;
-        display->wireframe() = false;
+        display->wireframe() = true;
         display->point() = false;
         return display;
     }
@@ -161,17 +179,21 @@ struct BaseScene final : Scene
         {
             if(args.scenario_1!=-1)
             {
-                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
+                //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
-                rd_constraint_1->_smooth_iterations = 5;
+                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
+                rd_constraint_1->_event_rate = 400;
+                rd_constraint_1->_smooth_iterations = 60;
+                rd_constraint_1->_rot_speed = 400;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)
             {
-                std::cout << pos + size - args.dir * 0.01f << std::endl;
                 const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Plane(pos + size - args.dir * 0.01f, args.dir), args.dir, args.scenario_2 );
                 //const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-3,-0.2,-2),Vector3(-1,0,2)), -args.dir, args.scenario_1);
-                rd_constraint_2->_smooth_iterations = 5;
+                rd_constraint_2->_event_rate = 320;
+                rd_constraint_2->_smooth_iterations = 60;
+                rd_constraint_2->_rot_speed = 360;
                 e->add_component(rd_constraint_2);
             }
         }
@@ -205,11 +227,13 @@ struct BaseScene final : Scene
     DataRecorder* build_data_recorder(const Vector3I& cells, const Vector3& size, const Element element, const int id) {
         const std::string file_name = std::to_string(id) + "_" +  std::string(element_name(element)) + "_" + std::to_string(cells.x) + "_" + std::to_string(cells.y) + "_" + std::to_string(cells.z)
             + "_" + std::to_string(static_cast<int>(size.x)) + "x" + std::to_string(static_cast<int>(size.y)) + "x" + std::to_string(static_cast<int>(size.z));
+
         DataRecorder* data_recorder = new DataRecorder(file_name, false);
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new FEM_VTK_Recorder(file_name));
-        data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        //data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        //data_recorder->add(new Mesh_Diff_VTK_Recorder(file_name, 4));
         //data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4, 1, 1), Vector3(3.34483, -1.86949, 1.0009)));
         return data_recorder;
     }
@@ -227,14 +251,13 @@ struct BaseScene final : Scene
         return mesh;
     }
 
-    Mesh* build_msh_mesh(const Vector3& pos, const std::string& file, const Element element) {
+    Mesh* build_msh_mesh(const Vector3& pos, const std::string& file, const Element element, int id) {
         Msh_Loader loader(AppInfo::PathToAssets() + file);
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
-
         std::cout << "NB VERTICES " << mesh->nb_vertices() << " -------------------" << std::endl;
         std::cout << "NB Element " << mesh->topologies()[element].size() / elem_nb_vertices(element) <<  " -------------------" << std::endl;
 
@@ -246,7 +269,7 @@ struct BaseScene final : Scene
     void add_fem_mesh(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const SimulationArgs& args) {
         if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
-        else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element));
+        else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element, e->id()));
     }
 
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {

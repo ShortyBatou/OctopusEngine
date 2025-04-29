@@ -137,6 +137,35 @@ private:
     Mesh *_mesh;
 };
 
+class Mesh_Diff_VTK_Recorder final : public Recorder {
+public:
+    explicit Mesh_Diff_VTK_Recorder(std::string file_name, const int id_other)
+       : _file_name(std::move(file_name)),
+         _id_other(id_other),
+         _mesh(nullptr), _mesh_diff(nullptr)
+    { }
+
+    void init(Entity *entity) override;
+
+    void print() override {
+    }
+
+    std::string get_name() override {
+        return "diff_vtk_file";
+    }
+
+    void add_data_json(std::ofstream &json) override { }
+
+    void save() override;
+
+protected:
+    std::string _file_name;
+    int _id_other;
+    ParticleSystemDynamics_Getters* _ps_dynamic;
+    Mesh * _mesh;
+    Mesh * _mesh_diff;
+};
+
 
 class FEM_VTK_Recorder final : public Recorder {
 public:

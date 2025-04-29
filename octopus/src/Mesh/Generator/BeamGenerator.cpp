@@ -57,9 +57,10 @@ void PrismBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh::
 
 void PyramidBeamGenerator::add_geometry_at_cell(const int x, const int y, const int z, Mesh::Geometry &geometry) {
     _mid_id = static_cast<int>(geometry.size());
-    const Vector3 v(static_cast<scalar>(x) * _x_step + _x_step * 0.5,
+    Vector3 v(static_cast<scalar>(x) * _x_step + _x_step * 0.5,
                     static_cast<scalar>(y) * _y_step + _y_step * 0.5,
                     static_cast<scalar>(z) * _z_step + _z_step * 0.5);
+    apply_transform(v);
     geometry.push_back(v);
 }
 

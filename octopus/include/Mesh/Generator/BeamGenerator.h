@@ -5,9 +5,9 @@
 struct BeamMeshGenerator : public MeshGenerator {
     BeamMeshGenerator(const Vector3I &subdivisions, const Vector3 &sizes)
         : _subdivisions(subdivisions + Vector3I(1)), _sizes(sizes) {
-        _x_step = _sizes.x / scalar(_subdivisions.x - 1);
-        _y_step = _sizes.y / scalar(_subdivisions.y - 1);
-        _z_step = _sizes.z / scalar(_subdivisions.z - 1);
+        _x_step = _sizes.x / static_cast<scalar>(_subdivisions.x - 1);
+        _y_step = _sizes.y / static_cast<scalar>(_subdivisions.y - 1);
+        _z_step = _sizes.z / static_cast<scalar>(_subdivisions.z - 1);
     }
 
 

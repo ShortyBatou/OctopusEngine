@@ -14,6 +14,6 @@ struct MeshGenerator {
 
 protected:
     virtual void apply_transform(Mesh::Geometry &geometry);
-
+    virtual void apply_transform(Vector3& v);
     Matrix4x4 _t;
 };

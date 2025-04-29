@@ -508,6 +508,9 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     d_owners = new GPU_Owners_Data();
     d_blocks = new GPU_Block_Data();
     r = new Cuda_Buffer(nb_vertices, Vector3(0.f));
+    std::cout << "#ELEMENT = " << topology.size() / elem_nb_vertices(element) << std::endl;
+    std::cout << "#VERTEX = " << nb_vertices << std::endl;
+    std::cout << "#QUADRATURE " << d_fem->nb_quadrature << std::endl;
     std::vector<std::vector<int>> e_owners;
     std::vector<std::vector<int>> e_ref_id;
     build_owner_data(nb_vertices, topology, e_owners, e_ref_id);
@@ -574,6 +577,7 @@ void GPU_VBD_FEM::create_buffers(
         total_thread += nb_block * n_max;
         // the max block size depends on the largest block in color and needs to be a multiple of 32 (NVidia)
         int vmax = n_max;
+
         if(version == Block_Merge) {
             // on devrait avoir une taille par bloc !
             // s'il y a  32 thread qui font rien, le bloc est terminé extrèmement vite
@@ -684,6 +688,8 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
+
+
     for(const int c : kernels) {
         switch(version) {
             case Base :

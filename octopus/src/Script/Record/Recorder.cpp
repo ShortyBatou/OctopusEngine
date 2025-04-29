@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <Core/Engine.h>
 #include <Mesh/Generator/BeamGenerator.h>
 
 void MeshRecorder::add_data_json(std::ofstream &json) {
@@ -45,6 +46,32 @@ void XPBD_FEM_Dynamic_Recorder::add_data_json(std::ofstream &json) {
             "}";
 }
 
+
+    void Mesh_Diff_VTK_Recorder::init(Entity *entity) {
+        _ps_dynamic = entity->get_component<ParticleSystemDynamics_Getters>();
+        _mesh = entity->get_component<Mesh>();
+        _mesh_diff = Engine::GetEntity(_id_other)->get_component<Mesh>();
+        assert(_mesh_diff && _ps_dynamic && _mesh);
+    }
+
+    void Mesh_Diff_VTK_Recorder::save() {
+        // get particle saved data
+        std::vector<Vector3> displacements = _ps_dynamic->get_displacement();
+        const Mesh::Geometry& g_first = _mesh->geometry();
+        const Mesh::Geometry& g_second = _mesh_diff->geometry();
+        std::vector<scalar> diff(g_first.size());
+        for(int i = 0; i < diff.size(); ++i) {
+            diff[i] = glm::length(g_first[i] - g_second[i]);
+        }
+
+        VTK_Formater vtk;
+        vtk.open(_file_name + "_diff_" + std::to_string(Time::Frame()));
+        vtk.save_mesh(_ps_dynamic->get_init_positions(), _mesh->topologies());
+        vtk.start_point_data();
+        vtk.add_scalar_data(diff, "u_norm");
+        vtk.add_vector_data(displacements, "u");
+        vtk.close();
+    }
 
 void Mesh_VTK_Recorder::add_data_json(std::ofstream &json) {
     json << "\"" << AppInfo::PathToAssets() + _file_name + ".vtk\"";
