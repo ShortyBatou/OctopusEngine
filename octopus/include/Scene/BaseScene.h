@@ -66,7 +66,7 @@ struct BaseScene final : Scene
 
     void build_root(Entity* root) override
     {
-        root->add_behaviour(new TimeManager(1.f / 60.f));
+        root->add_behaviour(new TimeManager(1.f / 60.f / 200.f));
         root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
@@ -86,7 +86,7 @@ struct BaseScene final : Scene
         args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
-        args.scenario_1 = 9;
+        args.scenario_1 = 0;
         args.scenario_2 = -1;
         args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
@@ -97,12 +97,12 @@ struct BaseScene final : Scene
         //args.mesh_type = "msh";
 
         const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(4, 1, 1);
+        Vector3I cells = Vector3I(8, 2, 2);
 
         args.damping = 1e-6;
-        args.iteration = 2;
-        args.sub_iteration = 100;
-        build_vbd_entity(Vector3(0,0.75,0), cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0.0, true);
+        args.iteration = 1;
+        args.sub_iteration = 1;
+        build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0.0);
         //cells = Vector3I(32, 8, 8);
         //build_vbd_entity(Vector3(0,0.,-3.2), cells, size, Color(0.2,.2,0.8,0.), Tetra10, args, 0, true);
         //cells = Vector3I(24, 6, 6);
