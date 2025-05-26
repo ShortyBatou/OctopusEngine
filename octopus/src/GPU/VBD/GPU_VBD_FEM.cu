@@ -61,6 +61,25 @@ __device__ void compute_f_H_sym(
     H += assemble_sub_hessian_sym(dF_dx, V, d2W_dF2);
 }
 
+__device__ void compute_f(
+    const int n, const int r_vid,
+    const Material_Data& mt, const Vector3* p, const int* topo,
+    const Matrix3x3 &JX_inv, const scalar V, const Vector3* dN,
+    Vector3& fi) {
+    Matrix3x3 Jx(0.f);
+
+    for (int i = 0; i < n; ++i) {
+        Jx += glm::outerProduct(p[topo[i]], dN[i]);
+    }
+
+    const Matrix3x3 F = Jx * JX_inv;
+    const Vector3 dF_dx = glm::transpose(JX_inv) * dN[r_vid];
+
+    // Compute force at vertex i
+    const Matrix3x3 P = eval_pk1_stress(mt.material, mt.lambda, mt.mu, F);
+    fi -= P * dF_dx * V;
+}
+
 
 __device__ void vec_reduction(const int tid, const int block_size, const int offset, const int v_size, scalar* s_data) {
     __syncthreads();
@@ -278,6 +297,61 @@ __global__ void kernel_vbd_solve_v3(
         // symmetry
         H[0][1] = H[1][0]; H[1][2] = H[2][1]; H[0][2] = H[2][0];
         ps.p[vid] += compute_correction(vid, damping, dt, ps, y, fi, H);
+    }
+}
+
+
+__global__ void kernel_vbd_solve_v3_test(
+    const int n,
+    const scalar damping,
+    const scalar dt,
+    const int offset,
+    const Vector3* y,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps,
+    GPU_FEM_Pameters fem,
+    GPU_Owners_Parameters owners
+) {
+    // global id
+    const int gid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (gid >= n) return;
+
+    // the group size depends on the number of element that contains these vertices
+    // and the number of needed quadratures
+    const int cid = blockIdx.x; // vertex position in coloration
+    const int size_of_block = owners.nb[cid] * fem.nb_quadrature;
+    const int tid = threadIdx.x; // thread id in block
+    if (tid >= size_of_block) return;
+
+    const int qid = tid % fem.nb_quadrature; // quadrature number
+    const int e_off = owners.offset[cid] + tid / fem.nb_quadrature; // offset in buffer to find the right element
+    const int eid = owners.eids[e_off]; // element id
+    const int r_vid = owners.ref_vid[e_off]; // vertex id in this element
+
+    const int *topo = fem.topology + eid * fem.elem_nb_vert; // offset the pointer at the start of the element's topology
+    const int vid = topo[r_vid];
+    if(ps.mask[vid] == 0) return;
+
+    const int qe_off = eid * fem.nb_quadrature + qid;
+    const int qv_off = qid * fem.elem_nb_vert;
+    Vector3 fi(0.f);
+
+    compute_f(fem.elem_nb_vert, r_vid,
+                mt, ps.p, topo, fem.JX_inv[qe_off], fem.V[qe_off], fem.dN + qv_off,
+                fi);
+
+    // shared variable : f, H
+    extern __shared__ scalar s_f_H[]; // size = block_size * 9 * sizeof(float)
+    for(int j = 0; j < 3; ++j) {
+        s_f_H[tid * 3 + j] = fi[j];
+    }
+    vec_reduction(tid, size_of_block, 0, 3, s_f_H);
+
+    if (threadIdx.x == 0) {
+        fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
+        //fi -= ps.m[vid] / (dt*dt) * (ps.p[vid] - y[vid]);
+        Matrix3x3 H(dt*dt / (dt*dt + ps.m[vid]));
+        ps.p[vid] += H * fi;
     }
 }
 
@@ -687,8 +761,22 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::iota(kernels.begin(), kernels.end(), 0);
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
-    unsigned int s;
+    unsigned int s = 0;
 
+    int nb_thread = 0;
+    int grid_size = 0;
+    int block_size = 0;
+    for(const int c : kernels) {
+        block_size = std::max(block_size, d_thread->block_size[c]);
+        nb_thread += d_thread->nb_threads[c] * d_fem->nb_quadrature;
+        grid_size += d_thread->grid_size[c];
+
+    }
+    s = block_size * d_fem->nb_quadrature * 3 * sizeof(scalar);
+    kernel_vbd_solve_v3_test<<<grid_size, block_size * d_fem->nb_quadrature, s>>>(
+        nb_thread * d_fem->nb_quadrature, damping, dt, 0,
+        y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
+    );/**/
 
     for(const int c : kernels) {
         switch(version) {

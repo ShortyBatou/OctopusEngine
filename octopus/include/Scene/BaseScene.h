@@ -81,13 +81,13 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e6;
-        args.poisson = 0.4995;
+        args.young = 1e7;
+        args.poisson = 0.45;
         args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = 0;
+        args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
@@ -96,19 +96,15 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(8, 1, 1);
+        const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(32, 4, 4);
 
         args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 300;
+        args.sub_iteration = 100;
         //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0.0);
-        cells = Vector3I(64, 8, 8);
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0, true);
-        cells = Vector3I(32, 4, 4);
-        build_vbd_entity(Vector3(0,0.,1.5), cells, size, Color(0.8,.2,0.8,0.), Tetra10, args, 0, true);
-        cells = Vector3I(64, 8, 8);
-        build_vbd_entity(Vector3(0,0.,3), cells, size, Color(0.2,.8,0.2,0.), Hexa, args, 0, true);
+        cells = Vector3I(64, 16, 16);
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
 
         //cells = Vector3I(24, 6, 6);
         //build_vbd_entity(Vector3(0,0.,-1.6), cells, size, Color(0.2,.2,0.8,0.), Tetra20, args, 0, true);
@@ -127,9 +123,9 @@ struct BaseScene final : Scene
         //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
 
 
-        args.damping = 5e-5;
+        args.damping = 1e-6;
         args.iteration = 1;
-        args.sub_iteration = 2000;
+        args.sub_iteration = 500;
         //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Tetra, args, true);
 
 
@@ -187,8 +183,8 @@ struct BaseScene final : Scene
                 const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
-                rd_constraint_1->_event_rate = 400;
-                rd_constraint_1->_smooth_iterations = 60;
+                rd_constraint_1->_event_rate = 0.5;
+                rd_constraint_1->_smooth_iterations = 5;
                 rd_constraint_1->_rot_speed = 400;
                 e->add_component(rd_constraint_1);
             }
@@ -196,8 +192,8 @@ struct BaseScene final : Scene
             {
                 const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Plane(pos + size - args.dir * 0.01f, args.dir), args.dir, args.scenario_2 );
                 //const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-3,-0.2,-2),Vector3(-1,0,2)), -args.dir, args.scenario_1);
-                rd_constraint_2->_event_rate = 320;
-                rd_constraint_2->_smooth_iterations = 60;
+                rd_constraint_2->_event_rate = 0.5;
+                rd_constraint_2->_smooth_iterations = 5;
                 rd_constraint_2->_rot_speed = 360;
                 e->add_component(rd_constraint_2);
             }

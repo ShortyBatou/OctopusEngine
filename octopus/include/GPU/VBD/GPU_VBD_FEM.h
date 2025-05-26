@@ -133,6 +133,13 @@ __global__ void kernel_vbd_solve_v3(
     GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
 );
 
+__global__ void kernel_vbd_solve_v3_expl(
+    int n, scalar damping, scalar dt, int offset,const Vector3* y,
+    Material_Data mt,
+    GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
+);
+
+
 __global__ void kernel_vbd_solve_v4(
     int n, scalar damping, scalar dt, int offset,const Vector3* y, const Vector3* p_new,
     Material_Data mt,
