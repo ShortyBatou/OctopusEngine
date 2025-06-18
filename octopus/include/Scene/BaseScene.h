@@ -67,7 +67,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -81,13 +81,13 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.499;
         args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
@@ -96,37 +96,27 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(4, 1, 1);
-        Vector3I cells = Vector3I(32, 4, 4);
-
-        args.damping = 1e-6;
+        const Vector3 size(2, 1, 1);
+        Vector3I cells = Vector3I(32, 8, 8);
         args.iteration = 1;
-        args.sub_iteration = 100;
-        //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0.0);
-        cells = Vector3I(64, 16, 16);
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
-
-        //cells = Vector3I(24, 6, 6);
-        //build_vbd_entity(Vector3(0,0.,-1.6), cells, size, Color(0.2,.2,0.8,0.), Tetra20, args, 0, true);
-        //cells = Vector3I(64, 16, 16);
-        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.2,0.8,0.), Hexa, args, 0, true);
-        //cells = Vector3I(32, 8, 8);
-        //build_vbd_entity(Vector3(0,0.,1.6), cells, size, Color(0.2,.2,0.8,0.), Hexa27, args, 0, true);
-        //cells = Vector3I(48, 12, 12);
-        //build_vbd_entity(Vector3(0,0.,3.2), cells, size, Color(0.2,.2,0.8,0.), Pyramid, args, 0, true);
-        //cells = Vector3I(64, 16, 16);
-        //build_vbd_entity(Vector3(0,0.,4.8), cells, size, Color(0.2,.2,0.8,0.), Prism, args, 0, true);
-
-        args.damping = 5;
+        args.sub_iteration = 1;
+        args.damping = 30;
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
-        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, true);
-        //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
+        cells = Vector3I(4, 2, 2);
+        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra20, args, true, false);
 
+        //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0.0);
+        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
+        //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, true, true);
+        cells = Vector3I(8, 2, 2);
+        //(Vector3(0,0,2),cells, size, Color(0.2,.8,0.2,0.), Tetra10, args, true, false);
+        //build_mixed_vbd_entity(Vector3(0,0.5,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, 4);
 
         args.damping = 1e-6;
         args.iteration = 1;
         args.sub_iteration = 500;
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Tetra, args, true);
+        cells = Vector3I(32, 8, 8);
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.3,.3,0.7,0.), Hexa, args, true);
 
 
         args.damping = 1e-6;
@@ -183,18 +173,18 @@ struct BaseScene final : Scene
                 const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
-                rd_constraint_1->_event_rate = 0.5;
-                rd_constraint_1->_smooth_iterations = 5;
-                rd_constraint_1->_rot_speed = 400;
+                rd_constraint_1->_event_rate = 1;
+                rd_constraint_1->_smooth_iterations = 30;
+                rd_constraint_1->_rot_speed = 90;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)
             {
                 const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Plane(pos + size - args.dir * 0.01f, args.dir), args.dir, args.scenario_2 );
                 //const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-3,-0.2,-2),Vector3(-1,0,2)), -args.dir, args.scenario_1);
-                rd_constraint_2->_event_rate = 0.5;
-                rd_constraint_2->_smooth_iterations = 5;
-                rd_constraint_2->_rot_speed = 360;
+                rd_constraint_2->_event_rate = 1;
+                rd_constraint_2->_smooth_iterations = 30;
+                rd_constraint_2->_rot_speed = 90;
                 e->add_component(rd_constraint_2);
             }
         }
@@ -318,7 +308,7 @@ struct BaseScene final : Scene
         add_fem_mesh(e, pos, cells, size, element, args);
         if(gpu) e->add_component(new Cuda_XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material,std::max(args.iteration, args.sub_iteration), args.damping, coupled));
         else e->add_component(new XPBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson,args.material, args.iteration, args.sub_iteration, args.damping, coupled));
-        add_fem_base(e, pos, cells, size, color, element, args, true);
+        add_fem_base(e, pos, cells, size, color, element, args, gpu);
     }
 
 

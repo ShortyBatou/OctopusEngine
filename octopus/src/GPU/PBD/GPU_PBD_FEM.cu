@@ -1,6 +1,7 @@
 #include "GPU/PBD/GPU_PBD_FEM.h"
 
 #include <set>
+#include <GPU/CUMatrix.h>
 #include <Manager/Debug.h>
 #include <GPU/PBD/GPU_PBD_FEM_Materials.h>
 #include <GPU/GPU_FEM.h>
@@ -85,6 +86,60 @@ __global__ void kernel_XPBD_V0(
     }
 }
 
+__global__ void kernel_XPBD_V1(
+    const int n, const int offset, const scalar dt, const int* eids,
+    int m, Material_Data mt,
+    GPU_ParticleSystem_Parameters ps,
+    GPU_FEM_Pameters fem, scalar* C, Vector3* grad_C)
+{
+    if (blockIdx.x >= n) return;
+    if (threadIdx.x >= fem.nb_quadrature) return;
+
+    const int eid = eids[blockIdx.x + offset];
+    const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
+    const int qid = eid * fem.nb_quadrature;
+    const int* topology = fem.topology+vid;
+    const int& q = threadIdx.x;
+
+    __shared__ Vector3 s_grad_C[256];
+    __shared__ scalar s_C[32];
+
+    for (int j = 0; j < fem.elem_nb_vert; ++j)
+        s_grad_C[j + q * fem.elem_nb_vert] = Vector3(1, 0.5, -1);
+    s_C[q] = 0;
+
+    Matrix3x3 JX_inv = fem.JX_inv[qid + q];
+    scalar V = fem.V[qid + q];
+    const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
+    xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, s_C[q], s_grad_C + q * fem.elem_nb_vert);
+    all_reduction<scalar>(threadIdx.x, fem.nb_quadrature, 0, 1,  s_C);
+    all_reduction<Vector3>(threadIdx.x, fem.nb_quadrature * fem.elem_nb_vert , 0, fem.elem_nb_vert, s_grad_C);
+
+    if(threadIdx.x == 0) {
+        scalar temp_C = s_C[0];
+        temp_C = (temp_C < 0.f) ? -temp_C : temp_C; // abs
+        temp_C = std::sqrt(temp_C);
+        const scalar C_inv = temp_C < 1e-5 ? 0.f : 1.f / (2.f * temp_C);
+        C[blockIdx.x] = temp_C;
+        for (int i = 0; i < fem.elem_nb_vert; ++i) {
+            grad_C[blockIdx.x * fem.elem_nb_vert + i] *= C_inv;
+        }
+    }
+}
+
+__global__ void kernel_XPBD_Solve_V1(
+    const int n, const int offset, const scalar dt, const int* eids, int m, Material_Data mt,
+    GPU_ParticleSystem_Parameters ps,
+    GPU_FEM_Pameters fem, scalar* C, Vector3* grad_C)
+{
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid >= n) return;
+    const int eid = eids[tid + offset];
+    const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
+    const int* topology = fem.topology+vid;
+    xpbd_solve(fem.elem_nb_vert,(m==0)?mt.lambda:mt.mu, dt, C[tid], grad_C + tid * fem.elem_nb_vert, ps.w, topology, ps.p, ps.mask);
+}
+
 
 // MUST BE ELSEWERE
 void GPU_PBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vert, std::vector<int>& colors) const {
@@ -139,9 +194,9 @@ void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {
     // build constant value for FEM simulation and init buffers
     for (int i = 0; i < s_off; ++i) {
         const int nb = (i < s_off - 1 ? d_thread->offsets[i + 1] : s_eids) - d_thread->offsets[i];
-        d_thread->nb_threads.push_back(nb);
-        d_thread->block_size.push_back(d_fem->nb_quadrature);
-        d_thread->grid_size.push_back((nb+d_fem->nb_quadrature-1) / d_fem->nb_quadrature);
+        d_thread->nb_threads.push_back(nb * d_fem->nb_quadrature); // grid * block
+        d_thread->block_size.push_back(d_fem->nb_quadrature); // nb quadrature
+        d_thread->grid_size.push_back(nb); // nb constraint
     }
 
     cb_eid = new Cuda_Buffer(eids);
@@ -154,14 +209,33 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
 {
     build_graph_color(topology, static_cast<int>(geometry.size()),colors);
     build_thread_by_color(colors);
+
+    int s_max = 0;
+    for(int k = 0; k < d_thread->nb_kernel; ++k) {
+        s_max = std::max(s_max, d_thread->grid_size[k]);
+    }
+    cb_C = new Cuda_Buffer<scalar>(s_max);
+    cb_grad_C = new Cuda_Buffer<Vector3>(s_max * elem_nb_vertices(element));
 }
-
-
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
-        kernel_XPBD_V0<<<d_thread->grid_size[j], d_thread->block_size[j]>>>(
+        /*kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
             cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters());
+        */
+        for(int m = 0; m < 2; ++m) {
+            kernel_XPBD_V1<<<d_thread->grid_size[j], d_thread->block_size[j]>>>(
+               d_thread->nb_threads[j], d_thread->offsets[j], dt,
+               cb_eid->buffer, m, *d_material, ps->get_parameters(), get_fem_parameters(),
+               cb_C->buffer, cb_grad_C->buffer
+           );
+            kernel_XPBD_Solve_V1<<< (d_thread->grid_size[j] + 31) /22, 32>>>(
+               d_thread->nb_threads[j], d_thread->offsets[j], dt,
+               cb_eid->buffer, m, *d_material, ps->get_parameters(), get_fem_parameters(),
+               cb_C->buffer, cb_grad_C->buffer
+           );
+        }
+
     }
 }

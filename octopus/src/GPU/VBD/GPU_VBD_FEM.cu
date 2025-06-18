@@ -81,19 +81,7 @@ __device__ void compute_f(
 }
 
 
-__device__ void vec_reduction(const int tid, const int block_size, const int offset, const int v_size, scalar* s_data) {
-    __syncthreads();
-    int i,b;
-    for(i=block_size/2, b=(block_size+1)/2; i > 0; b=(b+1)/2, i/=2) {
-        if(tid < i) {
-            for(int j = 0; j < v_size; ++j) {
-                s_data[(offset + tid)*v_size+j] += s_data[(offset + tid+b)*v_size+j];
-            }
-            __syncthreads();
-        }
-        i = (b>i) ? b : i;
-    }
-}
+
 
 __device__ void store_f_H_in_shared(const int tid, const Vector3& fi, const Matrix3x3& H, scalar* s_data) {
     int k = 0;

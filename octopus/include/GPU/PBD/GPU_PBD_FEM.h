@@ -20,6 +20,8 @@ struct GPU_PBD_FEM : GPU_FEM
 
 protected:
     Cuda_Buffer<int>* cb_eid;
+    Cuda_Buffer<scalar>* cb_C;
+    Cuda_Buffer<Vector3>* cb_grad_C;
     void build_graph_color(const Mesh::Topology& topology, int nb_vert, std::vector<int>& colors) const;
     void build_thread_by_color(const std::vector<int>& colors);
 };

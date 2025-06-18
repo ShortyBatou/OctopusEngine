@@ -2,6 +2,21 @@
 
 #include <Manager/Debug.h>
 #include <Manager/Key.h>
+
+__device__ void vec_reduction(const int tid, const int block_size, const int offset, const int v_size, scalar* s_data) {
+    __syncthreads();
+    int i,b;
+    for(i=block_size/2, b=(block_size+1)/2; i > 0; b=(b+1)/2, i/=2) {
+        if(tid < i) {
+            for(int j = 0; j < v_size; ++j) {
+                s_data[(offset + tid)*v_size+j] += s_data[(offset + tid+b)*v_size+j];
+            }
+            __syncthreads();
+        }
+        i = (b>i) ? b : i;
+    }
+}
+
 __device__ Matrix3x3 vec_hat(const Vector3 &v) {
     return {
         0.f, -v.z, v.y,
