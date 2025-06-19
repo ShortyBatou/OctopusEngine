@@ -2,6 +2,7 @@
 #include "Manager/TimeManager.h"
 #include <iostream>
 #include <Dynamic/FEM/FEM.h>
+#include <Manager/Debug.h>
 
 
 std::vector<scalar> FEM_Dynamic_Getters::get_residual_norm()
@@ -39,11 +40,18 @@ std::vector<scalar> FEM_Dynamic::get_stress_vertices()
 
 void FEM_Dynamic_Generic::update()
 {
+    Time::Tic();
     this->_ps->step(Time::Fixed_DeltaTime());
     for (int i = 0; i < _mesh->nb_vertices(); ++i)
     {
         _mesh->geometry()[i] = this->_ps->get(i)->position;
     }
+    const scalar t = Time::Tac() * 1000;
+    DebugUI::Begin("XPBD Performance");
+    DebugUI::Plot("Time plot", t);
+    DebugUI::Range("Time range", t);
+    DebugUI::Value("Time value", t);
+    DebugUI::End();
 }
 
 ParticleSystem* FEM_Dynamic_Generic::build_particle_system()

@@ -4,7 +4,7 @@
 // reduction
 /**
  * tid: current thread
- * block_size: total size of shared buffer
+ * block_size: nb values in shared buffer size(s_data) / v_size
  * offset : where is the beginning
  * v_size : size of final data vector
  * s_data : shared data buffer
@@ -12,8 +12,7 @@
 template<typename T>
 __device__ void all_reduction(const int tid, const int block_size, const int offset, const int v_size, T* s_data) {
     __syncthreads();
-    int i,b;
-    for(i=block_size/2, b=(block_size+1)/2; i > 0; b=(b+1)/2, i/=2) {
+    for(int i = block_size/2, b=(block_size+1)/2; i > 0; b=(b+1)/2, i/=2) {
         if(tid < i) {
             for(int j = 0; j < v_size; ++j) {
                 s_data[(offset + tid)*v_size+j] += s_data[(offset + tid+b)*v_size+j];

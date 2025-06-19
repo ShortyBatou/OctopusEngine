@@ -82,7 +82,7 @@ struct BaseScene final : Scene
         args.density = 1000;
         args.distribution = FemShape;
         args.young = 1e6;
-        args.poisson = 0.499;
+        args.poisson = 0.45;
         args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
@@ -96,14 +96,16 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(2, 1, 1);
+        const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(32, 8, 8);
         args.iteration = 1;
-        args.sub_iteration = 1;
-        args.damping = 30;
+        args.sub_iteration = 50;
+        args.damping = 1;
         //build_vbd_entity(Vector3(0,0.,2.2),cells, size, Color(0.3,.8,0.3,0.), Hexa, args, 0, true);
-        cells = Vector3I(4, 2, 2);
-        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra20, args, true, false);
+        cells = Vector3I(8, 2, 2);
+        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, false, false);
+        cells = Vector3I(8, 2, 2);
+        build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Hexa, args, true, true);
 
         //build_lf_vbd_entity(Vector3(0,0,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0.0);
         //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);

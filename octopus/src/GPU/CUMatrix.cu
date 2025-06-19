@@ -11,8 +11,8 @@ __device__ void vec_reduction(const int tid, const int block_size, const int off
             for(int j = 0; j < v_size; ++j) {
                 s_data[(offset + tid)*v_size+j] += s_data[(offset + tid+b)*v_size+j];
             }
-            __syncthreads();
         }
+        __syncthreads();
         i = (b>i) ? b : i;
     }
 }

@@ -1,5 +1,8 @@
 #pragma once
 #include "Dynamic/Base/ParticleSystem.h"
+
+#include <Manager/TimeManager.h>
+
 #include "Manager/Debug.h"
 
 void ParticleSystem::step(const scalar dt) {
