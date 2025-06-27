@@ -80,9 +80,6 @@ __device__ void compute_f(
     fi -= P * dF_dx * V;
 }
 
-
-
-
 __device__ void store_f_H_in_shared(const int tid, const Vector3& fi, const Matrix3x3& H, scalar* s_data) {
     int k = 0;
     for(int j = 0; j < 3; ++j) {
@@ -749,22 +746,8 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::iota(kernels.begin(), kernels.end(), 0);
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
-    unsigned int s = 0;
+    unsigned int s;
 
-    int nb_thread = 0;
-    int grid_size = 0;
-    int block_size = 0;
-    for(const int c : kernels) {
-        block_size = std::max(block_size, d_thread->block_size[c]);
-        nb_thread += d_thread->nb_threads[c] * d_fem->nb_quadrature;
-        grid_size += d_thread->grid_size[c];
-
-    }
-    s = block_size * d_fem->nb_quadrature * 3 * sizeof(scalar);
-    kernel_vbd_solve_v3_test<<<grid_size, block_size * d_fem->nb_quadrature, s>>>(
-        nb_thread * d_fem->nb_quadrature, damping, dt, 0,
-        y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
-    );/**/
 
     for(const int c : kernels) {
         switch(version) {
