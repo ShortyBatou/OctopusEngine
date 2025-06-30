@@ -106,10 +106,6 @@ void FEM_DataDisplay::update() {
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_volume();
         for (auto &[e, data]: e_data) {
-            scalar v_diff = 0;
-            for(const scalar d : data) v_diff += d;
-            std::cout << "Volume " << v_diff << std::endl;
-
             _graphic->set_ecolors(e, convert_to_color(data));
         }
     } else if (_mode == Volume_Diff) {

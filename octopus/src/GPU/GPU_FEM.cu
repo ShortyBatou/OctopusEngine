@@ -53,9 +53,10 @@ __global__ void kernel_compute_volume(
     scalar volume = 0;
     const int* topo = fem.topology + eid * fem.elem_nb_vert;
     // offset the pointer at the start of the element's topology
-    Matrix3x3 Jx(0.f);
+
     for (int i = 0; i < fem.nb_quadrature; ++i)
     {
+        Matrix3x3 Jx(0.f);
         for (int j = 0; j < fem.elem_nb_vert; ++j)
         {
             Jx += glm::outerProduct(ps.p[topo[j]], fem.dN[i * fem.elem_nb_vert + j]);
@@ -75,9 +76,9 @@ __global__ void kernel_compute_volume_diff(
     scalar diff_volume = 0;
     const int qid = eid * fem.nb_quadrature;
     const int* topo = fem.topology + eid * fem.elem_nb_vert;
-    Matrix3x3 Jx(0.f);
     for (int i = 0; i < fem.nb_quadrature; ++i)
     {
+        Matrix3x3 Jx(0.f);
         for (int j = 0; j < fem.elem_nb_vert; ++j)
         {
             Jx += glm::outerProduct(ps.p[topo[j]], fem.dN[i * fem.elem_nb_vert + j]);

@@ -204,7 +204,7 @@ void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {
     // build constant value for FEM simulation and init buffers
     for (int i = 0; i < s_off; ++i) {
         const int nb = (i < s_off - 1 ? d_thread->offsets[i + 1] : s_eids) - d_thread->offsets[i];
-        d_thread->nb_threads.push_back(nb * d_fem->nb_quadrature); // grid * block
+        d_thread->nb_threads.push_back(nb); // grid * block
         d_thread->block_size.push_back(d_fem->nb_quadrature); // nb quadrature
         d_thread->grid_size.push_back(nb); // nb constraint
     }
@@ -230,7 +230,7 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
-        kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
+        /*kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
             cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters());
 
