@@ -230,7 +230,7 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
-        /*kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
+        kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
             cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters());
 

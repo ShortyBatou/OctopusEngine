@@ -96,7 +96,7 @@ void GPU_PBD_FEM_Coupled::step(GPU_ParticleSystem* ps, const scalar dt)
 {
     for (int j = 0; j < d_thread->nb_kernel; ++j)
     {
-        kernel_XPBD_Coupled_V0<<<d_thread->grid_size[j],d_thread->block_size[j]>>>(
+        kernel_XPBD_Coupled_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt, cb_eid->buffer,
             *d_material, ps->get_parameters(), get_fem_parameters());
     }

@@ -12,6 +12,26 @@ struct Area {
 
 struct Box final : Area {
    Box(const Vector3& _pmin, const Vector3& _pmax) : pmin(_pmin), pmax(_pmax) {}
+   Box(const Mesh::Geometry& geometry) {
+      assert(geometry.size() > 0);
+      pmin = geometry[0];
+      pmax = geometry[0];
+      for(const Vector3& x : geometry) {
+         pmin = glm::min(pmin, x);
+         pmax = glm::max(pmax, x);
+      }
+   }
+
+   Box(const Vector3* geometry, const int* topology, const int nb) {
+      assert(nb > 0);
+      pmin = geometry[topology[0]];
+      pmax = geometry[topology[0]];
+      for(int i = 1; i < nb; ++i) {
+         pmin = glm::min(pmin, geometry[topology[i]]);
+         pmax = glm::max(pmax, geometry[topology[i]]);
+      }
+   }
+
    ~Box() override = default;
 
    bool inside(const Vector3& p) const override {
@@ -58,4 +78,60 @@ struct Sphere final : Area {
    ~Sphere() override = default;
    Vector3 o;
    scalar r;
+};
+
+
+struct Tetraedron final : Area {
+   Tetraedron(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d) {
+      _p[0] = a; _p[1] = b; _p[2] = c; _p[3] = d;
+   }
+
+   Tetraedron(const Vector3* p) {
+      for(int i = 0; i < 4; ++i) _p[i] = p[i];
+   }
+
+   Tetraedron(const Vector3* geo, const int* topo) {
+      for(int i = 0; i < 4; ++i) _p[i] = geo[topo[i]];
+   }
+
+   bool inside(const Vector3& p) const override {
+      const scalar V0 = signed_volume();
+      const bool b1 = V0 * Signed_Volume(p, _p[1], _p[2], _p[3]) > 0.f;
+      const bool b2 = V0 * Signed_Volume(_p[0], p, _p[2], _p[3]) > 0.f;
+      const bool b3 = V0 * Signed_Volume(_p[0], _p[1], p, _p[3]) > 0.f;
+      const bool b4 = V0 * Signed_Volume(_p[0], _p[1], _p[2], p) > 0.f;
+      if (b1 && b2 && b3 && b4) return true;
+      return false;
+   }
+
+   Vector4 barycentric(const Vector3& p) const {
+      const Vector3 vp = p - _p[0];
+      const Matrix3x3 m(_p[1] - _p[0], _p[2] - _p[0], _p[3] - _p[0]);
+      const Vector3 sol = glm::inverse(m) * vp;
+      return Vector4(sol.x, sol.y, sol.z, 1.0 - sol.x - sol.y - sol.z);
+   }
+
+   scalar signed_volume() const {
+      return glm::dot(_p[3] - _p[0], cross(_p[1] - _p[0], _p[2] - _p[0])) / 6.f;
+   }
+
+   static scalar Signed_Volume(const Vector3 a, const Vector3 b, const Vector3 c, const Vector3 d) {
+      return glm::dot(d - a, cross(b - a, c - a)) / 6.f;
+   }
+
+   scalar volume() const {
+      return abs(signed_volume());
+   }
+
+   void draw() const override {
+      Debug::Line(_p[0], _p[1]);
+      Debug::Line(_p[1], _p[2]);
+      Debug::Line(_p[2], _p[0]);
+      Debug::Line(_p[0], _p[3]);
+      Debug::Line(_p[1], _p[3]);
+      Debug::Line(_p[2], _p[3]);
+   }
+
+   ~Tetraedron() override = default;
+   Vector3 _p[4];
 };
