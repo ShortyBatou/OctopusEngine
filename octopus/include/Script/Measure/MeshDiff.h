@@ -6,11 +6,21 @@
 #include <vector>
 #include <iostream>
 
+struct Error {
+    Error() : min(max_limit), max(-max_limit), mean(0) {}
+    void update(scalar e) {
+        min = std::min(min, e);
+        max = std::max(max, e);
+        mean += e;
+    }
+    scalar min, max, mean;
+};
+
 struct BeamDiff : Behaviour {
     BeamDiff(const int ref, const std::vector<int> &ids) : _ref_id(ref), _ids(ids) { }
 
     virtual void build() = 0;
-    virtual scalar get_error(int mesh_id) = 0;
+    virtual Error get_error(int mesh_id) = 0;
 
     void late_init() override {
         Mesh* r_mesh = Engine::GetEntity(_ref_id)->get_component<Mesh>();
@@ -24,13 +34,14 @@ struct BeamDiff : Behaviour {
         build();
     }
 
-
     void late_update() override {
         DebugUI::Begin( "error");
         for(int id : _ids) {
             Mesh* mesh = _meshes[id];
-            scalar diff = get_error(id);
-            DebugUI::Value(std::to_string(id) + " = ", diff);
+            const Error error = get_error(id);
+            DebugUI::Value(std::to_string(id) + " mean = ", error.mean);
+            DebugUI::Value(std::to_string(id) + " min = ", error.min);
+            DebugUI::Value(std::to_string(id) + " max = ", error.max);
         }
         DebugUI::End();
     }
@@ -54,14 +65,15 @@ struct Beam_MSE_Vertex final : public BeamDiff {
         }
     }
 
-    scalar get_error(const int mesh_id) override {
-        scalar diff = 0;
+    Error get_error(const int mesh_id) override {
+        Error error;
         Mesh* r_mesh = _meshes[_ref_id];
         Mesh* mesh = _meshes[mesh_id];
         for(int i = 0; i < r_mesh->geometry().size(); ++i) {
-            diff += glm::length2(r_mesh->geometry()[i] - mesh->geometry()[i] - init_offset[mesh_id]);
+            error.update(glm::length2(r_mesh->geometry()[i] - mesh->geometry()[i] - init_offset[mesh_id]));
         }
-        return diff / r_mesh->geometry().size();
+        error.mean /= r_mesh->geometry().size();
+        return error;
     }
 };
 
@@ -125,7 +137,6 @@ struct Beam_MSE_Sampling final : public BeamDiff {
                 // get position of s in grid
                 Vector3 p = (s - box.pmin) / (box.pmax - box.pmin);
                 Vector3 i_p = glm::floor(Vector3(p.x * grid_size.x, p.y * grid_size.y, p.z * grid_size.z));
-
                 // for all element in this cell check if point in
                 for(int e : grid[i_p.x + i_p.y * grid_size.x + i_p.z * grid_size.x * grid_size.y]) {
                     int off = e * elem_nb_vert;
@@ -136,7 +147,12 @@ struct Beam_MSE_Sampling final : public BeamDiff {
                         if(!e_box.inside(s)) continue;
                         // get coordinate in reference element
                         Vector3 a = geo[topo[off]] - _offsets[id], b = geo[topo[off + 6]] - _offsets[id];
-                        _samples[id].push_back((s - a) / (b - a));
+                        // in unit cube
+                        Vector3 sample = (s - a) / (b - a);
+                        // in ref element
+                        std::swap(sample.y, sample.z);
+                        sample *= 2; sample += r_pos[0];
+                        _samples[id].push_back(sample);
                         _elements[id].push_back(e);
                         break;
                     }
@@ -158,8 +174,8 @@ struct Beam_MSE_Sampling final : public BeamDiff {
         }
     }
 
-    scalar get_error(const int id) override {
-        Debug::SetColor(ColorBase::Red());
+    Error get_error(const int id) override {
+        ColorMap::Set_Type(ColorMap::Rainbow);
         Mesh* mesh = _meshes[id];
         const FEM_Shape* shape = _shapes[id];
         Mesh::Topology& topo = mesh->topology(_types[id]);
@@ -170,9 +186,10 @@ struct Beam_MSE_Sampling final : public BeamDiff {
         Mesh::Topology& r_topo = r_mesh->topology(_types[_ref_id]);
         Mesh::Geometry& r_geo = r_mesh->geometry();
 
-        scalar error = 0;
+        Error error;
         for(int i = 0; i < _nb_sample; ++i) {
             const Vector3 s = _samples[id][i];
+
             std::vector<scalar> weights = shape->build_shape(s.x, s.y, s.z);
             const int off = _elements[id][i] * shape->nb;
             Vector3 p(0.f);
@@ -180,17 +197,27 @@ struct Beam_MSE_Sampling final : public BeamDiff {
                 p += geo[topo[off + j]] * weights[j];
             }
 
-            std::vector<scalar> r_weights = r_shape->build_shape(s.x, s.y, s.z);
+            const Vector3 r_s = _samples[_ref_id][i];
+            std::vector<scalar> r_weights = r_shape->build_shape(r_s.x, r_s.y, r_s.z);
             const int r_off = _elements[_ref_id][i] * r_shape->nb;
             Vector3 r_p(0.f);
             for(int j = 0; j < r_weights.size(); ++j) {
                 r_p += r_geo[r_topo[r_off + j]] * r_weights[j];
             }
+            Debug::SetColor(ColorBase::Red());
+            Debug::Cube(r_p, 0.05);
+            Debug::SetColor(ColorBase::Blue());
+            Debug::Cube(p, 0.025);
+            Debug::SetColor(ColorBase::Green());
+            Debug::Line(p, r_p);
+            Debug::SetColor(ColorBase::Black());
+            Debug::Cube(s, 0.0125);
+            //Debug::Line(p, global_sample[i]);
 
-            error += glm::length2(p - _offsets[id] - r_p);
+            error.update(glm::length2(p - _offsets[id] - r_p));
         }
-
-        return error / _nb_sample;
+        error.mean /= _nb_sample;
+        return error;
     }
 
 protected:

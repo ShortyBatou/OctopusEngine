@@ -29,6 +29,7 @@
 #include "Script/Dynamic/Cuda_XPBD_FEM_Dynamic.h"
 #include "Script/Dynamic/VBD_FEM_Dynamic.h"
 #include "Script/Measure/MeshDiff.h"
+#include "Script/VTK/VTK_Attribute.h"
 
 struct SimulationArgs {
     scalar density;
@@ -72,7 +73,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 2000));
+        root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 100));
     }
 
     // build scene's entities
@@ -81,7 +82,7 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e6;
+        args.young = 1e7;
         args.poisson = 0.45;
         args.damping = 5e-6;
         args.iteration = 5;
@@ -90,8 +91,8 @@ struct BaseScene final : Scene
         args.scenario_2 = -1;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
-        args.display = FEM_DataDisplay::Type::Volume;
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-8-2-2-tetra.vtk";
+        args.display = FEM_DataDisplay::Type::BaseColor;
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
         //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
@@ -99,18 +100,24 @@ struct BaseScene final : Scene
         const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(32, 8, 8);
 
-        args.damping = 5e-6;
-        args.iteration = 1;
-        args.sub_iteration = 500;
-        cells = Vector3I(4, 1, 1);
-        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Tetra, args, true);
+        //cells = Vector3I(128, 32, 32);
+        //args.mesh_file = "1_Hexa_128_32_32_4x1x1_564.vtk";
+        //build_mesh_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args);
+        //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, true);
 
-        args.iteration = 1;
+        args.iteration = 2;
         args.sub_iteration = 50;
-        args.damping = 1;
-        cells = Vector3I(4, 1, 1);
-        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, false);
-        build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, false);
+        args.damping = 5e-6;
+        cells = Vector3I(3, 2, 2);
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-8-2-2-tetra.vtk";
+        cells = Vector3I(1, 1, 1);
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0, true);
+        cells = Vector3I(16, 4, 4);
+        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra10, args, 0, true);
+        //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, false);
+        //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, false);
 
         cells = Vector3I(12, 6, 6);
         //build_xpbd_entity(Vector3(0,0,1),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, false, false);
@@ -166,7 +173,7 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = true;
+        display->surface() = false;
         display->wireframe() = true;
         display->point() = false;
         return display;
@@ -269,6 +276,14 @@ struct BaseScene final : Scene
         if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
         else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
         else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element, e->id()));
+    }
+
+    void build_mesh_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
+        Entity* e = Engine::CreateEnity();
+        add_fem_mesh(e, pos, cells, size, element, args);
+        if(e->id() == 1) e->add_component(new VTK_Attribute(args.mesh_file, "u"));
+        e->add_component(build_graphic(color));
+        e->add_component(build_display());
     }
 
     void build_fem_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, bool gpu) {

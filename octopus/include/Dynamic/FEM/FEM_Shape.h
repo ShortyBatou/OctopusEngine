@@ -209,7 +209,7 @@ struct Hexa_8 final : FEM_Shape {
     }
 
     [[nodiscard]] std::vector<scalar> build_shape(scalar s, scalar t, scalar l) const override {
-        const scalar a = 1.f / 8.f;
+        constexpr scalar a = 1.f / 8.f;
         return {
             a * (1 - s) * (1 - t) * (1 - l),
             a * (1 + s) * (1 - t) * (1 - l),

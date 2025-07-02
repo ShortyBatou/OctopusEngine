@@ -96,10 +96,10 @@ struct Tetraedron final : Area {
 
    bool inside(const Vector3& p) const override {
       const scalar V0 = signed_volume();
-      const bool b1 = V0 * Signed_Volume(p, _p[1], _p[2], _p[3]) > 0.f;
-      const bool b2 = V0 * Signed_Volume(_p[0], p, _p[2], _p[3]) > 0.f;
-      const bool b3 = V0 * Signed_Volume(_p[0], _p[1], p, _p[3]) > 0.f;
-      const bool b4 = V0 * Signed_Volume(_p[0], _p[1], _p[2], p) > 0.f;
+      const bool b1 = V0 * Signed_Volume(p, _p[1], _p[2], _p[3]) > -eps;
+      const bool b2 = V0 * Signed_Volume(_p[0], p, _p[2], _p[3]) > -eps;
+      const bool b3 = V0 * Signed_Volume(_p[0], _p[1], p, _p[3]) > -eps;
+      const bool b4 = V0 * Signed_Volume(_p[0], _p[1], _p[2], p) > -eps;
       if (b1 && b2 && b3 && b4) return true;
       return false;
    }

@@ -47,4 +47,5 @@ public:
     void skip_to(std::ifstream &inputFile, std::string &line, const std::string &s);
 
     std::vector<Vector3> get_point_data_v3(const std::string &att_name);
+    bool check_vector_data(const std::string& att_name);
 };

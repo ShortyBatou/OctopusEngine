@@ -8,7 +8,9 @@
 using scalar = float;
 constexpr scalar min_limit = std::numeric_limits<scalar>::min();
 constexpr scalar max_limit = std::numeric_limits<scalar>::max();
-constexpr scalar eps = min_limit * static_cast<scalar>(1e5);
+constexpr scalar eps = min_limit * static_cast<scalar>(1e6);
+constexpr scalar small_eps = 1e-12;
+constexpr scalar large_eps = 1e-6;
 constexpr glm::precision precision = glm::precision::defaultp;
 const scalar PI = glm::pi<scalar>();
 

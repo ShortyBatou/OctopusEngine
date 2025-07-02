@@ -273,6 +273,23 @@ void VTK_Loader::skip_to(std::ifstream& inputFile, std::string& line, const std:
     } while (line.compare(0, s.size(), s) != 0);
 }
 
+bool VTK_Loader::check_vector_data(const std::string& att_name) {
+    std::ifstream file = get_file();
+    if (!file.good()) {
+        std::cerr << "Error: could not read " << _file_path << std::endl;
+        return false;
+    }
+
+    std::string line;
+    // get data length
+    skip_to(file, line, "VECTORS " + att_name + " float"); // skip to data
+    if (line.compare(0, 14 + att_name.size(), "VECTORS " + att_name + " float") != 0) {
+        std::cerr << "Attribute " << att_name << " not found" << std::endl;
+        return false;
+    }
+    return true;
+}
+
 std::vector<Vector3> VTK_Loader::get_point_data_v3(const std::string& att_name) {
     std::vector<Vector3> v3;
     std::ifstream file = get_file();
@@ -295,7 +312,6 @@ std::vector<Vector3> VTK_Loader::get_point_data_v3(const std::string& att_name) 
     v3.resize(nb_point_data);
 
     // get data length
-
     skip_to(file, line, "VECTORS " + att_name + " float"); // skip to data
     if (line.compare(0, 14 + att_name.size(), "VECTORS " + att_name + " float") != 0) {
         std::cerr << "Attribute " << att_name << " not found" << std::endl;
