@@ -105,10 +105,11 @@ struct Tetraedron final : Area {
    }
 
    Vector4 barycentric(const Vector3& p) const {
-      const Vector3 vp = p - _p[0];
-      const Matrix3x3 m(_p[1] - _p[0], _p[2] - _p[0], _p[3] - _p[0]);
-      const Vector3 sol = glm::inverse(m) * vp;
-      return Vector4(sol.x, sol.y, sol.z, 1.0 - sol.x - sol.y - sol.z);
+      const scalar inv_V0 = 1.f / signed_volume();
+      const scalar l0 = Signed_Volume(p, _p[1], _p[2], _p[3]) * inv_V0;
+      const scalar l1 = Signed_Volume(_p[0], p, _p[2], _p[3]) * inv_V0;
+      const scalar l2 = Signed_Volume(_p[0], _p[1], p, _p[3]) * inv_V0;
+      return Vector4(l0, l1, l2, 1.0 - l0 - l1 - l2);
    }
 
    scalar signed_volume() const {

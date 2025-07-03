@@ -70,7 +70,7 @@ public:
     void set_dynamic_topology(bool state) {
         _dynamic_topology = state;
     }
-
+    bool has_element_type(const Element type) { return _topologies[type].size() > 0;}
     bool &need_update() { return _need_update; }
     [[nodiscard]] bool has_dynamic_geometry() const { return _dynamic_geometry; }
     [[nodiscard]] bool has_dynamic_topology() const { return _dynamic_topology; }

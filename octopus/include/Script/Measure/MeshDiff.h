@@ -7,13 +7,19 @@
 #include <iostream>
 
 struct Error {
-    Error() : min(max_limit), max(-max_limit), mean(0) {}
-    void update(scalar e) {
-        min = std::min(min, e);
-        max = std::max(max, e);
-        mean += e;
+    Error(): MSE(0), RMSE(0), MAE(0), max(0), L1(0), L2(0), n(0) {
     }
-    scalar min, max, mean;
+    void update(const Vector3& e) {
+        n++;
+        max = std::max(max, glm::length(e));
+        L2 += glm::length2(e);
+        L1 += glm::length(e);
+        MAE = L1 / n;
+        MSE = L2 / n;
+        RMSE = sqrt(MSE);
+    }
+    scalar MSE, RMSE, MAE, max, L1, L2;
+    int n;
 };
 
 struct BeamDiff : Behaviour {
@@ -35,15 +41,17 @@ struct BeamDiff : Behaviour {
     }
 
     void late_update() override {
-        DebugUI::Begin( "error");
-        for(int id : _ids) {
-            Mesh* mesh = _meshes[id];
+
+        for(const int id : _ids) {
             const Error error = get_error(id);
-            DebugUI::Value(std::to_string(id) + " mean = ", error.mean);
-            DebugUI::Value(std::to_string(id) + " min = ", error.min);
+            DebugUI::Begin( std::to_string(id) + ": error");
+            DebugUI::Value(std::to_string(id) + " MSE = ", error.MSE);
+            DebugUI::Value(std::to_string(id) + " RMSE = ", error.RMSE);
+            DebugUI::Value(std::to_string(id) + " MAE = ", error.MAE);
             DebugUI::Value(std::to_string(id) + " max = ", error.max);
+            DebugUI::End();
         }
-        DebugUI::End();
+
     }
 
 protected:
@@ -70,9 +78,8 @@ struct Beam_MSE_Vertex final : public BeamDiff {
         Mesh* r_mesh = _meshes[_ref_id];
         Mesh* mesh = _meshes[mesh_id];
         for(int i = 0; i < r_mesh->geometry().size(); ++i) {
-            error.update(glm::length2(r_mesh->geometry()[i] - mesh->geometry()[i] - init_offset[mesh_id]));
+            error.update(r_mesh->geometry()[i] - mesh->geometry()[i] - init_offset[mesh_id]);
         }
-        error.mean /= r_mesh->geometry().size();
         return error;
     }
 };
@@ -86,10 +93,18 @@ struct Beam_MSE_Sampling final : public BeamDiff {
         // construire la liste des sommets dans la poutres
         Box box(_meshes[_ref_id]->geometry());
 
-        for(int i = 0; i < _nb_sample; ++i) {
-            Vector3 s = Random::InBox(box.pmin, box.pmax);
-            global_sample.push_back(s);
+        Vector3 size = box.pmax - box.pmin;
+        Vector3 step = size * (1.0f / _nb_sample);
+        for(int x = 0; x <= _nb_sample * size.x; ++x)
+        for(int y = 0; y <= _nb_sample * size.y; ++y)
+        for(int z = 0; z <= _nb_sample * size.z; ++z) {
+            global_sample.push_back(Vector3(step.x * x / size.x, step.y * y  / size.y, step.z * z / size.z) - box.pmin);
         }
+
+        /*for(int i = 0; i < _nb_sample; ++i) {
+            Vector3 s = Random::InBox(box.pmin, box.pmax) - box.pmin;
+            global_sample.push_back(s);
+        }*/
 
         for(auto [id, mesh] : _meshes) {
             Element element = Tetra;
@@ -137,6 +152,7 @@ struct Beam_MSE_Sampling final : public BeamDiff {
                 // get position of s in grid
                 Vector3 p = (s - box.pmin) / (box.pmax - box.pmin);
                 Vector3 i_p = glm::floor(Vector3(p.x * grid_size.x, p.y * grid_size.y, p.z * grid_size.z));
+                i_p = min(i_p, Vector3(9,9,9));
                 // for all element in this cell check if point in
                 for(int e : grid[i_p.x + i_p.y * grid_size.x + i_p.z * grid_size.x * grid_size.y]) {
                     int off = e * elem_nb_vert;
@@ -178,16 +194,16 @@ struct Beam_MSE_Sampling final : public BeamDiff {
         ColorMap::Set_Type(ColorMap::Rainbow);
         Mesh* mesh = _meshes[id];
         const FEM_Shape* shape = _shapes[id];
-        Mesh::Topology& topo = mesh->topology(_types[id]);
-        Mesh::Geometry& geo = mesh->geometry();
+        const Mesh::Topology& topo = mesh->topology(_types[id]);
+        const Mesh::Geometry& geo = mesh->geometry();
 
         Mesh* r_mesh = _meshes[_ref_id];
         const FEM_Shape* r_shape = _shapes[_ref_id];
-        Mesh::Topology& r_topo = r_mesh->topology(_types[_ref_id]);
-        Mesh::Geometry& r_geo = r_mesh->geometry();
+        const Mesh::Topology& r_topo = r_mesh->topology(_types[_ref_id]);
+        const Mesh::Geometry& r_geo = r_mesh->geometry();
 
         Error error;
-        for(int i = 0; i < _nb_sample; ++i) {
+        for(int i = 0; i < global_sample.size(); ++i) {
             const Vector3 s = _samples[id][i];
 
             std::vector<scalar> weights = shape->build_shape(s.x, s.y, s.z);
@@ -204,19 +220,8 @@ struct Beam_MSE_Sampling final : public BeamDiff {
             for(int j = 0; j < r_weights.size(); ++j) {
                 r_p += r_geo[r_topo[r_off + j]] * r_weights[j];
             }
-            Debug::SetColor(ColorBase::Red());
-            Debug::Cube(r_p, 0.05);
-            Debug::SetColor(ColorBase::Blue());
-            Debug::Cube(p, 0.025);
-            Debug::SetColor(ColorBase::Green());
-            Debug::Line(p, r_p);
-            Debug::SetColor(ColorBase::Black());
-            Debug::Cube(s, 0.0125);
-            //Debug::Line(p, global_sample[i]);
-
-            error.update(glm::length2(p - _offsets[id] - r_p));
+            error.update(p - r_p - _offsets[id]);
         }
-        error.mean /= _nb_sample;
         return error;
     }
 

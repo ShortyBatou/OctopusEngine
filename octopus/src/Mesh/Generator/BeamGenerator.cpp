@@ -368,7 +368,7 @@ std::vector<T> MeshMap::convert(Mesh *mesh, const std::vector<T> &vals) {
 void MeshMap::apply_to_mesh(Mesh *mesh) {
     mesh->geometry() = convert<Vector3>(mesh, mesh->geometry());
     mesh->topologies()[t_elem] = elem_topo;
-    mesh->topologies()[s_elem].clear();
+    if(t_elem != s_elem) mesh->topologies()[s_elem].clear();
 }
 
 
@@ -380,8 +380,16 @@ void tetra_refine(
 
     // all new tetraedron after subdivision of reference element
     int tetra_10_topo[32] = {
-        0, 4, 6, 7, 1, 5, 4, 8, 7, 8, 9, 3, 2, 6, 5, 9, 6, 4, 5, 7, 7, 4, 5, 8, 6, 5, 9, 7, 7, 8, 5, 9
+        0, 4, 6, 7,
+        1, 5, 4, 8,
+        7, 8, 9, 3,
+        2, 6, 5, 9,
+        6, 4, 5, 7,
+        7, 4, 5, 8,
+        6, 5, 9, 7,
+        7, 8, 5, 9
     };
+
     std::map<Face<2>, int> edges;
     Mesh::Topology new_tetra_topology;
     std::vector<Vector3> new_ref_tetra_geometry;

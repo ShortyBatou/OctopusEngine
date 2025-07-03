@@ -45,6 +45,7 @@ struct SimulationArgs {
     int scenario_2;
     std::string mesh_file;
     std::string mesh_type;
+    int refine;
     Vector3 dir;
 };
 
@@ -73,7 +74,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 100));
+        root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
     }
 
     // build scene's entities
@@ -93,27 +94,35 @@ struct BaseScene final : Scene
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::BaseColor;
         //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        //args.mesh_type = "vtk";
+        args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
         const Vector3 size(4, 1, 1);
         Vector3I cells = Vector3I(32, 8, 8);
 
-        //cells = Vector3I(128, 32, 32);
-        //args.mesh_file = "1_Hexa_128_32_32_4x1x1_564.vtk";
-        //build_mesh_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args);
+        args.iteration = 1;
+        args.sub_iteration = 200;
+        args.damping = 1e-6;
+        cells = Vector3I(64, 16, 16);
+        args.mesh_file = "1_Hexa_128_32_32_4x1x1_564.vtk";
+        build_mesh_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args);
         //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, true);
 
-        args.iteration = 2;
-        args.sub_iteration = 50;
-        args.damping = 5e-6;
-        cells = Vector3I(3, 2, 2);
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        args.iteration = 1;
+        args.sub_iteration = 150;
+        cells = Vector3I(16, 4, 4);
+        args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        args.damping = 1e-5;
+        args.refine = 0;
         build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-8-2-2-tetra.vtk";
-        cells = Vector3I(1, 1, 1);
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.2,0.8,0.), Tetra, args, 0, true);
+        args.refine = 1;
+        args.damping = 5e-6;
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
+        args.damping = 1e-6;
+        args.refine = 2;
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
+
         cells = Vector3I(16, 4, 4);
         //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra10, args, 0, true);
         //build_xpbd_entity(Vector3(0,0,0),cells, size, Color(0.2,.8,0.2,0.), Tetra, args, true, false);
@@ -173,7 +182,7 @@ struct BaseScene final : Scene
 
     GL_DisplayMesh* build_display() {
         GL_DisplayMesh* display = new GL_DisplayMesh();
-        display->surface() = false;
+        display->surface() = true;
         display->wireframe() = true;
         display->point() = false;
         return display;
@@ -244,44 +253,50 @@ struct BaseScene final : Scene
         return data_recorder;
     }
 
-    Mesh* build_vtk_mesh(const Vector3& pos, const std::string& file, const Element element) {
+    Mesh* build_vtk_mesh(const Vector3& pos, const std::string& file, const Element element, const SimulationArgs& args) {
         VTK_Loader loader(AppInfo::PathToAssets() + file);
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
-
-        if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
-        if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
-        if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
-
-        mesh->set_dynamic_geometry(true);
+        mesh_post_process(mesh, element, args);
         return mesh;
     }
 
-    Mesh* build_msh_mesh(const Vector3& pos, const std::string& file, const Element element, int id) {
+    Mesh* build_msh_mesh(const Vector3& pos, const std::string& file, const Element element, const SimulationArgs& args) {
         Msh_Loader loader(AppInfo::PathToAssets() + file);
         loader.setTransform(glm::scale(Vector3(1.f)) * glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = loader.build();
-        if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
-        if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
-        if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
-        std::cout << "NB VERTICES " << mesh->nb_vertices() << " -------------------" << std::endl;
-        std::cout << "NB Element " << mesh->topologies()[element].size() / elem_nb_vertices(element) <<  " -------------------" << std::endl;
-
-        mesh->set_dynamic_geometry(true);
+        mesh_post_process(mesh, element, args);
         return mesh;
+    }
+
+    void mesh_post_process(Mesh* mesh, const Element element, const SimulationArgs& args) {
+        if(args.refine > 0) {
+            const Element lin_elem = get_linear_element(element);
+            MeshMap* map = lin_elem == Tetra ? tetra_to_linear(mesh, element, args.refine) : hexa_to_linear(mesh, element, args.refine);
+            map->apply_to_mesh(mesh);
+            if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+            if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+            if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
+        }
+        else {
+            if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
+            if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
+            if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
+        }
+        mesh->set_dynamic_geometry(true);
     }
 
 
     void add_fem_mesh(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const SimulationArgs& args) {
         if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
-        else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element));
-        else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element, e->id()));
+        else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element, args));
+        else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element, args));
     }
 
     void build_mesh_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args) {
         Entity* e = Engine::CreateEnity();
         add_fem_mesh(e, pos, cells, size, element, args);
-        if(e->id() == 1) e->add_component(new VTK_Attribute(args.mesh_file, "u"));
+        if(e->id() == 1 && args.mesh_type == "vtk") e->add_component(new VTK_Attribute(args.mesh_file, "u"));
         e->add_component(build_graphic(color));
         e->add_component(build_display());
     }
