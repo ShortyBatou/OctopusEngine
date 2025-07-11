@@ -41,7 +41,6 @@ struct BeamDiff : Behaviour {
     }
 
     void late_update() override {
-
         for(const int id : _ids) {
             const Error error = get_error(id);
             DebugUI::Begin( std::to_string(id) + ": error");
@@ -51,7 +50,6 @@ struct BeamDiff : Behaviour {
             DebugUI::Value(std::to_string(id) + " max = ", error.max);
             DebugUI::End();
         }
-
     }
 
 protected:
