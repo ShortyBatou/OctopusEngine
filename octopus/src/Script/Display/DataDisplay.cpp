@@ -105,6 +105,11 @@ void FEM_DataDisplay::update() {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_volume();
+        scalar v = 0;
+        for (auto &[e, data]: e_data) {
+            for(const scalar d : data) v += d;
+        }
+        std::cout << _entity->id() << " " << v << std::endl;
         for (auto &[e, data]: e_data) {
             _graphic->set_ecolors(e, convert_to_color(data));
         }

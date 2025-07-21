@@ -69,12 +69,12 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
+        //root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
     }
 
     // build scene's entities
@@ -83,45 +83,56 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.25;
         args.damping = 5e-6;
         args.iteration = 5;
         args.sub_iteration = 5;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
-        args.dir = Unit3D::right();
+        args.scenario_2 = 0;
+        args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
-        args.display = FEM_DataDisplay::Type::BaseColor;
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        args.mesh_type = "vtk";
+        args.display = FEM_DataDisplay::Type::Volume;
+        //args.mesh_file = "mesh/vtk/model_1_P1.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        const Vector3 size(4, 1, 1);
+        const Vector3 size(1, 1, 1);
         Vector3I cells = Vector3I(32, 8, 8);
 
         args.iteration = 1;
         args.sub_iteration = 200;
-        args.damping = 1e-6;
-        cells = Vector3I(64, 16, 16);
-        args.mesh_file = "1_Hexa_128_32_32_4x1x1_564.vtk";
-        build_mesh_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args);
+        args.damping = 5e-6;
+        cells = Vector3I(32, 32, 32);
+        //args.mesh_file = "1_Hexa_128_32_32_4x1x1_564.vtk";
+        //build_mesh_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args);
         //build_fem_entity(Vector3(0,0,0),cells, size, Color(0.7,.7,0.7,0.), Hexa, args, true);
 
-        args.iteration = 1;
-        args.sub_iteration = 150;
-        cells = Vector3I(16, 4, 4);
-        args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        args.damping = 1e-5;
+        args.iteration = 2;
+        args.sub_iteration = 50;
+        cells = Vector3I(24, 24, 24);
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        args.damping = 1e-6;
         args.refine = 0;
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra, args, 0, true);
+        args.poisson = 0.25;
+        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.poisson = 0.30;
+        build_vbd_entity(Vector3(0,0.,1.2), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.poisson = 0.35;
+        build_vbd_entity(Vector3(0,0.,2.4), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.poisson = 0.40;
+        build_vbd_entity(Vector3(0,0.,3.6), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.poisson = 0.45;
+        build_vbd_entity(Vector3(0,0.,4.8), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.poisson = 0.495;
+        build_vbd_entity(Vector3(0,0.,6.0), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
         args.refine = 1;
         args.damping = 5e-6;
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
+        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
         args.damping = 1e-6;
         args.refine = 2;
-        build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
+        //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);
 
         cells = Vector3I(16, 4, 4);
         //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Tetra10, args, 0, true);
