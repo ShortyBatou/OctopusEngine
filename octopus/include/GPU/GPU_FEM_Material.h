@@ -8,14 +8,17 @@ __device__ __forceinline__ Matrix3x3 get_strain_linear(const Matrix3x3 &F);
 
 __device__ __forceinline__ Matrix3x3 hooke_stress(const Matrix3x3 &F, scalar lambda, scalar mu);
 __device__ __forceinline__ Matrix3x3 stvk_stress(const Matrix3x3 &F, scalar lambda, scalar mu);
+__device__ __forceinline__ Matrix3x3 nh_stress(const Matrix3x3 &F, scalar lambda, scalar mu);
 __device__ __forceinline__ Matrix3x3 snh_stress(const Matrix3x3 &F, scalar lambda, scalar mu);
 
 __device__ void hooke_hessian(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[9]);
 __device__ void stvk_hessian(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[9]);
+__device__ void nh_hessian(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[9]);
 __device__ void snh_hessian(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[9]);
 
 __device__ void hooke_hessian_sym(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[6]);
 __device__ void stvk_hessian_sym(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[6]);
+__device__ void nh_hessian_sym(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[6]);
 __device__ void snh_hessian_sym(const Matrix3x3 &F, scalar lambda, scalar mu, Matrix3x3 d2W_dF2[6]);
 
 __device__ Matrix3x3 eval_pk1_stress(Material material, scalar lambda, scalar mu, const Matrix3x3 &F);

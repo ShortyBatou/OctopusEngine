@@ -52,6 +52,7 @@ for col, (dt, title, color) in enumerate(zip(dt_values, titles, colors)):
     axes[0, col].plot(t_values, x_values, '-', color=color)
     axes[0, col].set_title(title)
     axes[0, col].set_ylabel("x(t)")
+    axes[0, col].axis([0, t_max, -2,2])
     axes[0, col].legend()
     axes[0, col].grid(False)
 

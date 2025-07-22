@@ -53,12 +53,12 @@ __global__ void kernel_constraint_random_sphere(Vector3 c, scalar radius, GPU_Pa
     if (i >= ps.nb_particles) return;
     if(ps.mask[i] == 0) return;
 
-    scalar rx = vec3_to_scalar_random(ps.init_p[i]) * 2.f - 1.;
-    scalar ry = scalar_to_scalar_random(rx * i) * 2.f - 1.;
-    scalar rz = scalar_to_scalar_random(rx * ry) * 2.f - 1.;
-    scalar r = scalar_to_scalar_random(rz*rx*ry);
+    const scalar rx = vec3_to_scalar_random(ps.init_p[i]) * 2.f - 1.;
+    const scalar ry = scalar_to_scalar_random(rx * i) * 2.f - 1.;
+    const scalar rz = scalar_to_scalar_random(rx * ry) * 2.f - 1.;
+    const scalar r = scalar_to_scalar_random(rz*rx*ry);
 
-    Vector3 d = glm::normalize(Vector3(rx,ry,rz));
+    const Vector3 d = glm::normalize(Vector3(rx,ry,rz));
     ps.p[i] = c + d * radius * r;
     ps.last_p[i] = ps.p[i];
     ps.v[i] = Vector3(0, 0, 0);
