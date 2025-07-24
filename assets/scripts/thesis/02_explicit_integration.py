@@ -56,6 +56,8 @@ methods = ["Euler", "RK2", "RK4"]
 results = [F_euler, F_rk2, F_rk4]
 colors = ['red', 'green', 'blue']
 
+
+
 for i in range(3):
     axes[0][i].plot(t_values, results[i], 'o-', color=colors[i])
     axes[0][i].plot(t_exact, F_exact, '--', color='black')
@@ -74,7 +76,7 @@ for i in range(0,3):
     axes[1][i].set_ylabel('Erreur')
     axes[1][i].grid(False)
 
-plt.suptitle("Méthodes d'intégrations explicites", fontsize=18)
+
 plt.tight_layout()
 plt.savefig('02_explicit_integration.png', dpi=200)
 plt.show()
