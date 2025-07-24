@@ -18,7 +18,7 @@ colors = ['red', 'green', 'blue']
 titles = ["dt = 1e-4", "dt = 5e-3", "dt = 1e-2"]
 
 # Création d'une grille 2x3 : haut = x(t), bas = erreur
-fig, axes = plt.subplots(2, 3, figsize=(15, 6), sharex='col')
+fig, axes = plt.subplots(2, 3, figsize=(16, 6), sharex='col',  sharey='row')
 
 for col, (dt, title, color) in enumerate(zip(dt_values, titles, colors)):
     t_values = np.arange(0, t_max + dt, dt)
@@ -44,18 +44,20 @@ for col, (dt, title, color) in enumerate(zip(dt_values, titles, colors)):
     axes[0, col].plot(t_exact, x_exact, '--', color='black')
     axes[0, col].plot(t_values, x_values, '-', color=color)
     axes[0, col].axis([0, t_max, -2,2])
-    axes[0, col].set_title(title)
-    axes[0, col].set_ylabel("x(t)")
+    axes[0, col].set_title(title, fontsize=18)
+    if(col == 0):
+        axes[0, col].set_ylabel("x(t)", fontsize=16)
     axes[0, col].grid(False)
 
     # Graphique inférieur : erreur
     axes[1, col].plot(t_values, error, '-', color='darkred')
     axes[1, col].axis([0, t_max, 0,1])
-    axes[1, col].set_xlabel("t")
-    axes[1, col].set_ylabel("Erreur Intégration")
+    axes[1, col].set_xlabel("t", fontsize=16)
+    if(col == 0):
+        axes[1, col].set_ylabel("Erreur Intégration", fontsize=16)
     axes[1, col].grid(False)
 
 # Mise en page
-plt.suptitle("Stabilité d'Euler explicite", fontsize=18)
-plt.savefig('03_explicit_stability.png', dpi=200)
+plt.tight_layout()
+plt.savefig('explicit_stability.png', dpi=200)
 plt.show()

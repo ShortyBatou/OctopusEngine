@@ -10,7 +10,7 @@ def exact_integral(t):
 
 # Paramètres
 t0 = 0
-t_max = 4 * np.pi
+t_max = 12
 dt = 1.
 t_values = np.arange(t0, t_max + dt, dt)
 
@@ -49,7 +49,7 @@ t_exact = np.arange(t0, t_max + 0.01, 0.01)
 F_exact = exact_integral(t_exact)
 
 # Affichage
-fig, axes = plt.subplots(2, 3, figsize=(16, 8))
+fig, axes = plt.subplots(2, 3, figsize=(16, 6), sharex='col',  sharey='row')
 
 # Méthodes et couleurs
 methods = ["Euler", "RK2", "RK4"]
@@ -62,9 +62,9 @@ for i in range(3):
     axes[0][i].plot(t_values, results[i], 'o-', color=colors[i])
     axes[0][i].plot(t_exact, F_exact, '--', color='black')
     axes[0][i].axis([t0, t_max, -0.25,2.25])
-    axes[0][i].set_title(methods[i])
-    axes[0][i].set_xlabel('t')
-    axes[0][i].set_ylabel('∫ sin(t) dt')
+    axes[0][i].set_title(methods[i], fontsize=18)
+    if(i == 0):
+        axes[0][i].set_ylabel('∫ sin(t) dt', fontsize=16)
     axes[0][i].grid(False)
 
 
@@ -72,11 +72,12 @@ results = [e_euler, e_rk2, e_rk4]
 for i in range(0,3):
     axes[1][i].plot(t_values, results[i], 'o-', color='darkred')
     axes[1][i].axis([t0, t_max, -1,1])
-    axes[1][i].set_xlabel('t')
-    axes[1][i].set_ylabel('Erreur')
+    axes[1][i].set_xlabel('t', fontsize=16)
+    if(i == 0):
+        axes[1][i].set_ylabel("Erreur d'intégration", fontsize=16)
     axes[1][i].grid(False)
 
 
 plt.tight_layout()
-plt.savefig('02_explicit_integration.png', dpi=200)
+plt.savefig('explicit_integration.png', dpi=200)
 plt.show()

@@ -115,10 +115,14 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
         args.damping = 1e-5;
         args.refine = 0;
-        args.material = NeoHooke;
+        args.material = Hooke;
         build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.material = StVK;
+        build_vbd_entity(Vector3(0,0.,3), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        args.material = NeoHooke;
+        build_vbd_entity(Vector3(0,0.,6), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
         args.material = Stable_NeoHooke;
-        build_vbd_entity(Vector3(0,0.,2.5), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
+        build_vbd_entity(Vector3(0,0.,9), cells, size, Color(0.2,.8,0.8,0.), Hexa, args, 0, true);
         args.refine = 1;
         args.damping = 5e-6;
         //build_vbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.8,0.3,0.), Tetra, args, 0, true);

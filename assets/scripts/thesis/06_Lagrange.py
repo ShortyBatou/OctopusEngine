@@ -11,7 +11,7 @@ def lagrange_basis(x_points, i, x):
 orders = ["Linéaire", "Quadratique", "Cubique"]
 def plot_all_lagrange_orders(max_order=3):
     x_plot = np.linspace(-1.2, 1.2, 400)
-    fig, axes = plt.subplots(1, max_order, figsize=(5 * max_order, 4))
+    fig, axes = plt.subplots(1, max_order, figsize=(5 * max_order, 4), sharex='col',  sharey='row')
 
     if max_order == 1:
         axes = [axes]
@@ -35,9 +35,10 @@ def plot_all_lagrange_orders(max_order=3):
         # Tracer la somme des fonctions de base
         ax.plot(x_plot, sum_plot, '--', color='red', linewidth=1)
         ax.axis([-1, 1, -0.5,1.5])
-        ax.set_title(f'{orders[idx]}')
-        ax.set_xlabel('x')
-        ax.set_ylabel('$N_i$')
+        ax.set_title(f'{orders[idx]}', fontsize=18)
+        ax.set_xlabel('x', fontsize=16)
+        if(idx == 0):
+            ax.set_ylabel('$N_i(x)$', fontsize=16)
         ax.axhline(0, color='gray', linewidth=1)
         ax.grid(False)
         for i, (label, color) in enumerate(zip(label_list, color_list)):
@@ -45,22 +46,22 @@ def plot_all_lagrange_orders(max_order=3):
                 x=0.5 - 0.15 * order * 0.5 + i * 0.15, y=0.85 ,
                 s=label,
                 color=color,
-                fontsize=11,
+                fontsize=16,
                 ha='center',
                 transform=ax.transAxes
             )
             
         ax.text(
-                x=0.075, y=0.8 ,
-                s=r'$\sum_i N_i(x)$',
+                x=0.09, y=0.8 ,
+                s=r'$\sum N_i(x)$',
                 color="red",
-                fontsize=8,
+                fontsize=14,
                 ha='center',
                 transform=ax.transAxes
             )
-    plt.suptitle('Polynômes de Lagrange (Ordres 1 à 3)', fontsize=16)
-    plt.tight_layout(rect=[0, 0.0, 1, 0.9])
-    plt.savefig('06_lagrange.png', dpi=200)
+    
+    plt.tight_layout()
+    plt.savefig('lagrange.png', dpi=200)
     plt.show()
 
 # Exécution
