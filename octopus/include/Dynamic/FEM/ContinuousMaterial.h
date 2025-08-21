@@ -6,7 +6,7 @@
 #include <string>
 
 enum Material {
-    Hooke, StVK, NeoHooke, Stable_NeoHooke
+    Hooke, StVK, NeoHooke, Stable_NeoHooke, Corotated, FixedCorotated
 };
 
 std::string get_material_name(Material material);

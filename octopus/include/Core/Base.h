@@ -58,6 +58,7 @@ namespace Matrix
     Matrix3x3 Hat(const Vector3& v);
     Matrix3x3 Com(const Matrix3x3& m);
     void PolarDecomposition(const Matrix3x3& m, Matrix3x3& R, Matrix3x3& S);
+    void PolarDecompositionOpti(const glm::mat3& F, glm::mat3& R, glm::mat3& S, int maxIter = 10, float tol = 1e-6);
     Vector3 SingularValues(const Matrix3x3& m);
 };
 

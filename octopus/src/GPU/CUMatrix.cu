@@ -48,6 +48,30 @@ __device__ scalar squared_norm(const Matrix3x3& m)
     return st;
 }
 
+__device__ void mat3x3_polardecomposition(const Matrix3x3 &F, Matrix3x3 &R, Matrix3x3 &S, const int max_it, const scalar tol) {
+    glm::quat q(R);
+    for (unsigned int iter = 0; iter < max_it; iter++) {
+        // Calcul du vecteur omega
+        const scalar denom = 1.f / fabs(glm::dot(glm::vec3(R[0]), glm::vec3(F[0])) +
+                                   glm::dot(glm::vec3(R[1]), glm::vec3(F[1])) +
+                                   glm::dot(glm::vec3(R[2]), glm::vec3(F[2]))) + 1.0e-9f;
+
+        const glm::vec3 omega = (glm::cross(glm::vec3(R[0]), glm::vec3(F[0])) +
+                          glm::cross(glm::vec3(R[1]), glm::vec3(F[1])) +
+                          glm::cross(glm::vec3(R[2]), glm::vec3(F[2]))) * denom;
+
+        const scalar w = glm::length(omega);
+        if (w < tol) break;
+
+        glm::quat dq = glm::angleAxis(w, omega / w);
+
+        q = dq * q;
+        q = glm::normalize(q);
+        R = glm::toMat3(q);
+    }
+    S = glm::transpose(R) * F;
+}
+
 __device__ void print_vec(const Vector3 &v) {
     printf("x:%f y:%f z:%f \n", v.x, v.y, v.z);
 }

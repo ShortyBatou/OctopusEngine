@@ -161,6 +161,31 @@ void Matrix::PolarDecomposition(const Matrix3x3 &m, Matrix3x3 &R, Matrix3x3 &S) 
     S = glm::transpose(R) * m;
 }
 
+void Matrix::PolarDecompositionOpti(const glm::mat3& F, glm::mat3& R, glm::mat3& S, const int maxIter, const float tol) {
+    glm::quat q(R);
+    for (unsigned int iter = 0; iter < maxIter; iter++) {
+        // Calcul du vecteur omega
+        const scalar denom = 1.f / fabs(glm::dot(glm::vec3(R[0]), glm::vec3(F[0])) +
+                                   glm::dot(glm::vec3(R[1]), glm::vec3(F[1])) +
+                                   glm::dot(glm::vec3(R[2]), glm::vec3(F[2]))) + 1.0e-9f;
+
+        const glm::vec3 omega = (glm::cross(glm::vec3(R[0]), glm::vec3(F[0])) +
+                          glm::cross(glm::vec3(R[1]), glm::vec3(F[1])) +
+                          glm::cross(glm::vec3(R[2]), glm::vec3(F[2]))) * denom;
+
+        const scalar w = glm::length(omega);
+        if (w < tol) break;
+
+        glm::quat dq = glm::angleAxis(w, omega / w);
+
+        q = dq * q;
+        q = glm::normalize(q);
+        R = glm::toMat3(q);
+    }
+    S = glm::transpose(R) * F;
+}
+
+
 Vector3 Matrix::SingularValues(const Matrix3x3& m) {
     const scalar a = SquaredNorm(m);
     const scalar b = SquaredNorm(glm::transpose(m) * m);

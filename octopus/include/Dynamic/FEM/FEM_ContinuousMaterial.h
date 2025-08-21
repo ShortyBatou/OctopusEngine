@@ -51,4 +51,27 @@ struct M_Stable_NeoHooke final : FEM_ContinuousMaterial {
     void get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) override;
 };
 
+struct M_Corotated final : FEM_ContinuousMaterial {
+    Matrix3x3 F,R,S;
+
+    M_Corotated(const scalar _young, const scalar _poisson)
+        : FEM_ContinuousMaterial(_young, _poisson), F(0.), R(1.), S(0.) {    }
+
+    Matrix3x3 get_pk1(const Matrix3x3& F) override;
+    scalar get_energy(const Matrix3x3& F) override;
+    void get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) override;
+};
+
+struct M_FixedCorotated final : FEM_ContinuousMaterial {
+    Matrix3x3 F,R,S;
+
+    M_FixedCorotated(const scalar _young, const scalar _poisson)
+        : FEM_ContinuousMaterial(_young, _poisson), F(0.), R(1.), S(0.) {    }
+
+    Matrix3x3 get_pk1(const Matrix3x3& F) override;
+    scalar get_energy(const Matrix3x3& F) override;
+    void get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) override;
+};
+
+
 FEM_ContinuousMaterial* get_fem_material(Material material, scalar young, scalar poisson);

@@ -66,6 +66,35 @@ __device__ void dsnh_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     P = 2.f * F - 2.f * d_detF;
 }
 
+__device__ void corot_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
+    Matrix3x3 R(1.), S(1.);
+    mat3x3_polardecomposition(F, R, S);
+    C = squared_trace(S - Matrix3x3(1.f));
+    P = R * (2.f * mat3x3_trace(S - Matrix3x3(1.f)) * Matrix3x3(1.f));
+}
+
+__device__ void corot_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C){
+    Matrix3x3 R(1.), S(1.);
+    mat3x3_polardecomposition(F, R, S);
+    C = squared_norm(S);
+    P = R * (2.f * S - Matrix3x3(1.f));
+}
+
+__device__ void fixed_corot_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C){
+    Matrix3x3 R(1.), S(1.);
+    mat3x3_polardecomposition(F, R, S);
+    const scalar d = glm::determinant(S) - 1;
+    C = d * d;
+    P = R * (2.f * d * mat3x3_com(S));
+}
+
+__device__ void fixed_corot_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C){
+    Matrix3x3 R(1.), S(1.);
+    mat3x3_polardecomposition(F, R, S);
+    C = 2.f * squared_norm(S) ;
+    P = R * (4.f * (S - Matrix3x3(1.f)));
+}
+
 __device__ void eval_material(const Material material, const int m, const scalar lambda, const scalar mu, const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
     switch (material) {
         case Hooke :
@@ -80,5 +109,11 @@ __device__ void eval_material(const Material material, const int m, const scalar
         case Stable_NeoHooke :
             if (m == 0) dsnh_first(F, P, energy);
             else dsnh_second(F, P, energy); break;
+        case Corotated :
+            if (m == 0) corot_first(F, P, energy);
+            else corot_second(F, P, energy); break;
+        case FixedCorotated :
+            if (m == 0) fixed_corot_first(F, P, energy);
+            else fixed_corot_second(F, P, energy); break;
     }
 }

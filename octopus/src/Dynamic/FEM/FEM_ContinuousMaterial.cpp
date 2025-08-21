@@ -115,6 +115,40 @@ void M_Stable_NeoHooke::get_sub_hessian(const Matrix3x3 &F, std::vector<Matrix3x
             d2W_dF2[i * 3 + j] += glm::outerProduct(comF[j], comF[i]) * lambda;
 }
 
+scalar M_Corotated::get_energy(const Matrix3x3& F) {
+    if(F != this->F) { this->F = F; Matrix::PolarDecompositionOpti(F, R, S);}
+    return 0.5f * mu * Matrix::SquaredNorm(S) + 0.5 * lambda * Matrix::SquaredTrace(S - Matrix::Identity3x3());
+}
+
+Matrix3x3 M_Corotated::get_pk1(const Matrix3x3& F) {
+    if(F != this->F) { this->F = F; Matrix::PolarDecompositionOpti(F, R, S);}
+    return R * (
+        mu * (S - Matrix::Identity3x3()) +
+        lambda * Matrix3x3(Matrix::Trace(S - Matrix::Identity3x3()))
+        );
+}
+
+void M_Corotated::get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) {
+    std::cout << "M_Corotated::get_sub_hessian : not hanled" << std::endl;
+    assert(false);
+}
+
+scalar M_FixedCorotated::get_energy(const Matrix3x3& F) {
+    if(F != this->F) { this->F = F; Matrix::PolarDecompositionOpti(F, R, S);}
+    const scalar d = glm::determinant(S) - 1;
+    return mu * Matrix::SquaredNorm(S) + 0.5 * lambda * d * d;
+}
+
+Matrix3x3 M_FixedCorotated::get_pk1(const Matrix3x3& F) {
+    if(F != this->F) { this->F = F; Matrix::PolarDecompositionOpti(F, R, S);}
+    const scalar d = glm::determinant(S) - 1;
+    return R * (2.f * mu * (S - Matrix::Identity3x3()) + lambda * d * Matrix::Com(S));
+}
+
+void M_FixedCorotated::get_sub_hessian(const Matrix3x3&, std::vector<Matrix3x3>&) {
+    std::cout << "M_FixedCorotated::get_sub_hessian : not hanled" << std::endl;
+    assert(false);
+}
 
 FEM_ContinuousMaterial *get_fem_material(const Material material, const scalar young, const scalar poisson) {
     switch (material) {
@@ -122,6 +156,8 @@ FEM_ContinuousMaterial *get_fem_material(const Material material, const scalar y
         case StVK: return new M_StVK(young, poisson);
         case NeoHooke: return new M_NeoHooke(young, poisson);
         case Stable_NeoHooke: return new M_Stable_NeoHooke(young, poisson);
+        case Corotated: return new M_Corotated(young, poisson);
+        case FixedCorotated: return new M_FixedCorotated(young, poisson);
         default:
             std::cout << "Material not found" << std::endl;
             return nullptr;

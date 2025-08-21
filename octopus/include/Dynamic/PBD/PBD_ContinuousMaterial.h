@@ -138,6 +138,46 @@ struct Material_Union final : PBD_ContinuousMaterial {
 
 };
 
+struct Corotated_First final : PBD_ContinuousMaterial {
+    Matrix3x3 R, S;
+    Corotated_First(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson), R(1.), S(1.) { }
+
+    void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
+
+    [[nodiscard]] scalar get_stiffness() const override { return this->lambda; }
+};
+
+struct Corotated_Second final : PBD_ContinuousMaterial {
+    Matrix3x3 R, S;
+    Corotated_Second(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson), R(1.), S(1.) {
+    }
+
+    void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
+
+    [[nodiscard]] scalar get_stiffness() const override { return this->mu; }
+};
+
+struct FixedCorotated_First final : PBD_ContinuousMaterial {
+    Matrix3x3 R, S;
+    FixedCorotated_First(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson), R(1.), S(1.) { }
+
+    void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
+
+    [[nodiscard]] scalar get_stiffness() const override { return this->lambda; }
+};
+
+
+struct FixedCorotated_Second final : PBD_ContinuousMaterial {
+    Matrix3x3 R, S;
+    FixedCorotated_Second(const scalar _young, const scalar _poisson) : PBD_ContinuousMaterial(_young, _poisson), R(1.), S(1.) { }
+
+    void get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) override;
+
+    [[nodiscard]] scalar get_stiffness() const override { return this->mu; }
+};
+
+
+
 //Muller and Macklin neohooke energy for Tetra
 struct C_Stable_NeoHooke_First final : PBD_ContinuousMaterial {
     scalar alpha;
@@ -177,6 +217,7 @@ struct C_Developed_Stable_NeoHooke_Second final : PBD_ContinuousMaterial {
 
     [[nodiscard]] scalar get_stiffness() const override { return this->mu; }
 };
+
 
 
 std::vector<PBD_ContinuousMaterial*> get_pbd_materials(Material material, scalar young, scalar poisson);

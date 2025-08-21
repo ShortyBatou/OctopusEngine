@@ -35,6 +35,7 @@ __device__ scalar squared_norm(const Matrix3x3& m);
 
 __device__ Matrix3x3 vec_hat(const Vector3 &v);
 
+__device__ void mat3x3_polardecomposition(const Matrix3x3 &F, Matrix3x3 &R, Matrix3x3 &S, int max_it = 10, scalar tol = 1e-8);
 
 __device__ void print_vec(const Vector3 &v);
 __device__ void print_mat(const Matrix3x3 &m);

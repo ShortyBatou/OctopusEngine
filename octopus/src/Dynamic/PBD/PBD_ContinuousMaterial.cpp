@@ -131,6 +131,30 @@ void Material_Union::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar
     }
 }
 
+void Corotated_First::get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) {
+    Matrix::PolarDecompositionOpti(F, R, S);
+    energy = Matrix::SquaredTrace(S - Matrix::Identity3x3());
+    P = R * (2.f * Matrix::Trace(S - Matrix::Identity3x3()) * Matrix::Identity3x3());
+}
+
+void Corotated_Second::get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) {
+    Matrix::PolarDecompositionOpti(F, R, S);
+    energy = Matrix::SquaredNorm(S);
+    P = R * (2.f * S - Matrix::Identity3x3());
+}
+
+void FixedCorotated_First::get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) {
+    Matrix::PolarDecompositionOpti(F, R, S);
+    const scalar d = glm::determinant(S) - 1;
+    energy = d * d;
+    P = R * (2.f * d * Matrix::Com(S));
+}
+
+void FixedCorotated_Second::get_pk1_and_energy(const Matrix3x3& F, Matrix3x3& P, scalar& energy) {
+    Matrix::PolarDecompositionOpti(F, R, S);
+    energy = 2.f * Matrix::SquaredNorm(S) ;
+    P = R * (4.f * (S - Matrix::Identity3x3()));
+}
 
 //Muller and Macklin neohooke energy for Tetra
 void C_Stable_NeoHooke_First::get_pk1_and_energy(const Matrix3x3 &F, Matrix3x3 &P, scalar &energy) {
@@ -169,6 +193,8 @@ void C_Developed_Stable_NeoHooke_Second::get_pk1_and_energy(const Matrix3x3 &F, 
     P = (2.f * F - 2.f * d_det) * (1.f / (2.f * energy));
 }
 
+
+
 std::vector<PBD_ContinuousMaterial *> get_pbd_materials(const Material material, const scalar young, const scalar poisson) {
     std::vector<PBD_ContinuousMaterial *> materials;
     switch (material) {
@@ -187,6 +213,14 @@ std::vector<PBD_ContinuousMaterial *> get_pbd_materials(const Material material,
         case Stable_NeoHooke:
             materials.push_back(new Developed_Stable_NeoHooke_First(young, poisson));
             materials.push_back(new Developed_Stable_NeoHooke_Second(young, poisson));
+            break;
+        case Corotated:
+            materials.push_back(new Corotated_First(young, poisson));
+            materials.push_back(new Corotated_Second(young, poisson));
+            break;
+        case FixedCorotated:
+            materials.push_back(new FixedCorotated_First(young, poisson));
+            materials.push_back(new FixedCorotated_Second(young, poisson));
             break;
         default:
             std::cout << "Material not found" << std::endl;
