@@ -22,8 +22,8 @@ struct Error {
     int n;
 };
 
-struct BeamDiff : Behaviour {
-    BeamDiff(const int ref, const std::vector<int> &ids) : _ref_id(ref), _ids(ids) { }
+struct MeshDiff : Behaviour {
+    MeshDiff(const int ref, const std::vector<int> &ids) : _ref_id(ref), _ids(ids) { }
 
     virtual void build() = 0;
     virtual Error get_error(int mesh_id) = 0;
@@ -61,8 +61,8 @@ protected:
 
 
 
-struct Beam_MSE_Vertex final : public BeamDiff {
-    Beam_MSE_Vertex(const int ref, const std::vector<int> &ids) : BeamDiff(ref,ids) {}
+struct MeshDiff_MSE final : public MeshDiff {
+    MeshDiff_MSE(const int ref, const std::vector<int> &ids) : MeshDiff(ref,ids) {}
 
     void build() override {
         Mesh* r_mesh = _meshes[_ref_id];
@@ -82,8 +82,8 @@ struct Beam_MSE_Vertex final : public BeamDiff {
     }
 };
 
-struct Beam_MSE_Sampling final : public BeamDiff {
-    Beam_MSE_Sampling(const int ref, const std::vector<int> &ids, int nb_sample) : BeamDiff(ref, ids), _nb_sample(nb_sample) {
+struct Beam_MSE_Sampling final : public MeshDiff {
+    Beam_MSE_Sampling(const int ref, const std::vector<int> &ids, int nb_sample) : MeshDiff(ref, ids), _nb_sample(nb_sample) {
 
     }
 

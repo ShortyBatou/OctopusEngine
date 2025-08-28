@@ -162,6 +162,7 @@ protected:
     std::string _file_name;
     int _id_other;
     ParticleSystemDynamics_Getters* _ps_dynamic;
+    Vector3 _off;
     Mesh * _mesh;
     Mesh * _mesh_diff;
 };

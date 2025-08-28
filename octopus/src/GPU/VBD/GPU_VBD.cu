@@ -9,10 +9,10 @@ __global__ void kernel_integration(
         Vector3* y, Vector3* prev_it_p) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= ps.nb_particles) return;
-    ps.last_p[i] = ps.p[i]; // x^t-1 = x^t
     prev_it_p[i] = ps.p[i];
     const Vector3 a_ext = g + ps.f[i] * ps.w[i];
-    y[i] = ps.p[i] + (ps.v[i] + a_ext * dt) * dt;
+    y[i] = ps.p[i] + ((ps.p[i] - ps.last_p[i]) * (1.f / dt)  + a_ext * dt) * dt;
+    ps.last_p[i] = ps.p[i]; // x^t-1 = x^t
     ps.p[i] = y[i];
     ps.f[i] *= 0;
 }

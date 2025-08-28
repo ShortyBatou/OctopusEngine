@@ -19,6 +19,7 @@ struct GPU_VBD : GPU_ParticleSystem
         y = new Cuda_Buffer(positions);
         prev_it_p = new Cuda_Buffer(positions);
         prev_it2_p = new Cuda_Buffer(positions);
+        prev_prev_p = new Cuda_Buffer(positions);
     }
 
     void step(scalar dt) override;
@@ -37,6 +38,7 @@ struct GPU_VBD : GPU_ParticleSystem
     Cuda_Buffer<Vector3>* prev_it2_p;
 
     Cuda_Buffer<Vector3>* y;
+    Cuda_Buffer<Vector3>* prev_prev_p;
 
     ~GPU_VBD() override
     {
@@ -47,7 +49,7 @@ struct GPU_VBD : GPU_ParticleSystem
 };
 
 __global__ void kernel_integration(scalar dt, Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y,
-                                   Vector3* prev_it_p);
+                                   Vector3* prev_it_p, Vector3* prev_prev_p);
 __global__ void kernel_velocity_update(scalar dt, GPU_ParticleSystem_Parameters ps);
 __global__ void kernel_chebychev_acceleration(int it, scalar omega, GPU_ParticleSystem_Parameters ps,
                                               Vector3* prev_it_p, Vector3* prev_it2_p);

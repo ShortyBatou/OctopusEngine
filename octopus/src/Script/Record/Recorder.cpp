@@ -51,6 +51,7 @@ void XPBD_FEM_Dynamic_Recorder::add_data_json(std::ofstream &json) {
         _ps_dynamic = entity->get_component<ParticleSystemDynamics_Getters>();
         _mesh = entity->get_component<Mesh>();
         _mesh_diff = Engine::GetEntity(_id_other)->get_component<Mesh>();
+        _off = _mesh->vertice(0) - _mesh_diff->vertice(0);
         assert(_mesh_diff && _ps_dynamic && _mesh);
     }
 
@@ -59,9 +60,10 @@ void XPBD_FEM_Dynamic_Recorder::add_data_json(std::ofstream &json) {
         std::vector<Vector3> displacements = _ps_dynamic->get_displacement();
         const Mesh::Geometry& g_first = _mesh->geometry();
         const Mesh::Geometry& g_second = _mesh_diff->geometry();
+
         std::vector<scalar> diff(g_first.size());
         for(int i = 0; i < diff.size(); ++i) {
-            diff[i] = glm::length(g_first[i] - g_second[i]);
+            diff[i] = glm::length(g_first[i] - g_second[i] - _off);
         }
 
         VTK_Formater vtk;
