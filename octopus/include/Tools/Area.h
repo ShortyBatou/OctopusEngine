@@ -1,6 +1,5 @@
 #pragma once
 #include <Manager/Debug.h>
-
 #include "Core/Base.h"
 #include "Tools/Axis.h"
 

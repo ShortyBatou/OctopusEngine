@@ -271,6 +271,6 @@ public:
 
 private:
     std::vector<int> p_ids;
-    ParticleSystem *_ps;
+    ParticleSystemDynamics_Getters *_ps;
     scalar _max_rotation, _beam_length;
 };

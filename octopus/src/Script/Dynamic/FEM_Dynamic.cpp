@@ -47,7 +47,7 @@ void FEM_Dynamic_Generic::update()
         _mesh->geometry()[i] = this->_ps->get(i)->position;
     }
     const scalar t = Time::Tac() * 1000;
-    DebugUI::Begin("XPBD Performance");
+    DebugUI::Begin(std::to_string(this->entity()->id()) + " Performance");
     DebugUI::Plot("Time plot", t);
     DebugUI::Range("Time range", t);
     DebugUI::Value("Time value", t);

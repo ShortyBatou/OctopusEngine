@@ -1,4 +1,6 @@
 #include "Mesh/Generator/BeamGenerator.h"
+#include <Tools/Area.h>
+#include <Tools/Graph.h>
 
 Mesh *BeamMeshGenerator::build() {
     Mesh *mesh = new Mesh();
@@ -84,10 +86,38 @@ void PyramidBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh
 void TetraBeamGenerator::build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology> &topologies) {
     //static unsigned tetras[24]{ 0,4,6,5, 0,4,7,6, 0,7,3,6, 2,0,3,6, 2,0,6,1, 6,0,5,1 }; int nb = 24;
     static int tetras[24]{0, 4, 6, 5, 3, 6, 2, 0, 0, 4, 7, 6, 3, 6, 0, 7, 2, 0, 6, 1, 6, 0, 5, 1};
-    //static unsigned tetras[20]{ 1,6,5,4, 1,2,6,3, 0,1,4,3, 7,6,3,4, 1,3,6,4 }; int nb = 20;
-    //static unsigned tetras[20]{ 0,3,2,7, 7,4,5,0, 7,6,2,5, 2,1,0,5, 7,0,5,0}; int nb = 20;
+
     for (const int& tetra: tetras)
         topologies[Tetra].push_back(ids[tetra]);
+}
+
+void beam_hexa_to_tetra5(const Mesh::Geometry& geometry,std::map<Element, Mesh::Topology> &topologies) {
+    Mesh::Topology &hexa = topologies[Hexa];
+    Mesh::Topology& tetra = topologies[Tetra];
+    tetra.reserve(hexa.size() / 8 * 5 * 4);
+    const Graph p_graph(Hexa, hexa);
+    const Graph d_graph(Hexa, hexa, false);
+    Coloration col = GraphColoration::Primal_Dual_Element_2(Hexa, hexa, p_graph, d_graph);
+    static int tetras5[20]{0,1,3,4,1,2,3,6,1,3,4,6,1,4,5,6,3,4,6,7};
+    for(int i = 0; i < hexa.size(); i+=8) {
+        int c[8];
+        for(int j = 0; j < 8; ++j) {
+            c[j] = col.colors[hexa[i+j]];
+        }
+        for(int j = 0; j < 20; ++j) {
+            tetra.push_back(hexa[i+c[tetras5[j]]]);
+        }
+    }
+    hexa.clear();
+
+    for(int i = 0; i < tetra.size(); i+=4) {
+        int tet[4];
+        for(int j = 0; j < 4; ++j) tet[j] = tetra[i+j];
+        Tetraedron t(geometry.data(), tet);
+        if(t.signed_volume() < 0) {
+            std::swap(tetra[i+1], tetra[i+2]);
+        }
+    }
 }
 
 

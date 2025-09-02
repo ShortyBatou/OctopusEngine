@@ -1,4 +1,5 @@
 #pragma once
+#include <dinput.h>
 #include <Mesh/Converter/MeshLoader.h>
 #include <Script/Dynamic/Cuda_Constraint_Rigid_Controller.h>
 #include <Script/Dynamic/Cuda_LF_VBD_FEM_Dynamic.h>
@@ -45,6 +46,7 @@ struct SimulationArgs {
     int scenario_2;
     std::string mesh_file;
     std::string mesh_type;
+    bool biased = false; // only usefull with tetra beam generated mesh
     int refine;
     Vector3 dir;
 };
@@ -66,16 +68,16 @@ struct BaseScene final : Scene
         editor->add_component_ui(new UI_Graphic_Saver());
     }
 
-    void build_root(Entity* root) override
+        void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        root->add_behaviour(new MeshDiff_MSE(1,{2,3,4,5,6,7,8,9,10,11}));
-        //root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
+        //root->add_behaviour(new MeshDiff_MSE(1,{2,3,4}));
+        root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
     }
 
     // build scene's entities
@@ -84,49 +86,45 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e7;
-        args.poisson = 0.45;
+        args.young = 1e6;
+        args.poisson = 0.35;
         args.damping = 5e-6;
         args.iteration = 0;
         args.sub_iteration = 0;
         args.scenario_1 = 0;
-        args.scenario_2 = -1;
+        args.scenario_2 = 0;
         args.dir = Unit3D::right();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
 
-        args.refine = 2;
-        const Vector3 size(1, 1, 1);
-        Vector3I cells = Vector3I(1, 1, 1);
+        args.refine = 0;
+        const Vector3 size(4, 1, 1);
+        Vector3I cells = Vector3I(64, 16, 16);
         args.iteration = 1;
-        args.sub_iteration = 200;
+        args.sub_iteration = 750;
         args.damping = 5e-6;
-        build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true);
+        build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
 
-
-        cells = Vector3I(16, 4, 4);
         args.material = Stable_NeoHooke;
-        args.damping = 0.4; args.sub_iteration = 5; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 10; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 15; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 20; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 25; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 30; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 35; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 40; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 45; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        args.damping = 0.4; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
+        args.biased = true;
+        cells = Vector3I(16, 4, 4); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
+        cells = Vector3I(8, 2, 2); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra10, args, true, false);
+        cells = Vector3I(3, 2, 2); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra20, args, true, false);
     }
 
-    Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element) {
+
+    Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const bool biased) {
         BeamMeshGenerator* generator;
         switch (element)
         {
-            case Tetra: case Tetra10: case Tetra20: generator = new TetraBeamGenerator(cells, size); break;
+            case Tetra: case Tetra10: case Tetra20:
+                if(biased) generator = new TetraBeamGenerator(cells, size);
+                else generator = new HexaBeamGenerator(cells, size);
+            break;
             case Pyramid: generator = new PyramidBeamGenerator(cells, size); break;
             case Prism: generator = new PrismBeamGenerator(cells, size); break;
             case Hexa: case Hexa27: generator = new HexaBeamGenerator(cells, size); break;
@@ -134,23 +132,26 @@ struct BaseScene final : Scene
         }
         generator->setTransform(glm::translate(Matrix::Identity4x4(), pos));
         Mesh* mesh = generator->build();
+        if(get_linear_element(element) == Tetra && !biased)
+            beam_hexa_to_tetra5(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_topology(false);
         delete generator;
         return mesh;
     }
 
-    Mesh* build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element) {
-        Mesh* mesh = get_beam_mesh(pos, cells, size, element);
+    Mesh* build_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, Element element, bool biased) {
+        Mesh* mesh = get_beam_mesh(pos, cells, size, element, biased);
         if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
         if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
         if (element == Hexa27) hexa_to_hexa27(mesh->geometry(), mesh->topologies());
         mesh->set_dynamic_geometry(true);
+        std::cout << "NB VERTICES " << mesh->nb_vertices() << std::endl;
         return mesh;
     }
 
     GL_Graphic* build_graphic(const Color& color) {
-        //return new GL_GraphicHighOrder(2, color);
-        return new GL_GraphicSurface(color);
+        return new GL_GraphicHighOrder(2, color);
+        //return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {
@@ -170,17 +171,19 @@ struct BaseScene final : Scene
                 const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
-                rd_constraint_1->_event_rate = 1;
+                rd_constraint_1->_event_rate = 0.5;
                 rd_constraint_1->_smooth_iterations = 30;
-                rd_constraint_1->_rot_speed = 90;
+                rd_constraint_1->_move_speed = 0.5;
+                rd_constraint_1->_rot_speed = 0;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)
             {
                 const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Plane(pos + size - args.dir * 0.01f, args.dir), args.dir, args.scenario_2 );
                 //const auto rd_constraint_2 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-3,-0.2,-2),Vector3(-1,0,2)), -args.dir, args.scenario_1);
-                rd_constraint_2->_event_rate = 1;
+                rd_constraint_2->_event_rate = 0.5;
                 rd_constraint_2->_smooth_iterations = 30;
+                rd_constraint_2->_move_speed = 0.5;
                 rd_constraint_2->_rot_speed = 90;
                 e->add_component(rd_constraint_2);
             }
@@ -220,8 +223,9 @@ struct BaseScene final : Scene
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new FEM_VTK_Recorder(file_name));
-        //data_recorder->add(new Graphic_VTK_Recorder(file_name));
-        data_recorder->add(new Mesh_Diff_VTK_Recorder(file_name, 1));
+        data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        data_recorder->add(new FEM_Torsion_error_recorder(180,4));
+        //data_recorder->add(new Mesh_Diff_VTK_Recorder(file_name, 1));
         //data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4, 1, 1), Vector3(3.34483, -1.86949, 1.0009)));
         return data_recorder;
     }
@@ -245,7 +249,7 @@ struct BaseScene final : Scene
     void mesh_post_process(Mesh* mesh, const Element element, const SimulationArgs& args) {
         if(args.refine > 0) {
             const Element lin_elem = get_linear_element(element);
-            MeshMap* map = lin_elem == Tetra ? tetra_to_linear(mesh, element, args.refine) : hexa_to_linear(mesh, element, args.refine);
+            MeshMap* map = lin_elem == Tetra ? tetra_to_linear(mesh, Tetra, args.refine) : hexa_to_linear(mesh, element, args.refine);
             map->apply_to_mesh(mesh);
             if (element == Tetra10) tetra4_to_tetra10(mesh->geometry(), mesh->topologies());
             if (element == Tetra20) tetra4_to_tetra20(mesh->geometry(), mesh->topologies());
@@ -261,7 +265,7 @@ struct BaseScene final : Scene
 
 
     void add_fem_mesh(Entity* e, const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const SimulationArgs& args) {
-        if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        if(args.mesh_file.empty()) e->add_behaviour(build_beam_mesh(pos, cells, size, element, args.biased));
         else if(args.mesh_type == "vtk") e->add_behaviour(build_vtk_mesh(pos, args.mesh_file, element, args));
         else e->add_behaviour(build_msh_mesh(pos, args.mesh_file, element, args));
     }
@@ -301,7 +305,7 @@ struct BaseScene final : Scene
     void build_mixed_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const int exp_it) {
         Entity* e = Engine::CreateEnity();
         add_fem_mesh(e, pos, cells, size, element, args);
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        e->add_behaviour(build_beam_mesh(pos, cells, size, element, args.biased));
         e->add_component(new Cuda_Mixed_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, exp_it, args.damping));
         add_fem_base(e, pos, cells, size, color, element, args, true);
     }
@@ -309,7 +313,7 @@ struct BaseScene final : Scene
     void build_lf_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const scalar rho) {
         Entity* e = Engine::CreateEnity();
         add_fem_mesh(e, pos, cells, size, element, args);
-        e->add_behaviour(build_beam_mesh(pos, cells, size, element));
+        e->add_behaviour(build_beam_mesh(pos, cells, size, element, args.biased));
         e->add_component(new Cuda_LF_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration,  args.damping, rho));
         add_fem_base(e, pos, cells, size, color, element, args, true);
     }

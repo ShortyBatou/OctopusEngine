@@ -71,6 +71,15 @@ public:
     void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology> &topologies) override;
 };
 
+class Tetra5BeamGenerator : public BeamMeshGenerator {
+public:
+    Tetra5BeamGenerator(const Vector3I &_subdivisions, const Vector3 &_sizes) : BeamMeshGenerator(_subdivisions, _sizes) {
+    }
+
+    void build_topo_at_cell(int ids[8], std::map<Element, Mesh::Topology> &topologies) override;
+};
+
+void beam_hexa_to_tetra5(const Mesh::Geometry& geo, std::map<Element, Mesh::Topology> &topologies);
 
 void subdive_tetra(Mesh::Geometry &geometry, std::map<Element, Mesh::Topology> &topologies);
 

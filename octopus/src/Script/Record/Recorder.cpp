@@ -196,17 +196,12 @@ void FEM_Flexion_error_recorder::add_data_json(std::ofstream &json) {
             "}";
 }
 
-void FEM_Torsion_error_recorder::init(Entity *entity) { {
-        auto fem_dynamic = entity->get_component<XPBD_FEM_Dynamic>();
-        if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
-    } {
-        auto fem_dynamic = entity->get_component<FEM_Dynamic_Generic>();
-        if (fem_dynamic != nullptr) _ps = fem_dynamic->getParticleSystem();
-    }
-
-    for (int i = 0; i < _ps->nb_particles(); ++i) {
-        Particle *p = _ps->get(i);
-        if (p->position.y < 1e-6 && p->position.z < 1e-6) p_ids.push_back(i);
+void FEM_Torsion_error_recorder::init(Entity *entity) {
+    _ps = entity->get_component<ParticleSystemDynamics_Getters>();
+    std::vector<Vector3> positions = _ps->get_init_positions();
+    for (int i = 0; i < positions.size(); ++i) {
+        Vector3 p = positions[i];
+        if (p.y < 1e-6 && p.z < 1e-6) p_ids.push_back(i);
         //if (p->position.y < 1e-6 && p->position.z > 0.9999) p_ids.push_back(i);
         //if (p->position.y > 0.9999 && p->position.z < 1e-6) p_ids.push_back(i);
         //if (p->position.y > 0.9999f && p->position.z > 0.9999) p_ids.push_back(i);
@@ -221,15 +216,19 @@ void FEM_Torsion_error_recorder::init(Entity *entity) { {
 
 
 void FEM_Torsion_error_recorder::compute_errors(std::vector<scalar> &dist, std::vector<scalar> &angles) const {
+    const std::vector<Vector3> positions = _ps->get_init_positions();
+    const std::vector<Vector3> init_positions = _ps->get_positions();
+    const Vector3 off = init_positions[0];
     for (const int p_id: p_ids) {
-        const Particle *p = _ps->get(p_id);
-        const Vector2 d_init = glm::normalize(Vector2(p->init_position.y, p->init_position.z) - Vector2(0.5, 0.5));
-        const Vector2 d_current = glm::normalize(Vector2(p->position.y, p->position.z) - Vector2(0.5, 0.5));
+        const Vector3 p = positions[p_id] - off;
+        const Vector3 p0 = init_positions[p_id] - off;
+        const Vector2 d_init = glm::normalize(Vector2(p0.y, p0.z) - Vector2(0.5, 0.5));
+        const Vector2 d_current = glm::normalize(Vector2(p.y, p.z) - Vector2(0.5, 0.5));
 
         scalar angle = std::abs(std::atan2(d_current.x * d_init.y - d_current.y * d_init.x,
                                            d_current.x * d_init.x + d_current.y * d_init.y));
         angle = glm::degrees(angle);
-        dist.push_back(p->init_position.x / _beam_length);
+        dist.push_back(p0.x / _beam_length);
         angles.push_back(angle);
     }
     for (int i = 0; i < dist.size() - 1; ++i) {
