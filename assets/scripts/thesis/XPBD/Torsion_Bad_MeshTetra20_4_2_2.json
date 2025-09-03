@@ -1,0 +1,1 @@
+{"Time" : {"frame" : 199,"time" : 35.9194,"dt" : 0.177088,"fixed_Time" : 3.31666,"fixed_dt" : 0.0166667},"mesh" : {"Tetra20" : 96,"vertices" : 637},"vtk_file" : "assets/3_Tetra20_4_2_2_4x1x1_199.vtk","rotation_error" : {"rot_max" : 180,"beam_lenght" : 4,"distance" : [0,0.249686,0.49995,0.750051,1],"angles" : [0,44.3558,89.9412,135.478,180]}}

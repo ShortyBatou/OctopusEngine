@@ -249,8 +249,8 @@ private:
 
 class FEM_Torsion_error_recorder : public Recorder {
 public:
-    FEM_Torsion_error_recorder(const scalar max_rotation, const scalar beam_length)
-        : p_ids({}), _ps(nullptr), _max_rotation(max_rotation), _beam_length(beam_length) {
+    FEM_Torsion_error_recorder(const scalar max_rotation, const scalar beam_length, const int sample_per_edge = 2)
+        : _ps(nullptr), _max_rotation(max_rotation), _beam_length(beam_length), _sample_per_edge(sample_per_edge) {
     }
 
     void init(Entity *entity) override;
@@ -270,7 +270,14 @@ public:
     void add_scalar_array(std::ofstream &json, const std::vector<scalar> &s_array);
 
 private:
-    std::vector<int> p_ids;
+    std::vector<int> e_off;
+    std::vector<Vector3> r_pos;
+
+    Element elem;
     ParticleSystemDynamics_Getters *_ps;
+    Mesh* mesh;
+    FEM_Shape* shape;
+
     scalar _max_rotation, _beam_length;
+    int _sample_per_edge;
 };

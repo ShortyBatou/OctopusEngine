@@ -7,6 +7,7 @@
 #include <sstream>
 #include <Core/Engine.h>
 #include <Mesh/Generator/BeamGenerator.h>
+#include <Tools/Interpolation.h>
 
 void MeshRecorder::add_data_json(std::ofstream &json) {
     json <<
@@ -197,40 +198,75 @@ void FEM_Flexion_error_recorder::add_data_json(std::ofstream &json) {
 }
 
 void FEM_Torsion_error_recorder::init(Entity *entity) {
+
+    mesh = entity->get_component<Mesh>();
     _ps = entity->get_component<ParticleSystemDynamics_Getters>();
-    std::vector<Vector3> positions = _ps->get_init_positions();
-    for (int i = 0; i < positions.size(); ++i) {
-        Vector3 p = positions[i];
-        if (p.y < 1e-6 && p.z < 1e-6) p_ids.push_back(i);
-        //if (p->position.y < 1e-6 && p->position.z > 0.9999) p_ids.push_back(i);
-        //if (p->position.y > 0.9999 && p->position.z < 1e-6) p_ids.push_back(i);
-        //if (p->position.y > 0.9999f && p->position.z > 0.9999) p_ids.push_back(i);
+
+    elem = Tetra;
+    for(auto [e, _] : mesh->topologies()) {
+        if(_.size() > 0) { elem = e; break; }
     }
 
-    if (p_ids.empty()) {
-        std::cout << "ERROR : No particle found for torsion error" << std::endl;
-    } else {
-        std::cout << "Flexion Error : Follow " << p_ids.size() << " particles" << std::endl;
+    shape = get_fem_shape(elem);
+
+    const Mesh::Geometry positions = _ps->get_init_positions();
+    const Mesh::Topology& topo = mesh->topology(elem);
+
+    const Mesh::Geometry r_geo = shape->get_vertices();
+
+    const int e_nb = elem_nb_vertices(elem);
+    const int e_lin_nb = elem_nb_vertices(get_linear_element(elem));
+    for(int i = 0; i < topo.size(); i += e_nb) {
+        int edge[2]; int k = 0;
+        for(int j = 0; j < e_lin_nb; ++j) {
+            const Vector3 p = positions[topo[i+j]];
+            if (p.y < 1e-6 && p.z < 1e-6) edge[k++] = j;
+        }
+        if(k < 2) continue;
+
+        e_off.push_back(i);
+
+        Vector3 a = r_geo[edge[0]], b = r_geo[edge[1]];
+        for(int j = 0; j < _sample_per_edge; ++j) {
+            const scalar t = static_cast<scalar>(j) / static_cast<scalar>(_sample_per_edge-1);
+            r_pos.push_back(range(t,a,b));
+        }
     }
 }
 
 
 void FEM_Torsion_error_recorder::compute_errors(std::vector<scalar> &dist, std::vector<scalar> &angles) const {
-    const std::vector<Vector3> positions = _ps->get_init_positions();
-    const std::vector<Vector3> init_positions = _ps->get_positions();
+    const Mesh::Geometry positions = _ps->get_init_positions();
+    const Mesh::Geometry init_positions = _ps->get_positions();
+    const Mesh::Topology& topo = mesh->topology(elem);
     const Vector3 off = init_positions[0];
-    for (const int p_id: p_ids) {
-        const Vector3 p = positions[p_id] - off;
-        const Vector3 p0 = init_positions[p_id] - off;
-        const Vector2 d_init = glm::normalize(Vector2(p0.y, p0.z) - Vector2(0.5, 0.5));
-        const Vector2 d_current = glm::normalize(Vector2(p.y, p.z) - Vector2(0.5, 0.5));
 
-        scalar angle = std::abs(std::atan2(d_current.x * d_init.y - d_current.y * d_init.x,
-                                           d_current.x * d_init.x + d_current.y * d_init.y));
-        angle = glm::degrees(angle);
-        dist.push_back(p0.x / _beam_length);
-        angles.push_back(angle);
+
+
+    for(int i = 0; i < e_off.size(); ++i) {
+        const int e = e_off[i];
+        for(int j = 0; j < _sample_per_edge; ++j) {
+            int k = i * _sample_per_edge + j;
+            Vector3 r_p = r_pos[k];
+            Vector3 p(0.f,0.f,0.f);
+            Vector3 p0(0.f,0.f,0.f);
+            std::vector<scalar> weights = shape->build_shape(r_p.x,r_p.y,r_p.z);
+            for(int l = 0; l < weights.size(); ++l) {
+                p += weights[l] * positions[topo[e + l]];
+                p0 += weights[l] * init_positions[topo[e + l]];
+            }
+            const Vector2 d_init = glm::normalize(Vector2(p0.y, p0.z) - Vector2(0.5, 0.5));
+            const Vector2 d_current = glm::normalize(Vector2(p.y, p.z) - Vector2(0.5, 0.5));
+
+            scalar angle = std::abs(std::atan2(d_current.x * d_init.y - d_current.y * d_init.x,
+                                               d_current.x * d_init.x + d_current.y * d_init.y));
+            angle = glm::degrees(angle);
+            dist.push_back(p0.x / _beam_length);
+            angles.push_back(angle);
+        }
     }
+
+    // sort by angles
     for (int i = 0; i < dist.size() - 1; ++i) {
         for (int j = 0; j < dist.size() - 1; ++j) {
             if (dist[j] <= dist[j + 1]) continue;
@@ -238,6 +274,8 @@ void FEM_Torsion_error_recorder::compute_errors(std::vector<scalar> &dist, std::
             std::swap(angles[j], angles[j + 1]);
         }
     }
+
+    // fusionne les sommets qui sont trop proches
     std::vector<scalar> temp_angle;
     std::vector<scalar> temp_dist;
     int i = 0;

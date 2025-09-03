@@ -77,7 +77,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
         //root->add_behaviour(new MeshDiff_MSE(1,{2,3,4}));
-        root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
+        //root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
     }
 
     // build scene's entities
@@ -93,29 +93,24 @@ struct BaseScene final : Scene
         args.sub_iteration = 0;
         args.scenario_1 = 0;
         args.scenario_2 = 0;
-        args.dir = Unit3D::right();
+        args.dir = Unit3D::forward();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
         //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
         //args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        //args.mesh_type = "msh";
+        args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        args.mesh_type = "msh";
 
         args.refine = 0;
-        const Vector3 size(4, 1, 1);
+        const Vector3 size(1, 1, 4);
         Vector3I cells = Vector3I(64, 16, 16);
         args.iteration = 1;
         args.sub_iteration = 750;
         args.damping = 5e-6;
-        build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
+        //build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
 
         args.material = Stable_NeoHooke;
-        args.biased = true;
-        cells = Vector3I(16, 4, 4); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra, args, true, false);
-        cells = Vector3I(8, 2, 2); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra10, args, true, false);
-        cells = Vector3I(3, 2, 2); args.damping = 50; args.sub_iteration = 50; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0.), Tetra20, args, true, false);
     }
-
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const bool biased) {
         BeamMeshGenerator* generator;
@@ -150,8 +145,8 @@ struct BaseScene final : Scene
     }
 
     GL_Graphic* build_graphic(const Color& color) {
-        return new GL_GraphicHighOrder(2, color);
-        //return new GL_GraphicSurface(color);
+        //return new GL_GraphicHighOrder(2, color);
+        return new GL_GraphicSurface(color);
     }
 
     GL_DisplayMesh* build_display() {
@@ -174,7 +169,7 @@ struct BaseScene final : Scene
                 rd_constraint_1->_event_rate = 0.5;
                 rd_constraint_1->_smooth_iterations = 30;
                 rd_constraint_1->_move_speed = 0.5;
-                rd_constraint_1->_rot_speed = 0;
+                rd_constraint_1->_rot_speed = 90;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)
@@ -223,8 +218,8 @@ struct BaseScene final : Scene
         data_recorder->add(new TimeRecorder());
         data_recorder->add(new MeshRecorder());
         data_recorder->add(new FEM_VTK_Recorder(file_name));
-        data_recorder->add(new Graphic_VTK_Recorder(file_name));
-        data_recorder->add(new FEM_Torsion_error_recorder(180,4));
+        //data_recorder->add(new Graphic_VTK_Recorder(file_name));
+        //data_recorder->add(new FEM_Torsion_error_recorder(180,4));
         //data_recorder->add(new Mesh_Diff_VTK_Recorder(file_name, 1));
         //data_recorder->add(new FEM_Flexion_error_recorder(Vector3(4, 1, 1), Vector3(3.34483, -1.86949, 1.0009)));
         return data_recorder;
