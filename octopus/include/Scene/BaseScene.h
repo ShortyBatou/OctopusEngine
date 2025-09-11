@@ -68,7 +68,7 @@ struct BaseScene final : Scene
         editor->add_component_ui(new UI_Graphic_Saver());
     }
 
-        void build_root(Entity* root) override
+    void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
         root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
@@ -77,7 +77,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
         //root->add_behaviour(new MeshDiff_MSE(1,{2,3,4}));
-        //root->add_behaviour(new Beam_MSE_Sampling(1, {2,3,4}, 20));
+        //root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 30));
     }
 
     // build scene's entities
@@ -86,30 +86,32 @@ struct BaseScene final : Scene
         SimulationArgs args{};
         args.density = 1000;
         args.distribution = FemShape;
-        args.young = 1e6;
-        args.poisson = 0.35;
+        args.young = 1e7;
+        args.poisson = 0.45;
         args.damping = 5e-6;
         args.iteration = 0;
         args.sub_iteration = 0;
-        args.scenario_1 = 0;
-        args.scenario_2 = 0;
-        args.dir = Unit3D::forward();
+        args.scenario_1 = 10;
+        args.scenario_2 = -1;
+        args.dir = Unit3D::up();
         args.material = Stable_NeoHooke;
         args.display = FEM_DataDisplay::Type::Displacement;
-        //args.mesh_file = "mesh/vtk/beam-s-4-1-1-n-16-4-4-tetra.vtk";
-        //args.mesh_type = "vtk";
-        args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
-        args.mesh_type = "msh";
+        args.mesh_file = "mesh/vtk/armadillo4.vtk";
+        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
+        //args.mesh_type = "msh";
 
-        args.refine = 0;
-        const Vector3 size(1, 1, 4);
-        Vector3I cells = Vector3I(64, 16, 16);
+        const Vector3 size(1, 1, 1);
+        Vector3I cells(1, 1, 1);
+        //build_mesh_entity(Vector3(0,0.,-4), cells, size, Color(0.8,.2,0.8,0), Tetra, args);
+
         args.iteration = 1;
-        args.sub_iteration = 750;
-        args.damping = 5e-6;
-        //build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
+        args.sub_iteration = 200;
+        args.damping = 4;
+        //build_fem_entity(Vector3(0,0.,4), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true);
+        /**/
 
-        args.material = Stable_NeoHooke;
+        build_xpbd_entity(Vector3(-0.,0.55,0.), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const bool biased) {
@@ -163,13 +165,13 @@ struct BaseScene final : Scene
         {
             if(args.scenario_1!=-1)
             {
-                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
+                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(Unit3D::Zero() + args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
                 rd_constraint_1->_event_rate = 0.5;
                 rd_constraint_1->_smooth_iterations = 30;
                 rd_constraint_1->_move_speed = 0.5;
-                rd_constraint_1->_rot_speed = 90;
+                rd_constraint_1->_rot_speed = 0;
                 e->add_component(rd_constraint_1);
             }
             if(args.scenario_2!=-1)

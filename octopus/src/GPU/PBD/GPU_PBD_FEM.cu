@@ -82,7 +82,7 @@ __global__ void kernel_XPBD_V0(
         xpbd_convert_to_constraint(fem.elem_nb_vert, C, grad_C);
         if(C < 1e-12f) continue;
 
-        xpbd_solve(fem.elem_nb_vert,(m==0)?mt.lambda:mt.mu, dt, C, grad_C, ps.w, topology, ps.p, ps.mask);
+        xpbd_solve(fem.elem_nb_vert,(m==0) ? mt.lambda : mt.mu, dt, C, grad_C, ps.w, topology, ps.p, ps.mask);
     }
 }
 
@@ -226,6 +226,14 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
     }
     cb_C = new Cuda_Buffer<scalar>(s_max);
     cb_grad_C = new Cuda_Buffer<Vector3>(s_max * elem_nb_vertices(element));
+}
+
+scalar GPU_PBD_FEM::get_inertia_residual() {
+ return 0;
+}
+
+scalar GPU_PBD_FEM::get_constraint_residual() {
+    return 0;
 }
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {

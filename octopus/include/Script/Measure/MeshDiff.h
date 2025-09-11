@@ -91,12 +91,12 @@ struct Beam_MSE_Sampling final : public MeshDiff {
         // construire la liste des sommets dans la poutres
         Box box(_meshes[_ref_id]->geometry());
 
-        Vector3 size = box.pmax - box.pmin;
+        Vector3 size = box.pmax - box.pmin - Vector3(2.f * large_eps);
         Vector3 step = size * (1.0f / _nb_sample);
         for(int x = 0; x <= _nb_sample * size.x; ++x)
         for(int y = 0; y <= _nb_sample * size.y; ++y)
         for(int z = 0; z <= _nb_sample * size.z; ++z) {
-            global_sample.push_back(Vector3(step.x * x / size.x, step.y * y  / size.y, step.z * z / size.z) - box.pmin);
+            global_sample.push_back(Vector3(step.x * x / size.x, step.y * y  / size.y, step.z * z / size.z) - box.pmin + Vector3(large_eps));
         }
 
         /*for(int i = 0; i < _nb_sample; ++i) {
@@ -218,6 +218,7 @@ struct Beam_MSE_Sampling final : public MeshDiff {
             for(int j = 0; j < r_weights.size(); ++j) {
                 r_p += r_geo[r_topo[r_off + j]] * r_weights[j];
             }
+
             error.update(p - r_p - _offsets[id]);
         }
         return error;

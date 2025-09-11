@@ -65,7 +65,9 @@ void Cuda_XPBD_FEM_Dynamic::update() {
         graphic->set_multi_color(false);
         graphic->set_element_color(false);
     }
-
+    if(Input::Down(Key::A)) _sub_iterations++;
+    if(Input::Down(Key::Q)) _sub_iterations--;
+    if(Input::Down(Key::A) || Input::Down(Key::Q)) std::cout << _sub_iterations << std::endl;
     Cuda_ParticleSystem_Dynamics::update();
 }
 

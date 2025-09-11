@@ -24,6 +24,8 @@ protected:
     Cuda_Buffer<Vector3>* cb_grad_C;
     void build_graph_color(const Mesh::Topology& topology, int nb_vert, std::vector<int>& colors) const;
     void build_thread_by_color(const std::vector<int>& colors);
+    scalar get_inertia_residual();
+    scalar get_constraint_residual();
 };
 
 __device__ void xpbd_convert_to_constraint(int nb_vert_elem, scalar& C, Vector3* grad_C);
