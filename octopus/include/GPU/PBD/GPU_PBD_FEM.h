@@ -17,15 +17,17 @@ struct GPU_PBD_FEM : GPU_FEM
     ~GPU_PBD_FEM() override = default;
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
+    void get_residuals(GPU_ParticleSystem* ps, scalar dt, scalar& primal, scalar& dual);
 
 protected:
     Cuda_Buffer<int>* cb_eid;
     Cuda_Buffer<scalar>* cb_C;
     Cuda_Buffer<Vector3>* cb_grad_C;
+    Cuda_Buffer<scalar>* cb_lambda;
+    Cuda_Buffer<Vector3>* cb_internia_residual;
+    Cuda_Buffer<scalar>* cb_constraint_residual;
     void build_graph_color(const Mesh::Topology& topology, int nb_vert, std::vector<int>& colors) const;
     void build_thread_by_color(const std::vector<int>& colors);
-    scalar get_inertia_residual();
-    scalar get_constraint_residual();
 };
 
 __device__ void xpbd_convert_to_constraint(int nb_vert_elem, scalar& C, Vector3* grad_C);

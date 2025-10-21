@@ -21,7 +21,7 @@ void Cuda_ParticleSystem_Dynamics::update()
     const scalar t = Time::Tac() * 1000.f;
     _gpu_ps->get_position(_mesh->geometry());
     DebugUI::Begin("Entity Time " + std::to_string(entity()->id()));
-    DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t, 400);
+    DebugUI::Plot("Time (" + std::to_string(entity()->id()) + ")", t, 150);
     DebugUI::Range("Range (" + std::to_string(entity()->id()) + ")", t);
     DebugUI::Value("Value (" + std::to_string(entity()->id()) + ")", t);
     DebugUI::End();
@@ -32,6 +32,13 @@ std::vector<Vector3> Cuda_ParticleSystem_Dynamics::get_positions()
     std::vector<Vector3> positions;
     _gpu_ps->get_position(positions);
     return positions;
+}
+
+std::vector<Vector3> Cuda_ParticleSystem_Dynamics::get_last_positions()
+{
+    std::vector<Vector3> last_positions;
+    _gpu_ps->get_prev_position(last_positions);
+    return last_positions;
 }
 
 std::vector<Vector3> Cuda_ParticleSystem_Dynamics::get_init_positions()

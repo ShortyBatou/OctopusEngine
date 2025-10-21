@@ -14,6 +14,7 @@ struct FEM_Dynamic_Getters
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_stress() = 0;
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_volume() = 0;
     [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_volume_diff() = 0;
+    [[nodiscard]] virtual std::map<Element, std::vector<scalar>> get_inverted() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_stress_vertices() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_residual_vertices() = 0;
     [[nodiscard]] virtual std::vector<scalar> get_residual_norm();
@@ -47,6 +48,7 @@ struct FEM_Dynamic_Generic : FEM_Dynamic {
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_stress() override;
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume() override;
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume_diff() override;
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_inverted() override;
 
     virtual std::vector<FEM_Generic*> build_element(const std::vector<int>& ids, Element type, scalar& volume);
     virtual void get_fem_info(int& nb_elem, int& elem_vert, Element& elem);

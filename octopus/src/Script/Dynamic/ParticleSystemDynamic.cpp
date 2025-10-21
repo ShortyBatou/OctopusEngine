@@ -30,6 +30,13 @@ std::vector<Vector3> ParticleSystemDynamic::get_positions()
     return positions;
 }
 
+std::vector<Vector3> ParticleSystemDynamic::get_last_positions() {
+    std::vector<Vector3> last_positions(_ps->nb_particles());
+    for (int i = 0; i < _ps->nb_particles(); ++i)
+        last_positions[i] = _ps->get(i)->last_position;
+    return last_positions;
+}
+
 std::vector<Vector3> ParticleSystemDynamic::get_init_positions()
 {
     std::vector<Vector3> init_positions(_ps->nb_particles());

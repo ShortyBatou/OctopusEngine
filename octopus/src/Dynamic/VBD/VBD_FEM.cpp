@@ -215,6 +215,28 @@ std::vector<scalar> VBD_FEM::compute_colume_diff(VertexBlockDescent *vbd) const
     return volume_diff;
 }
 
+std::vector<scalar> VBD_FEM::compute_inverted(VertexBlockDescent *vbd) const
+{
+    const int nb_element = static_cast<int>(data->JX_inv.size());
+    std::vector<scalar> inverted(nb_element,0);
+    const int nb_quadrature = data->shape->nb_quadratures();
+    const int nb_vert_elem = data->shape->nb;
+    for(int eid = 0; eid < nb_element; ++eid)
+    {
+        for (int i = 0; i < nb_quadrature; ++i) {
+            Matrix3x3 Jx = Matrix::Zero3x3();
+            for (int j = 0; j < nb_vert_elem; ++j) {
+                const int vid = data->topology[eid * nb_vert_elem + j];
+                Jx += glm::outerProduct(vbd->get(vid)->position, data->shape->dN[i][j]);
+            }
+
+            if(glm::determinant(Jx * data->JX_inv[eid][i]) < 0) inverted[eid] = 0;;
+        }
+    }
+    return inverted;
+}
+
+
 Matrix3x3 VBD_FEM::assemble_hessian(const std::vector<Matrix3x3> &d2W_dF2, const Vector3 dF_dx) {
     Matrix3x3 H = Matrix::Zero3x3();
     for (int j = 0; j < 3; ++j) {

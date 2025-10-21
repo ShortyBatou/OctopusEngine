@@ -13,6 +13,7 @@ std::string FEM_DataDisplay::Type_To_Str(const Type mode) {
         case Velocity: return "Velocity";
         case Mask: return "Mask";
         case Residual: return "Residual";
+        case Inverted: return "Inverted";
         default: return "";
     }
 }
@@ -117,6 +118,13 @@ void FEM_DataDisplay::update() {
         _graphic->set_multi_color(true);
         _graphic->set_element_color(true);
         std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_volume_diff();
+        for (auto &[e, data]: e_data) {
+            _graphic->set_ecolors(e, convert_to_color(data));
+        }
+    } else if (_mode == Inverted) {
+        _graphic->set_multi_color(true);
+        _graphic->set_element_color(true);
+        std::map<Element, std::vector<scalar> > e_data = _fem_dynamic->get_inverted();
         for (auto &[e, data]: e_data) {
             _graphic->set_ecolors(e, convert_to_color(data));
         }

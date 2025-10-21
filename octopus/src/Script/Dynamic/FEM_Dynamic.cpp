@@ -141,8 +141,7 @@ std::map<Element, std::vector<scalar>> FEM_Dynamic_Generic::get_volume_diff()
         for (size_t i = 0; i < fems.size(); ++i)
         {
             std::vector<Vector3> p = _mesh->get_elem_vertices(type, id_fems[i]);
-            diff_volumes[id_fems[i]] = abs(fems[i]->compute_volume(p) - fems[i]->get_init_volume()) / fems[i]->
-                get_init_volume();
+            diff_volumes[id_fems[i]] = abs(fems[i]->compute_volume(p) - fems[i]->get_init_volume());
             count[id_fems[i]]++; // in the case that we have multiple fem_generic per element
         }
         for (size_t i = 0; i < diff_volumes.size(); ++i)
@@ -150,6 +149,31 @@ std::map<Element, std::vector<scalar>> FEM_Dynamic_Generic::get_volume_diff()
             diff_volumes[i] /= static_cast<scalar>(count[i]);
         }
         e_volume[type] = diff_volumes;
+    }
+
+    return e_volume;
+}
+
+[[nodiscard]] std::map<Element, std::vector<scalar>> FEM_Dynamic_Generic::get_inverted()
+{
+    std::map<Element, std::vector<scalar>> e_volume;
+    for (auto& [e, fems] : e_fems)
+    {
+        const int nb_elem = static_cast<int>(_mesh->topology(e).size()) / elem_nb_vertices(e);
+        std::vector<int>& id_fems = e_id_fems[e];
+        std::vector<scalar> inverted(nb_elem);
+        std::vector<int> count(nb_elem, 0);
+        for (size_t i = 0; i < fems.size(); ++i)
+        {
+            std::vector<Vector3> p = _mesh->get_elem_vertices(e, id_fems[i]);
+            inverted[id_fems[i]] += fems[i]->inverted(p);
+            count[id_fems[i]]++; // in the case that we have multiple fem_generic per element
+        }
+        for (size_t i = 0; i < inverted.size(); ++i)
+        {
+            inverted[i] /= static_cast<scalar>(count[i]);
+        }
+        e_volume[e] = inverted;
     }
 
     return e_volume;

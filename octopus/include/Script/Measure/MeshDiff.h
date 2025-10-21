@@ -43,7 +43,7 @@ struct MeshDiff : Behaviour {
     void late_update() override {
         for(const int id : _ids) {
             const Error error = get_error(id);
-            DebugUI::Begin( std::to_string(id) + ": error");
+            DebugUI::Begin( std::to_string(_ref_id) + " => " + std::to_string(id) + ": error");
             DebugUI::Value(std::to_string(id) + " MSE = ", error.MSE);
             DebugUI::Value(std::to_string(id) + " RMSE = ", error.RMSE);
             DebugUI::Value(std::to_string(id) + " MAE = ", error.MAE);

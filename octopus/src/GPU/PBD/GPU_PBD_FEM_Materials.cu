@@ -16,18 +16,17 @@ __device__ void stvk_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
 
 __device__ void hooke_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     const float trace = mat3x3_trace(0.5f * (glm::transpose(F) + F) - Matrix3x3(1.f));
-    // P(F) = 2E   C(F) = tr(E)�
+    // P(F) = 2E   C(F) = tr(E)
     C = trace * trace;
     P = 2.f * trace * Matrix3x3(1.f);
 }
 
 __device__ void hooke_second(const Matrix3x3 &F, Matrix3x3 &P, scalar &C) {
     const Matrix3x3 E = 0.5f * (glm::transpose(F) + F) - Matrix3x3(1.f);
-    // P(F) = 2E   C(F) = tr(E)�
+    // P(F) = 2E   C(F) = tr(E)
     C = 2.f * squared_trace(E);
     P = 4.f * E;
 }
-
 
 __device__ void snh_first(const Matrix3x3 &F, Matrix3x3 &P, scalar &C, const scalar alpha) {
     const scalar I_3 = glm::determinant(F);

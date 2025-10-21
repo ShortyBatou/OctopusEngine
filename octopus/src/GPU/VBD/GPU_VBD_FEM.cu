@@ -11,6 +11,7 @@
 #include <GPU/GPU_ParticleSystem.h>
 #include <Manager/Input.h>
 #include <Manager/TimeManager.h>
+#include <Mesh/Converter/VTK_Formater.h>
 
 __device__ void compute_f_H(
     const int n, const int r_vid,
@@ -575,6 +576,18 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     build_owner_data(nb_vertices, topology, e_owners, e_ref_id);
     Coloration coloration = build_graph_color(element, topology); // get coloration
     create_buffers(element, topology, coloration, e_owners, e_ref_id);
+
+    std::vector<scalar> data(coloration.colors.size());
+    for(int i = 0; i < data.size(); ++i) data[i] = coloration.colors[i];
+    std::map<Element, Mesh::Topology> topologies;
+    topologies[element] = topology;
+
+    /*VTK_Formater vtk;
+    vtk.open("vbd_mesh_coloration_" + element_name(element) + "_" + std::to_string(coloration.nb_color));
+    vtk.save_mesh(geometry, topologies);
+    vtk.start_point_data();
+    vtk.add_scalar_data(data, "colors");
+    vtk.close();*/
 }
 
 void GPU_VBD_FEM::create_buffers(
@@ -736,6 +749,7 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     //Graph d_graph(element, topology, false);
     //Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
     Coloration coloration = GraphColoration::DSAT(p_graph);
+    std::cout <<"!!!DATA : " << element_name(element) << " " << p_graph.n << " " << topology.size() / elem_nb_vertices(element) << " " << coloration.nb_color << std::endl;
     return coloration;
 }
 

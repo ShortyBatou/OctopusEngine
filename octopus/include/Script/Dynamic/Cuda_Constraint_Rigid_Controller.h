@@ -9,7 +9,8 @@ public:
 	Cuda_Constraint_Rigid_Controller(Area* area, const Vector3& n, const int mode = 0)
 		: _mode(mode), _event_rate(1), _move_speed(1.), _rot_speed(90), _smooth_iterations(1), _area(area),
 		  _smooth_step(1),
-		  _timer(0.f), _rot_normal(n), _fixation(nullptr), _crush(nullptr), _random_sphere(nullptr) {
+		  _timer(0.f), _rot_normal(n), _fixation(nullptr), _crush(nullptr), _random_sphere(nullptr),
+		  _high_stretch(nullptr) {
 	}
 
 	void late_init() override;
@@ -36,4 +37,5 @@ protected:
 	GPU_Fix_Constraint* _fixation;
 	GPU_Crush* _crush;
 	GPU_RandomSphere* _random_sphere;
+	GPU_HighStretch* _high_stretch;
 };

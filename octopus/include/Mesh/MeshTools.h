@@ -6,6 +6,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "Converter/MeshConverter.h"
+
 class MeshTools {
 public:
     // get face that correspond to surface
@@ -59,11 +61,40 @@ public:
         std::vector<int> &v_element_id
     );
 
+    static Mesh::Topology Get_Surface_Geometry_Ids(Mesh* mesh) {
+        std::set<int> ids;
+        std::set<Face<3>> surface_tri;
+        std::set<Face<4>> surface_quad;
+        for (auto &it: mesh->topologies()) {
+            Element element = it.first;
+            MeshConverter* converter = get_mesh_converter(element);
+
+            Mesh::Topology triangles;
+            Mesh::Topology quads;
+
+            // convert all elements into triangles and quads
+            converter->convert_element(mesh->topology(element), triangles, quads);
+
+            // get surface faces
+            const Mesh::Topology &ref_topology_tri = converter->topo_triangle();
+            const Mesh::Topology &ref_topology_quad = converter->topo_quad();
+            MeshTools::GetSurface<3>(surface_tri, triangles, ref_topology_tri);
+            MeshTools::GetSurface<4>(surface_quad, quads, ref_topology_quad);
+            delete converter;
+        }
+        for(Face<3> it: surface_tri)
+            for(int i = 0; i < 3; ++i) ids.insert(it.ids[i]);
+
+        for(Face<4> it: surface_quad)
+            for(int i = 0; i < 4; ++i) ids.insert(it.ids[i]);
+
+        return std::vector<int>(ids.begin(), ids.end());
+    }
+
 private:
     template<int nb>
     static void TryAddFace(std::set<Face<nb> > &faces, Face<nb> &face, bool remove_duplicates);
 };
-
 
 template<int NB>
 void MeshTools::GetSurface(

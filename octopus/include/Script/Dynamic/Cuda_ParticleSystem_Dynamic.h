@@ -22,6 +22,7 @@ struct Cuda_ParticleSystem_Dynamics : Component, ParticleSystemDynamics_Getters
     ~Cuda_ParticleSystem_Dynamics() override { delete _gpu_ps; }
 
     [[nodiscard]] std::vector<Vector3> get_positions() override;
+    [[nodiscard]] std::vector<Vector3> get_last_positions() override;
     [[nodiscard]] std::vector<Vector3> get_init_positions() override;
     [[nodiscard]] std::vector<Vector3> get_displacement() override;
     [[nodiscard]] std::vector<Vector3> get_velocity() override;

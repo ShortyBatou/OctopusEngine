@@ -109,20 +109,24 @@ void FEM_VTK_Recorder::save() {
     std::map<Element, std::vector<scalar> > e_stress = _fem_dynamic->get_stress();
     std::map<Element, std::vector<scalar> > e_volume = _fem_dynamic->get_volume();
     std::map<Element, std::vector<scalar> > e_volume_diff = _fem_dynamic->get_volume_diff();
-    std::vector<scalar> all_stress, all_volume, all_volume_diff;
+    std::map<Element, std::vector<scalar> > e_inverted = _fem_dynamic->get_inverted();
+    std::vector<scalar> all_stress, all_volume, all_volume_diff, all_inverted;
     for (auto &it: e_stress) {
         Element type = it.first;
         std::vector<scalar> &stress = e_stress[type];
         std::vector<scalar> &volume = e_volume[type];
         std::vector<scalar> &volume_diff = e_volume_diff[type];
+        std::vector<scalar> &inverted = e_inverted[type];
         size_t n = all_stress.size();
         all_stress.resize(all_stress.size() + stress.size());
         all_volume.resize(all_volume.size() + volume.size());
         all_volume_diff.resize(all_volume_diff.size() + volume_diff.size());
+        all_inverted.resize(all_inverted.size() + inverted.size());
         for (size_t i = 0; i < stress.size(); ++i) {
             all_stress[n + i] = stress[i];
             all_volume[n + i] = volume[i];
             all_volume_diff[n + i] = volume_diff[i];
+            all_inverted[n + i] = all_inverted[i];
         }
     }
 
@@ -145,6 +149,7 @@ void FEM_VTK_Recorder::save() {
     vtk.add_scalar_data(all_stress, "stress");
     vtk.add_scalar_data(all_volume, "volume");
     vtk.add_scalar_data(all_volume_diff, "volume_diff");
+    vtk.add_scalar_data(all_inverted, "inverted");
     vtk.close();
 }
 

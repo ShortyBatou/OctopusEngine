@@ -58,6 +58,15 @@ scalar FEM_Generic::compute_volume(const std::vector<Particle *> &p) const {
     return volume;
 }
 
+bool FEM_Generic::inverted(const std::vector<Vector3> &p) const {
+    const size_t nb_w = _shape->weights.size();
+    for (size_t i = 0; i < nb_w; ++i) {
+        const scalar d = glm::determinant(get_jacobian(p, _shape->dN[i]) * _JX_inv[i]);
+        if(d < 0) return true;
+    }
+    return false;
+}
+
 scalar FEM_Generic::compute_volume(const std::vector<Vector3> &p) const {
     const size_t nb_w = _shape->weights.size();
     scalar volume = 0.;

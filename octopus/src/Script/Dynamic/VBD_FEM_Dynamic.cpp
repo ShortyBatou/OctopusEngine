@@ -74,3 +74,17 @@ std::map<Element, std::vector<scalar>> VBD_FEM_Dynamic::get_volume_diff()
     }
     return volumes_diff;
 }
+
+
+std::map<Element, std::vector<scalar>> VBD_FEM_Dynamic::get_inverted()
+{
+    std::map<Element, std::vector<scalar>> inverted;
+    for(auto&[e, topo] : _mesh->topologies())
+    {
+        if(topo.empty()) continue;
+        inverted[e] = fem->compute_colume_diff(vbd);
+        break;
+    }
+    return inverted;
+}
+

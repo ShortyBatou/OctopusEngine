@@ -88,6 +88,29 @@ __global__ void kernel_compute_volume_diff(
     diff_volumes[eid] = diff_volume;
 }
 
+__global__ void kernel_compute_inverted(
+    GPU_ParticleSystem_Parameters ps,
+    GPU_FEM_Pameters fem,
+    scalar* e_inverted)
+{
+    const int eid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (eid >= fem.nb_element) return;
+    const int qid = eid * fem.nb_quadrature;
+    const int* topo = fem.topology + eid * fem.elem_nb_vert;
+    scalar signed_v = 0;
+    for (int i = 0; i < fem.nb_quadrature; ++i)
+    {
+        Matrix3x3 Jx(0.f);
+        for (int j = 0; j < fem.elem_nb_vert; ++j)
+        {
+            Jx += glm::outerProduct(ps.p[topo[j]], fem.dN[i * fem.elem_nb_vert + j]);
+        }
+        scalar d = glm::determinant(Jx * fem.JX_inv[eid+qid]) * fem.weights[i];
+        signed_v += d;
+    }
+    e_inverted[eid] = signed_v > -1e-6 ? 0 : 1;
+}
+
 std::vector<scalar> GPU_FEM::get_stress(const GPU_ParticleSystem* ps) const
 {
     kernel_compute_stress<<<(d_fem->nb_element + 31) / 32, 32>>>(
@@ -111,12 +134,21 @@ std::vector<scalar> GPU_FEM::get_volume(const GPU_ParticleSystem* ps) const
 
 std::vector<scalar> GPU_FEM::get_volume_diff(const GPU_ParticleSystem* ps) const
 {
-    kernel_compute_volume_diff<<<(d_fem->nb_element + 31) / 32, 32>>>(
+    kernel_compute_inverted<<<(d_fem->nb_element + 31) / 32, 32>>>(
         ps->get_parameters(), get_fem_parameters(), cb_elem_data->buffer
     );
     std::vector<scalar> volumes_diff(d_fem->nb_element);
     cb_elem_data->get_data(volumes_diff);
     return volumes_diff;
+}
+
+std::vector<scalar> GPU_FEM::get_inverted(const GPU_ParticleSystem *ps) const {
+    kernel_compute_inverted<<<(d_fem->nb_element + 31) / 32, 32>>>(
+            ps->get_parameters(), get_fem_parameters(), cb_elem_data->buffer
+        );
+    std::vector<scalar> inverted(d_fem->nb_element);
+    cb_elem_data->get_data(inverted);
+    return inverted;
 }
 
 

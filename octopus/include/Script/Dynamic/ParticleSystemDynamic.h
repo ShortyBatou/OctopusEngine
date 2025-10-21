@@ -8,6 +8,7 @@ struct ParticleSystemDynamics_Getters
 {
     virtual ~ParticleSystemDynamics_Getters() = default;
     [[nodiscard]] virtual std::vector<Vector3> get_positions() = 0;
+    [[nodiscard]] virtual std::vector<Vector3> get_last_positions() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_init_positions() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_displacement() = 0;
     [[nodiscard]] virtual std::vector<Vector3> get_velocity() = 0;
@@ -31,6 +32,7 @@ public:
 
     ~ParticleSystemDynamic() override { delete _ps; }
 
+    [[nodiscard]] std::vector<Vector3> get_last_positions() override;
     [[nodiscard]] std::vector<Vector3> get_positions() override;
     [[nodiscard]] std::vector<Vector3> get_init_positions() override;
     [[nodiscard]] std::vector<Vector3> get_displacement() override;

@@ -40,6 +40,7 @@ struct VBD_FEM : VBD_Object {
     std::vector<scalar> compute_volume(VertexBlockDescent *vbd) const;
     std::vector<scalar> compute_colume_diff(VertexBlockDescent *vbd) const;
     std::vector<Vector3> compute_forces(VertexBlockDescent *vbd, scalar dt) const;
+    std::vector<scalar> compute_inverted(VertexBlockDescent *vbd) const;
 
     virtual void solve_vertex(VertexBlockDescent *vbd, scalar dt, int vid, scalar mass);
 

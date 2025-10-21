@@ -226,3 +226,20 @@ struct Hexa27Converter : HexaConverter {
 
     [[nodiscard]] FEM_Shape *get_shape() const override { return new Hexa_27(); }
 };
+
+inline MeshConverter* get_mesh_converter(const Element elem) {
+    MeshConverter* converter = nullptr;
+    switch (elem) {
+        case Tetra: converter = new TetraConverter(); break;
+        case Tetra10: converter = new Tetra10Converter();break;
+        case Tetra20: converter = new Tetra20Converter();break;
+        case Hexa: converter = new HexaConverter();break;
+        case Pyramid: converter = new PyramidConverter();break;
+        case Prism: converter = new PrysmConverter();break;
+        case Hexa27: converter = new Hexa27Converter();break;
+        default: converter = nullptr;
+    }
+    assert(converter != nullptr);
+    if(converter != nullptr) converter->init();
+    return converter;
+}

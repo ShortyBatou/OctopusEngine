@@ -17,5 +17,14 @@ struct Random {
 
     template<typename T>
     static T Range(const T& min, const T& max) { return range(Eval(), min, max); }
+
+    template<typename T>
+    static std::vector<T> InList(std::vector<T>& list, int n) {
+        std::vector<T> result = list;
+        std::random_device rd; std::mt19937 gen(rd());
+        std::shuffle(result.begin(), result.end(), gen);
+        result.resize(n);
+        return result;
+    }
 };
 

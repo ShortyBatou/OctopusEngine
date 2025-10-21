@@ -1,6 +1,7 @@
 #include "Core/Base.h"
 #include "GPU/GPU_Constraint.h"
 #include<vector>
+#include <GPU/CUMatrix.h>
 #include <GPU/GPU_ParticleSystem.h>
 #include <Manager/Debug.h>
 
@@ -79,8 +80,16 @@ __global__ void kernel_constraint_box_limit(const Vector3 pmin, const Vector3 pm
     ps.p[i] = p;
 }
 
+__global__ void kernel_constraint_high_stretch(const int n, Vector3 c, scalar dist, int* ids,  GPU_ParticleSystem_Parameters ps)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n) return;
+    const int id = ids[i];
+    if(ps.mask[id] == 0) return;
 
-
+    const Vector3 d = glm::normalize(ps.init_p[id] - c);
+    ps.p[id] = ps.init_p[id] + d * dist;
+}
 
 GPU_Fix_Constraint::GPU_Fix_Constraint(const Mesh::Geometry& positions, Area* area) {
     std::vector<int> ids;
@@ -115,4 +124,9 @@ void GPU_RandomSphere::step(GPU_ParticleSystem *ps, scalar dt) {
 
 void GPU_Box_Limit::step(GPU_ParticleSystem *ps, scalar dt) {
     kernel_constraint_box_limit<<<(ps->nb_particles() + 31) / 32, 32>>>(pmin, pmax, ps->get_parameters());
+}
+
+void GPU_HighStretch::step(GPU_ParticleSystem *ps, scalar dt) {
+    t = std::min(t+dt, max_dist);
+    kernel_constraint_high_stretch<<<(cb_ids->nb + 31) / 32, 32>>>(cb_ids->nb, center, t, cb_ids->buffer, ps->get_parameters());
 }

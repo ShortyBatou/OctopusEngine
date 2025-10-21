@@ -77,6 +77,17 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
         return volumes;
     }
 
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_inverted() override
+    {
+        std::map<Element, std::vector<scalar>> inverted;
+        for(auto&[e, topo] : _mesh->topologies())
+        {
+            if(topo.empty()) continue;
+            inverted[e] = _gpu_fems[e]->get_inverted(_gpu_ps);
+        }
+        return inverted;
+    }
+
     [[nodiscard]] std::vector<scalar> get_stress_vertices() override
     {
         std::vector<scalar> stresses(_gpu_ps->nb_particles(),0);

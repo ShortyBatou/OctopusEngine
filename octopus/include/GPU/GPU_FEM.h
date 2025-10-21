@@ -65,6 +65,7 @@ struct GPU_FEM : GPU_Dynamic {
     virtual GPU_FEM_Data* build_fem_const(const Element& element, const Mesh::Geometry& geometry, const Mesh::Topology& topology);
     std::vector<scalar> get_stress(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume(const GPU_ParticleSystem *ps) const;
+    std::vector<scalar> get_inverted(const GPU_ParticleSystem *ps) const;
     std::vector<scalar> get_volume_diff(const GPU_ParticleSystem *ps) const;
     virtual std::vector<Vector3> get_forces(const GPU_ParticleSystem *ps, scalar dt) const;
 

@@ -37,7 +37,6 @@ scalar XPBD_Constraint::get_dual_residual(const std::vector<Particle*>& particle
     if (!project(x, grads, C)) return 0;
     const scalar alpha = 1.0f / (_stiffness * dt * dt);
     return (C + alpha * _lambda);
-
 }
 
 

@@ -30,6 +30,7 @@ struct VBD_FEM_Dynamic : FEM_Dynamic
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_stress() override;
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume() override;
     [[nodiscard]] std::map<Element, std::vector<scalar>> get_volume_diff() override;
+    [[nodiscard]] std::map<Element, std::vector<scalar>> get_inverted() override;
 
 protected:
     VBD_FEM* fem;

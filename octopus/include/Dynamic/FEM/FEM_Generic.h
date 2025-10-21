@@ -27,6 +27,8 @@ struct FEM_Generic {
 
     [[nodiscard]] scalar compute_volume(const std::vector<Vector3> &p) const;
 
+    [[nodiscard]] bool inverted(const std::vector<Vector3> &p) const;
+
     [[nodiscard]] virtual scalar compute_stress(const std::vector<Vector3> &p) const;
 
 
