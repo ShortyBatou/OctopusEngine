@@ -155,3 +155,19 @@ __global__ void kernel_vbd_compute_residual(
     Material_Data mt,
     GPU_ParticleSystem_Parameters ps, GPU_FEM_Pameters fem, GPU_Owners_Parameters owners
 );
+__device__ void compute_f_H(int n, int r_vid,
+    const Material_Data& mt, GPU_ParticleSystem_Parameters ps, const int* topo,
+    const Matrix3x3 &JX_inv, scalar V, const Vector3* dN,
+    Vector3& fi, Matrix3x3& H);
+
+__device__ void compute_f_H_sym(int n, int r_vid,
+     const Material_Data& mt, const Vector3* p, const int* topo,
+    const Matrix3x3 &JX_inv, scalar V, const Vector3* dN,
+    Vector3& fi, Matrix3x3& H);
+
+__device__ void store_f_H_in_shared(int tid, const Vector3& fi, const Matrix3x3& H, scalar* s_data);
+__device__ void store_f_H_in_shared_sym(int tid, const Vector3& fi, const Matrix3x3& H, scalar* s_data);
+
+__device__ Vector3 compute_correction(int vid, scalar damping, scalar dt,
+        GPU_ParticleSystem_Parameters ps, const Vector3* y,
+        Vector3& fi, Matrix3x3& H);

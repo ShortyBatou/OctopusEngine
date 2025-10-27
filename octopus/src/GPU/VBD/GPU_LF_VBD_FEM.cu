@@ -35,7 +35,6 @@ __device__ void snh_lf_constraint_stress(const Matrix3x3 &F, Matrix3x3& P, scala
     P = mat3x3_com(F);
 }
 
-
 __global__ void kernel_lf_vbd_solve(
     const int n,
     const scalar damping,

@@ -12,6 +12,7 @@
 #include <Manager/Input.h>
 #include <Manager/TimeManager.h>
 #include <Mesh/Converter/VTK_Formater.h>
+#include <spdlog/fmt/bundled/core.h>
 
 __device__ void compute_f_H(
     const int n, const int r_vid,
@@ -749,6 +750,25 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     //Graph d_graph(element, topology, false);
     //Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
     Coloration coloration = GraphColoration::DSAT(p_graph);
+    /*
+    std::vector<int> count(coloration.nb_color,0);
+    for(int c : coloration.colors) {
+        count[c]++;
+    }
+
+    const int new_nb_color = coloration.nb_color/2;
+    for(int i = 0; i < coloration.colors.size(); ++i) {
+        if(coloration.colors[i] > new_nb_color ) {
+            int i_min_c = 0;
+            for(int j = 1; j < new_nb_color; ++j) {
+                if(count[j] < count[i_min_c]) {
+                    i_min_c = j;
+                }
+            }
+            coloration.colors[i] = i_min_c;
+        }
+    }
+    coloration.nb_color = new_nb_color;*/
     std::cout <<"!!!DATA : " << element_name(element) << " " << p_graph.n << " " << topology.size() / elem_nb_vertices(element) << " " << coloration.nb_color << std::endl;
     return coloration;
 }
