@@ -9,7 +9,7 @@ __global__ void kernel_velocity_update(const int n, const float dt, const scalar
     if (i >= n) return;
     ps.v[i] = (ps.p[i] - ps.last_p[i]) / dt;
     scalar norm_v = glm::length(ps.v[i]);
-    if (norm_v > 1e-12) {
+    if (norm_v > 1e-7) {
         const scalar coef = global_damping * dt * ps.w[i];
         const scalar damping = -norm_v * (coef > 1.f ? 1.f : coef);
         ps.v[i] += glm::normalize(ps.v[i]) * damping;

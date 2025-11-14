@@ -6,6 +6,7 @@
 #include <GPU/PBD/GPU_PBD_FEM_Materials.h>
 #include <GPU/GPU_FEM.h>
 #include <Mesh/Converter/VTK_Formater.h>
+#include <Tools/Graph.h>
 
 
 __device__ scalar xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, const scalar* inv_mass, const int* topology, Vector3* p, const int* mask)
@@ -278,6 +279,16 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
     cb_lambda = new Cuda_Buffer<scalar>(topology.size() / d_fem->elem_nb_vert * 2);
     cb_internia_residual = new Cuda_Buffer<Vector3>(geometry.size());
     cb_constraint_residual = new Cuda_Buffer<scalar>(topology.size() / d_fem->elem_nb_vert);
+
+    /*std::vector<scalar> c(colors.begin(), colors.end());
+    std::map<Element, Mesh::Topology> topologies;
+    topologies[element] = topology;
+    VTK_Formater vtk;
+    vtk.open("xpbd_mesh_coloration_" + element_name(element) + "_" + std::to_string(nb_color));
+    vtk.save_mesh(geometry, topologies);
+    vtk.start_cell_data();
+    vtk.add_scalar_data(c, "colors");
+    vtk.close();*/
 }
 
 void GPU_PBD_FEM::get_residuals(GPU_ParticleSystem* ps, const scalar dt, scalar& primal, scalar& dual) {

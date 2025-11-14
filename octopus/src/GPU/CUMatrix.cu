@@ -48,6 +48,30 @@ __device__ scalar squared_norm(const Matrix3x3& m)
     return st;
 }
 
+__device__ bool mat_3x3_is_symmetric(const glm::mat3& A, const scalar eps) {
+    return (
+        abs(A[0][1] - A[1][0]) < eps &&
+        abs(A[0][2] - A[2][0]) < eps &&
+        abs(A[1][2] - A[2][1]) < eps
+    );
+}
+
+__device__ bool mat_3x3_is_positive_definite(const glm::mat3& A) {
+    // Mineur d’ordre 1
+    float m1 = A[0][0];
+    if (m1 <= 0.0f) return false;
+
+    // Mineur d’ordre 2
+    float m2 = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+    if (m2 <= 0.0f) return false;
+
+    // Déterminant (mineur d’ordre 3)
+    float detA = glm::determinant(A);
+    if (detA <= 0.0f) return false;
+
+    return true;
+}
+
 __device__ void mat3x3_polardecomposition(const Matrix3x3 &F, Matrix3x3 &R, Matrix3x3 &S, const int max_it, const scalar tol) {
     glm::quat q(R);
     for (unsigned int iter = 0; iter < max_it; iter++) {
@@ -77,7 +101,7 @@ __device__ void print_vec(const Vector3 &v) {
 }
 
 __device__ void print_mat(const Matrix3x3 &m) {
-    printf("|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n\n", m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1],
+    printf("|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n|%.3e  %.3e  %.3e|\n\n", m[0][0], m[1][0], m[2][0], m[0][1], m[1][1], m[2][1], m[0][2], m[1][2],
            m[2][2]);
 }
 

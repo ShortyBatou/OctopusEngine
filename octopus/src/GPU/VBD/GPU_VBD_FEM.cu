@@ -280,7 +280,7 @@ __global__ void kernel_vbd_solve_v3(
         fi.x = s_f_H[0]; fi.y = s_f_H[1]; fi.z = s_f_H[2];
         H[0][0] = s_f_H[3];
         H[1][0] = s_f_H[4]; H[1][1] = s_f_H[6];
-        H[2][0] = s_f_H[5]; H[2][1] = s_f_H[7];  H[2][2] = s_f_H[8];
+        H[2][0] = s_f_H[5]; H[2][1] = s_f_H[7]; H[2][2] = s_f_H[8];
         // symmetry
         H[0][1] = H[1][0]; H[1][2] = H[2][1]; H[0][2] = H[2][0];
         ps.p[vid] += compute_correction(vid, damping, dt, ps, y, fi, H);

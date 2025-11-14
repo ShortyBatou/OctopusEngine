@@ -36,7 +36,8 @@ __device__ scalar squared_norm(const Matrix3x3& m);
 __device__ Matrix3x3 vec_hat(const Vector3 &v);
 
 __device__ void mat3x3_polardecomposition(const Matrix3x3 &F, Matrix3x3 &R, Matrix3x3 &S, int max_it = 10, scalar tol = 1e-8);
-
+__device__ bool mat_3x3_is_symmetric(const glm::mat3& A, scalar eps = 1e-6f);
+__device__ bool mat_3x3_is_positive_definite(const glm::mat3& A);
 __device__ void print_vec(const Vector3 &v);
 __device__ void print_mat(const Matrix3x3 &m);
 __device__ void print_mat(const Matrix2x2 &m);
