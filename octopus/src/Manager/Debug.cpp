@@ -93,6 +93,14 @@ void Debug::Cube(const Vector3 &p = Unit3D::Zero(), const scalar size = 1.f) {
     Debug::Cube(p_min, p_max);
 }
 
+void Debug::Wireframe(const Mesh::Geometry& geometry, const Mesh::Topology& topology)
+{
+    for(int i =0 ; i <topology.size(); i+=2)
+    {
+        Debug::Line(geometry[topology[i]], geometry[topology[i + 1]]);
+    }
+}
+
 
 /// MUST BE ELSEWHERE !
 std::string DebugUI_Component::convert_scientific(const double value, const int precision) {

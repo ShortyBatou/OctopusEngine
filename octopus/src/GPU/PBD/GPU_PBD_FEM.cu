@@ -70,12 +70,12 @@ __global__ void kernel_XPBD_V0(
     const int* topology = fem.topology+vid;
     for(int m = 0; m < 2; ++m) // nb materials
     {
-        Vector3 grad_C[32];
+        Vector3 grad_C[27];
         scalar C = 0.f;
         for (int j = 0; j < fem.elem_nb_vert; ++j)
             grad_C[j] = Vector3(0, 0, 0);
 
-        for (int q = 0; q < fem.nb_quadrature; ++q) { // must be possible to do in parrallel
+        for (int q = 0; q < fem.nb_quadrature; ++q) {
             Matrix3x3 JX_inv = fem.JX_inv[qid + q];
             scalar V = fem.V[qid + q];
             const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
@@ -136,102 +136,85 @@ __global__ void kernel_XPBD_constraint_residuals(
     }
 }
 
+
+
 __global__ void kernel_XPBD_V1(
     const int n, const int offset, const scalar dt, const int* eids,
-    int m, Material_Data mt,
+    Material_Data mt,
     GPU_ParticleSystem_Parameters ps,
-    GPU_FEM_Pameters fem, scalar* C, Vector3* grad_C)
+    GPU_FEM_Pameters fem)
 {
     if (blockIdx.x >= n) return;
     if (threadIdx.x >= fem.nb_quadrature) return;
     const int eid = eids[blockIdx.x + offset];
-    const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
-    const int qid = eid * fem.nb_quadrature;
-    const int* topology = fem.topology+vid;
+    const int off_topo = eid * fem.elem_nb_vert; // first vertice id in topology
+    const int q_off = eid * fem.nb_quadrature;
+    const int* topology = fem.topology+off_topo;
     const int& q = threadIdx.x;
-    //printf("%d %d\n", blockIdx.x, q);
 
-    scalar _C = threadIdx.x + 1;
-    Vector3 _grad_C[32];
-    for (int j = 0; j < fem.elem_nb_vert; ++j)
-        _grad_C[j] = Vector3(0, 0, 0);
+    Vector3 _grad_C[27];
+    extern __shared__ scalar s_C[];
+    Vector3* s_grad_C = reinterpret_cast<Vector3*>(s_C + fem.elem_nb_vert);
 
-    const Matrix3x3 JX_inv = fem.JX_inv[qid + q];
-    const scalar V = fem.V[qid + q];
-    const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
-    xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, _C, _grad_C);
+    //__shared__ scalar s_C[27];
+    //__shared__ Vector3 s_grad_C[27 * 27];
+    for(int m = 0; m < 2; ++m)
+    {
+        scalar _C = 0;
+        for (int j = 0; j < fem.elem_nb_vert; ++j)
+            _grad_C[j] = Vector3(0, 0, 0);
 
-    __shared__ scalar s_C[32];
-    __shared__ Vector3 s_grad_C[512];
-    s_C[q] = _C;
-    for(int i = 0; i < fem.elem_nb_vert; ++i) {
-        s_grad_C[q * fem.elem_nb_vert + i] = _grad_C[i];
-    }
+        const Matrix3x3 JX_inv = fem.JX_inv[q_off + q];
+        const scalar V = fem.V[q_off + q];
+        const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
+        xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, _C, _grad_C);
 
-    all_reduction<scalar>(threadIdx.x, fem.nb_quadrature, 0, 1,  s_C);
-    all_reduction<Vector3>(threadIdx.x, fem.nb_quadrature, 0, fem.elem_nb_vert,  s_grad_C);
+        s_C[q] = _C;
+        for(int i = 0; i < fem.elem_nb_vert; ++i) {
+            s_grad_C[q * fem.elem_nb_vert + i] = _grad_C[i];
+        }
 
-    if(threadIdx.x == 0) {
+        all_reduction<scalar>(threadIdx.x, fem.nb_quadrature, 0, 1,  s_C);
+        all_reduction<Vector3>(threadIdx.x, fem.nb_quadrature, 0, fem.elem_nb_vert,  s_grad_C);
+
+        const scalar stiffness = m==0 ? mt.lambda : mt.mu;
+        const scalar alpha = 1.f / (stiffness * dt * dt);
         _C = s_C[0];
-        for(int i = 0; i < fem.elem_nb_vert; ++i)
-            _grad_C[i] = s_grad_C[i];
+        _C = _C < 0.f ? -_C : _C; // abs
+        _C = std::sqrt(_C);
+        const scalar C_inv = _C < 1e-12 ? 0.f : 1.f / (2.f * _C);
 
-        xpbd_convert_to_constraint(fem.elem_nb_vert, _C, _grad_C);
+        const int steps = (fem.elem_nb_vert-1) / fem.nb_quadrature + 1;
+        for(int i = 0; i < steps; ++i)
+        {
+            const int id = q + fem.nb_quadrature * i;
+            if(id >= fem.elem_nb_vert) continue;
+            s_C[id] = glm::dot(s_grad_C[id] * C_inv, s_grad_C[id] * C_inv) * ps.w[topology[id]];
+        }
 
-        C[blockIdx.x] = _C;
-        for (int i = 0; i < fem.elem_nb_vert; ++i) {
-            grad_C[blockIdx.x * fem.elem_nb_vert + i] = _grad_C[i];
+        all_reduction<scalar>(q, fem.elem_nb_vert, 0, 1,  s_C);
+
+        const scalar sum_norm_grad = s_C[0];
+        const scalar dt_lambda = -_C / (sum_norm_grad + alpha);
+        for(int i = 0; i < steps; ++i)
+        {
+            const int id = q + fem.nb_quadrature * i;
+            if(id >= fem.elem_nb_vert) continue;
+            const int vid = topology[id];
+            if(ps.mask[vid] == 1) ps.p[vid] += dt_lambda * ps.w[vid] * C_inv * s_grad_C[id]  ;
         }
     }
-}
-
-__global__ void kernel_XPBD_Solve_V1(
-    const int n, const int offset, const scalar dt, const int* eids, int m, Material_Data mt,
-    GPU_ParticleSystem_Parameters ps,
-    GPU_FEM_Pameters fem, scalar* C, Vector3* grad_C)
-{
-    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid >= n) return;
-    //printf("%d\n", tid);
-    const int eid = eids[tid + offset];
-    const int vid = eid * fem.elem_nb_vert; // first vertice id in topology
-    const int* topology = fem.topology+vid;
-    if(C[tid] < 1e-6f) return;
-    xpbd_solve(fem.elem_nb_vert,(m==0)?mt.lambda:mt.mu, dt, C[tid], grad_C + tid * fem.elem_nb_vert, ps.w, topology, ps.p, ps.mask);
 }
 
 
 // MUST BE ELSEWERE
-void GPU_PBD_FEM::build_graph_color(const Mesh::Topology &topology, const int nb_vert, std::vector<int>& colors) const {
-    d_thread->nb_kernel = 1;
-    std::vector<std::set<int> > owners(nb_vert);
-    // for each vertice get elements that own this vertice
-    for (int i = 0; i < topology.size(); i += d_fem->elem_nb_vert) {
-        for (int j = 0; j < d_fem->elem_nb_vert; ++j) {
-            owners[topology[i + j]].insert(i / d_fem->elem_nb_vert);
-        }
-    }
+void GPU_PBD_FEM::build_graph_color(Element element, const Mesh::Topology &topology, std::vector<int>& colors) {
 
-    colors.resize(topology.size() / d_fem->elem_nb_vert, -1);
-    std::vector<int> available(64, true);
-    for (int i = 0; i < topology.size(); i += d_fem->elem_nb_vert) {
-        // for all vertices, check the neighbor elements colors
-        for (int j = 0; j < d_fem->elem_nb_vert; ++j) {
-            for (const int& n: owners[topology[i + j]]) {
-                if (colors[n] != -1) available[colors[n]] = false;
-            }
-        }
-        for (int c = 0; c < available.size(); ++c) {
-            if (available[c]) {
-                d_thread->nb_kernel = std::max(d_thread->nb_kernel, c);
-                colors[i / d_fem->elem_nb_vert] = c;
-                break;
-            }
-        }
-        std::fill(available.begin(), available.end(), true);
-    }
-    d_thread->nb_kernel++;
-    std::cout << "NB color: " << d_thread->nb_kernel << std::endl;
+    Graph d_graph(element, topology, V_Dual);
+    auto [nb_color, l_colors] = GraphColoration::DSAT(d_graph);
+    d_thread->nb_kernel = nb_color;
+    std::cout << "NB COLORS: " << nb_color << std::endl;
+    colors = l_colors;
 }
 
 void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {
@@ -266,20 +249,19 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
                          const scalar young, const scalar poisson, const Material material)
         : GPU_FEM(element, geometry, topology, young, poisson, material), cb_eid(nullptr)// materials
 {
-    build_graph_color(topology, static_cast<int>(geometry.size()),colors);
+    build_graph_color(element, topology, colors);
     build_thread_by_color(colors);
 
     int s_max = 0;
     for(int k = 0; k < d_thread->nb_kernel; ++k) {
         s_max = std::max(s_max, d_thread->grid_size[k]);
     }
-    cb_C = new Cuda_Buffer<scalar>(s_max);
-    cb_grad_C = new Cuda_Buffer<Vector3>(s_max * elem_nb_vertices(element));
 
     cb_lambda = new Cuda_Buffer<scalar>(topology.size() / d_fem->elem_nb_vert * 2);
     cb_internia_residual = new Cuda_Buffer<Vector3>(geometry.size());
     cb_constraint_residual = new Cuda_Buffer<scalar>(topology.size() / d_fem->elem_nb_vert);
 
+    shared_size = d_fem->elem_nb_vert * sizeof(scalar) + d_fem->elem_nb_vert * d_fem->nb_quadrature * sizeof(scalar) * 3;
     /*std::vector<scalar> c(colors.begin(), colors.end());
     std::map<Element, Mesh::Topology> topologies;
     topologies[element] = topology;
@@ -321,25 +303,26 @@ void GPU_PBD_FEM::get_residuals(GPU_ParticleSystem* ps, const scalar dt, scalar&
 }
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
+
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
         kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
             cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), cb_lambda->buffer);
-
-        /*for(int m = 0; m < 2; ++m) {
-            kernel_XPBD_V1<<<d_thread->grid_size[j], d_thread->block_size[j]>>>(
+        /*
+        if(d_fem->nb_element == 4)
+        {
+            kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
+            d_thread->nb_threads[j], d_thread->offsets[j], dt,
+            cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), cb_lambda->buffer);
+        }
+        else
+        {
+            kernel_XPBD_V1<<<d_thread->grid_size[j], d_thread->block_size[j], shared_size>>>(
                d_thread->nb_threads[j], d_thread->offsets[j], dt,
-               cb_eid->buffer, m, *d_material, ps->get_parameters(), get_fem_parameters(),
-               cb_C->buffer, cb_grad_C->buffer
-           );
-            kernel_XPBD_Solve_V1<<< (d_thread->grid_size[j] + 31) / 32, 32>>>(
-               d_thread->grid_size[j], d_thread->offsets[j], dt,
-               cb_eid->buffer, m, *d_material, ps->get_parameters(), get_fem_parameters(),
-               cb_C->buffer, cb_grad_C->buffer
+               cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters()
            );
         }*/
     }
-
     /*scalar p, d;
     get_residuals(ps, dt,p, d);
     DebugUI::Begin("XPBD  residual");

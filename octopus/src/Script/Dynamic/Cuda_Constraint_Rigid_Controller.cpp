@@ -12,7 +12,7 @@ void Cuda_Constraint_Rigid_Controller::late_init() {
     _fixation = new GPU_Fix_Constraint(mesh->geometry(), _area);
     _crush = new GPU_Crush(); _crush->active = false;
     _random_sphere = new GPU_RandomSphere(mesh->geometry(), 1); _random_sphere->active = false;
-    _high_stretch = new GPU_HighStretch(mesh, 20, 1.f); _high_stretch->active = false;
+    _high_stretch = new GPU_HighStretch(mesh, 20, 0.75f); _high_stretch->active = false;
     cuda_dynamic->get_particle_system()->add_constraint(_fixation);
     cuda_dynamic->get_particle_system()->add_constraint(_crush);
     cuda_dynamic->get_particle_system()->add_constraint(_random_sphere);

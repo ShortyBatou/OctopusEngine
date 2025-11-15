@@ -8,15 +8,24 @@
 #include <numeric>
 #include <queue>
 #include <UI/AppInfo.h>
-
+#include <Mesh/Mesh.h>
 #include "Random.h"
+
+enum GraphType
+{
+    Primal, V_Dual, F_Dual
+};
 
 struct Graph {
     Graph() : n(0) {}
 
-    Graph(const Element element, const Mesh::Topology& topology, const bool primal = true) {
-        if(primal) build_primal(element, topology);
-        else build_dual(element, topology);
+    Graph(const Element element, const Mesh::Topology& topology, const GraphType type = Primal) {
+        if(type == V_Dual) build_dual_vertex(element, topology);
+        else if(type == F_Dual) build_dual_face(element, topology);
+        else
+        {
+            build_primal(element, topology);
+        }
     }
 
     explicit Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
@@ -46,7 +55,38 @@ struct Graph {
         }
     }
 
-    void build_dual(const Element element, const Mesh::Topology& topology) {
+    void build_dual_vertex(const Element element, const Mesh::Topology& topology)
+    {
+        const int nb_vert_elem = elem_nb_vertices(element);
+        n = topology.size() / nb_vert_elem; // nb_element
+        degree.resize(n);
+        adj.resize(n);
+        const int nb_verts = *std::max_element(topology.begin(), topology.end()) + 1;
+        std::vector<std::vector<int>> owners(nb_verts);
+
+        for(int eid = 0; eid < n; ++eid)
+        {
+            for(int i = 0; i < nb_vert_elem; ++i)
+            {
+                const int vid = topology[eid * nb_vert_elem + i];
+                owners[vid].push_back(eid);
+            }
+        }
+
+        for(int i = 0; i < nb_verts; ++i)
+        {
+            for(int j = 0; j < owners[i].size(); ++j)
+            {
+                for(int k = j+1; k < owners[i].size(); ++k)
+                {
+                    add_edge(owners[i][j], owners[i][k]);
+                }
+            }
+        }
+
+    }
+
+    void build_dual_face(const Element element, const Mesh::Topology& topology) {
         const int nb_vert_elem = elem_nb_vertices(element);
         n = topology.size() / nb_vert_elem; // nb_element
         degree.resize(n);
@@ -55,7 +95,7 @@ struct Graph {
         const Mesh::Topology r_tri = ref_triangles(lin_elem);
         const Mesh::Topology r_quads = ref_quads(lin_elem);
 
-        // we need to find pairs of faces (triangle or quads)
+        // find pairs of faces (triangle or quads)
         std::map<Face<4>, int> quads;
         std::map<Face<3>, int> triangles;
 
@@ -129,6 +169,28 @@ struct Graph {
         return n - 1;
     }
 
+    Mesh::Topology convert_to_topology() const
+    {
+        using Edge = std::pair<int, int>;
+        std::set<Edge> visited;
+        Mesh::Topology topology;
+        for(int i = 0; i < n; ++i)
+        {
+            for(int adj : adj[i])
+            {
+                Edge edge = { std::min(i,adj), std::max(i,adj) };
+                if(auto it = visited.find(edge); it == visited.end())
+                {
+                    topology.push_back(i);
+                    topology.push_back(adj);
+                    visited.insert(edge);
+                }
+            }
+        }
+
+        return topology;
+    }
+
     int n;
     std::vector<int> degree;
     std::vector<std::set<int>> adj;
@@ -138,6 +200,7 @@ struct Coloration {
     int nb_color;
     std::vector<int> colors;
 };
+
 
 class GraphColoration {
 public:
@@ -510,7 +573,7 @@ public:
 
     static Coloration Primal_Dual_Element_2(
         const Element& elem, const Mesh::Topology& topo,
-        const Graph& p_graph, const Graph& d_graph)
+        const Graph& p_graph, const Graph& d_graph, bool randomised = true)
     {
         const int nb_vert_elem = elem_nb_vertices(elem);
         const int n = p_graph.n;
@@ -535,7 +598,8 @@ public:
             // color a random element
             int eid;
             if(q_tile.empty() && q_conflict.empty()) {
-                eid = get_random_element(to_visit);
+                if(randomised) eid = get_random_element(to_visit);
+                else eid = *std::begin(to_visit);
             }
             else if(q_tile.empty()) {
                 eid = q_conflict.front();

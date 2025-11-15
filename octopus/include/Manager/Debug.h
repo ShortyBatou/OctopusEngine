@@ -51,6 +51,8 @@ public:
     static void Cube(const Vector3 &p_min, const Vector3 &p_max);
 
     static void Cube(const Vector3 &p, scalar size);
+
+    static void Wireframe(const Mesh::Geometry& geometry, const Mesh::Topology& topology);
 };
 
 
