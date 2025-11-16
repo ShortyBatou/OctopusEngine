@@ -91,18 +91,18 @@ struct Beam_MSE_Sampling final : public MeshDiff {
         // construire la liste des sommets dans la poutres
         Box box(_meshes[_ref_id]->geometry());
 
-        Vector3 size = box.pmax - box.pmin - Vector3(2.f * large_eps);
-        Vector3 step = size * (1.0f / _nb_sample);
+        Vector3 max_size = box.pmax - box.pmin - Vector3(2.f * large_eps);
+        Vector3 min_size = Vector3(2.f * large_eps);
+        Vector3 size = box.pmax - box.pmin;
+        Vector3 step = (max_size - min_size) / size  * (1.0f / _nb_sample);
         for(int x = 0; x <= _nb_sample * size.x; ++x)
         for(int y = 0; y <= _nb_sample * size.y; ++y)
         for(int z = 0; z <= _nb_sample * size.z; ++z) {
-            global_sample.push_back(Vector3(step.x * x / size.x, step.y * y  / size.y, step.z * z / size.z) - box.pmin + Vector3(large_eps));
+            Vector3 s(min_size);
+            s += Vector3(step.x * x, step.y * y, step.z * z);
+            global_sample.push_back(s);
         }
 
-        /*for(int i = 0; i < _nb_sample; ++i) {
-            Vector3 s = Random::InBox(box.pmin, box.pmax) - box.pmin;
-            global_sample.push_back(s);
-        }*/
 
         for(auto [id, mesh] : _meshes) {
             Element element = Tetra;
@@ -125,20 +125,20 @@ struct Beam_MSE_Sampling final : public MeshDiff {
             const int lin_element_nb_vert = elem_nb_vertices(lin_element);
 
             // build acceleration grid
-            Vector3I grid_size(10,10,10);
+            Vector3I grid_size = Vector3I(glm::ceil(size * 2.f)) ;
             std::vector<std::vector<int>> grid(grid_size.x * grid_size.y * grid_size.z);
             for(int e = 0; e < nb_elem; ++e) {
                 int off = e * elem_nb_vert;
                 Box e_box(geo.data(), topo.data() + off, lin_element_nb_vert);
-                e_box.pmin -= _offsets[id]; e_box.pmax -= _offsets[id];
-                e_box.pmin = (e_box.pmin - box.pmin) / (box.pmax - box.pmin);
-                e_box.pmax = (e_box.pmax - box.pmin) / (box.pmax - box.pmin);
+                e_box.pmin = (e_box.pmin - _offsets[id]) / (box.pmax - box.pmin) - Vector3(10.f * large_eps);
+                e_box.pmax = (e_box.pmax - _offsets[id]) / (box.pmax - box.pmin) + Vector3(10.f * large_eps);
 
-                Vector3 i_pmin = glm::floor(
+                Vector3I i_pmin = glm::floor(
                     Vector3(e_box.pmin.x * grid_size.x, e_box.pmin.y * grid_size.y, e_box.pmin.z * grid_size.z));
-                Vector3 i_pmax = glm::floor(
+                Vector3I i_pmax = glm::floor(
                     Vector3(e_box.pmax.x * grid_size.x, e_box.pmax.y * grid_size.y, e_box.pmax.z * grid_size.z));
-                i_pmax = min(i_pmax, Vector3(9,9,9));
+                i_pmin = max(i_pmin, Vector3I(0));
+                i_pmax = min(i_pmax, (grid_size - Vector3I(1)));
                 for(int x = i_pmin.x; x <= i_pmax.x; ++x) {
                 for(int y = i_pmin.y; y <= i_pmax.y; ++y) {
                 for(int z = i_pmin.z; z <= i_pmax.z; ++z) {
@@ -148,26 +148,30 @@ struct Beam_MSE_Sampling final : public MeshDiff {
 
             for(const Vector3& s : global_sample) {
                 // get position of s in grid
-                Vector3 p = (s - box.pmin) / (box.pmax - box.pmin);
-                Vector3 i_p = glm::floor(Vector3(p.x * grid_size.x, p.y * grid_size.y, p.z * grid_size.z));
-                i_p = min(i_p, Vector3(9,9,9));
+                Vector3 p =  s / size;
+                Vector3I i_p = glm::floor(Vector3(p.x * grid_size.x, p.y * grid_size.y, p.z * grid_size.z));
+                i_p = max(i_p, Vector3I(0,0,0));
+                i_p = min(i_p, (grid_size - Vector3I(1)));
+                bool found = false;
                 // for all element in this cell check if point in
                 for(int e : grid[i_p.x + i_p.y * grid_size.x + i_p.z * grid_size.x * grid_size.y]) {
                     int off = e * elem_nb_vert;
                     if(lin_element == Hexa) {
                         // get pmin and pmax and check if in box
                         Box e_box(geo.data(), topo.data() + off, lin_element_nb_vert);
-                        e_box.pmin -= _offsets[id]; e_box.pmax -= _offsets[id];
-                        if(!e_box.inside(s)) continue;
+                        if(!e_box.inside(s + _offsets[id])) continue;
                         // get coordinate in reference element
-                        Vector3 a = geo[topo[off]] - _offsets[id], b = geo[topo[off + 6]] - _offsets[id];
+                        Vector3 x = geo[topo[off + 1]] - geo[topo[off]];
+                        Vector3 y = geo[topo[off + 3]] - geo[topo[off]];
+                        Vector3 z = geo[topo[off + 4]] - geo[topo[off]];
+                        Vector3 r = (s + _offsets[id]) - geo[topo[off]];
                         // in unit cube
-                        Vector3 sample = (s - a) / (b - a);
+                        Vector3 sample(glm::dot(r, glm::normalize(x)) / glm::length(x), glm::dot(r,glm::normalize(y)) / glm::length(y), glm::dot(r,glm::normalize(z)) / glm::length(z));
                         // in ref element
-                        std::swap(sample.y, sample.z);
                         sample *= 2; sample += r_pos[0];
                         _samples[id].push_back(sample);
                         _elements[id].push_back(e);
+                        found = true;
                         break;
                     }
                     else {
@@ -180,10 +184,14 @@ struct Beam_MSE_Sampling final : public MeshDiff {
                         }
                         _samples[id].push_back(sample);
                         _elements[id].push_back(e);
+                        found = true;
                         break;
                     }
                 }
-
+                if(!found)
+                {
+                    std::cout << "aze" << std::endl;
+                }
             }
         }
     }
@@ -219,7 +227,7 @@ struct Beam_MSE_Sampling final : public MeshDiff {
                 r_p += r_geo[r_topo[r_off + j]] * r_weights[j];
             }
 
-            error.update(p - r_p - _offsets[id]);
+            error.update((p - _offsets[id]) - (r_p - _offsets[_ref_id]));
         }
         return error;
     }

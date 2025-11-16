@@ -305,10 +305,10 @@ void GPU_PBD_FEM::get_residuals(GPU_ParticleSystem* ps, const scalar dt, scalar&
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
 
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
-        kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
+        /*kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
-            cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), cb_lambda->buffer);
-        /*
+            cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), cb_lambda->buffer);/**/
+
         if(d_fem->nb_element == 4)
         {
             kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
@@ -321,7 +321,7 @@ void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
                d_thread->nb_threads[j], d_thread->offsets[j], dt,
                cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters()
            );
-        }*/
+        }/**/
     }
     /*scalar p, d;
     get_residuals(ps, dt,p, d);

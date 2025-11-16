@@ -71,13 +71,13 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
         //root->add_behaviour(new MeshDiff_MSE(1,{2}));
-        //root->add_behaviour(new Beam_MSE_Sampling(1, {3}, 30));
+        //root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 5));
     }
 
     // build scene's entities
@@ -85,35 +85,36 @@ struct BaseScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000; args.distribution = FemShape;
-        args.young = 1e6; args.poisson = 0.35; args.material = Stable_NeoHooke;
+        args.young = 1e6; args.poisson = 0.45; args.material = Stable_NeoHooke;
         args.damping = 5e-6;
         args.iteration = 1; args.sub_iteration = 1  ;
-        args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::right();
+        args.scenario_1 = 0; args.scenario_2 = 5; args.dir = Unit3D::right();
         args.display = FEM_DataDisplay::Type::Displacement;
         //args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
         //args.mesh_type = "vtk";
-        //args.mesh_file = "mesh/msh/plane.msh";
+        //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(8, 2, 2);
+        Vector3I cells(12, 3, 3);
 
-        const Vector3 size(4, 1, 1);
-        //args.mesh_file = "1_Hexa_192_48_48_4x1x1_501.vtk";
+        Vector3 size(4, 1, 1);
+        //args.mesh_file = "1_Hexa_16_16_64_2x2x8_400.vtk";
         //args.mesh_type = "vtk";
-        //build_mesh_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args);
+        //build_mesh_entity(Vector3(-1,-1.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args);
         //args.mesh_type = "";
 
         args.damping = 5e-6;
         args.biased = false;
-        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
+        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,-4), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true);
 
+        size = Vector3I(4, 1, 1);
         args.iteration = 1;
         args.sub_iteration = 1;
-        args.damping = 5;
+        args.damping = 40;
         args.refine = 0;
         //for(int i = 1; i <= 4; ++i) {
             //args.sub_iteration = 120 + i*20;
             //args.material = Stable_NeoHooke; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
-        args.sub_iteration = 40; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra20, args, true, false);
+        args.sub_iteration = 100; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, false);
         //args.sub_iteration = 100; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra20, args, true, false);
         //args.sub_iteration = 100; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, false);
         //args.sub_iteration = 100; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false);
@@ -183,7 +184,7 @@ struct BaseScene final : Scene
         {
             if(args.scenario_1!=-1)
             {
-                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(Unit3D::Zero() + args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
+                const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Plane(pos - size + args.dir*0.01f, -args.dir), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Box(Vector3(-0.5,-0.2,-2),Vector3(3,0,2)), -args.dir, args.scenario_1);
                 //const auto rd_constraint_1 = new Cuda_Constraint_Rigid_Controller(new Sphere(Vector3(0,0.75,0),0.1), -args.dir, args.scenario_1);
                 rd_constraint_1->_event_rate = 0.5;
