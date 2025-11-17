@@ -51,6 +51,7 @@ VTK_Formater& VTK_Formater::save_mesh(const Mesh::Geometry& geometry, const std:
 		for (int i = 0; i < topo.size(); i += element_size) {
 			for (int j = 0; j < element_size; ++j)
 			{
+				// UGLY AS FUCK
 				if(e == Hexa27 && j == 20) {
 					file << topo[i + 24] << " ";
 				}

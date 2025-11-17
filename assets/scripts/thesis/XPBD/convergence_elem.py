@@ -8,6 +8,15 @@ h = [
     [1.73,8.66e-1]
 ]
 
+
+h_mean = [
+    [7.07e-1, 3.54e-1,2.83e-1,2.36e-1,1.77e-1, 1.18e-1, 1.01e-1, 8.84e-2],
+    [1.41,7.07e-1,3.54e-1],
+    [1.31,0.677,0.346,0.278,0.232,0.175,0.117],
+    [1.31,0.677]
+]
+
+
 nb_elem = [
     [160,1280,2500,4320,10240,34560,54880,81920],
     [20,160,540],
@@ -42,7 +51,7 @@ plt.ylim(1e-5, 1e-1, )
 x = np.logspace(-2, 1, 200)
 
 for i in range(len(h)):
-    plt.plot(nb_elem[i], error[i], label=elem[i], linewidth=2, color=colors[i])
+    plt.plot(h_mean[i], error[i], label=elem[i], linewidth=2, color=colors[i])
     plt.plot(x, slope[i]*x**(order[i]), '--', color=colors[i], label=r"$O(H^{%d})$" % (L+order[i]))
 
 # Légendes et axes

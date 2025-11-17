@@ -262,6 +262,7 @@ GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, 
     cb_constraint_residual = new Cuda_Buffer<scalar>(topology.size() / d_fem->elem_nb_vert);
 
     shared_size = d_fem->elem_nb_vert * sizeof(scalar) + d_fem->elem_nb_vert * d_fem->nb_quadrature * sizeof(scalar) * 3;
+
     /*std::vector<scalar> c(colors.begin(), colors.end());
     std::map<Element, Mesh::Topology> topologies;
     topologies[element] = topology;

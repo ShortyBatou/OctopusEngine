@@ -168,6 +168,30 @@ protected:
 };
 
 
+class Mesh_Sample_VTK_Recorder final : public Recorder {
+public:
+    explicit Mesh_Sample_VTK_Recorder(std::string file_name)
+       : _file_name(std::move(file_name))
+    { }
+
+    void init(Entity *entity) override;
+
+    void print() override { }
+
+    std::string get_name() override {
+        return "mse_diff_vtk_file";
+    }
+
+    void add_data_json(std::ofstream &json) override { }
+
+    void save() override;
+
+protected:
+    int id;
+    std::string _file_name;
+};
+
+
 class FEM_VTK_Recorder final : public Recorder {
 public:
     explicit FEM_VTK_Recorder(std::string file_name)

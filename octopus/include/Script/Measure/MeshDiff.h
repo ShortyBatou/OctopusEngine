@@ -91,8 +91,8 @@ struct Beam_MSE_Sampling final : public MeshDiff {
         // construire la liste des sommets dans la poutres
         Box box(_meshes[_ref_id]->geometry());
 
-        Vector3 max_size = box.pmax - box.pmin - Vector3(2.f * large_eps);
-        Vector3 min_size = Vector3(2.f * large_eps);
+        Vector3 max_size = box.pmax - box.pmin - Vector3(100.f * large_eps);
+        Vector3 min_size = Vector3(100.f * large_eps);
         Vector3 size = box.pmax - box.pmin;
         Vector3 step = (max_size - min_size) / size  * (1.0f / _nb_sample);
         for(int x = 0; x <= _nb_sample * size.x; ++x)
@@ -130,8 +130,8 @@ struct Beam_MSE_Sampling final : public MeshDiff {
             for(int e = 0; e < nb_elem; ++e) {
                 int off = e * elem_nb_vert;
                 Box e_box(geo.data(), topo.data() + off, lin_element_nb_vert);
-                e_box.pmin = (e_box.pmin - _offsets[id]) / (box.pmax - box.pmin) - Vector3(10.f * large_eps);
-                e_box.pmax = (e_box.pmax - _offsets[id]) / (box.pmax - box.pmin) + Vector3(10.f * large_eps);
+                e_box.pmin = (e_box.pmin - _offsets[id]) / (box.pmax - box.pmin) - Vector3(100.f * large_eps);
+                e_box.pmax = (e_box.pmax - _offsets[id]) / (box.pmax - box.pmin) + Vector3(100.f * large_eps);
 
                 Vector3I i_pmin = glm::floor(
                     Vector3(e_box.pmin.x * grid_size.x, e_box.pmin.y * grid_size.y, e_box.pmin.z * grid_size.z));
@@ -188,10 +188,6 @@ struct Beam_MSE_Sampling final : public MeshDiff {
                         break;
                     }
                 }
-                if(!found)
-                {
-                    std::cout << "aze" << std::endl;
-                }
             }
         }
     }
@@ -232,8 +228,27 @@ struct Beam_MSE_Sampling final : public MeshDiff {
         return error;
     }
 
-protected:
+    std::vector<Vector3> get_samples(const int id) {
+        std::vector<Vector3> samples(global_sample.size());
+        const FEM_Shape* shape = _shapes[id];
+        Mesh* mesh = _meshes[id];
+        const Mesh::Topology& topo = mesh->topology(_types[id]);
+        const Mesh::Geometry& geo = mesh->geometry();
 
+        for(int i = 0; i < global_sample.size(); ++i) {
+            const Vector3 s = _samples[id][i];
+
+            std::vector<scalar> weights = shape->build_shape(s.x, s.y, s.z);
+            const int off = _elements[id][i] * shape->nb;
+            Vector3 p(0.f);
+            for(int j = 0; j < weights.size(); ++j) {
+                p += geo[topo[off + j]] * weights[j];
+            }
+            samples[i] = p;
+        }
+        return samples;
+    }
+protected:
     std::vector<Vector3> global_sample;
     int _nb_sample;
     std::map<int, Vector3> _offsets;
