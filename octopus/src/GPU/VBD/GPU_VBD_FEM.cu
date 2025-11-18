@@ -711,7 +711,9 @@ void GPU_VBD_FEM::create_buffers(
         d_thread->offsets.push_back(offset);
         d_thread->block_size.push_back(vmax);
     }
-    std::cout << total_thread << " vs " << total_merge_thread << std::endl;
+    std::cout << "TOTAL THREAD : " << total_thread << std::endl;
+    std::cout << "GRID MAX SIZE : " << *std::max_element(d_thread->grid_size.begin(), d_thread->grid_size.end()) << std::endl;
+    std::cout << "BLOCK MAX SIZE : " << *std::max_element(d_thread->block_size.begin(), d_thread->block_size.end()) << std::endl;
     d_thread->nb_kernel = coloration.nb_color;
 
     //vert data

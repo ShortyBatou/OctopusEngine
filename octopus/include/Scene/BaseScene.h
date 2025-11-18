@@ -76,7 +76,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        //root->add_behaviour(new MeshDiff_MSE(1,{2}));
+        root->add_behaviour(new MeshDiff_MSE(1,{2}));
         //root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 8));
     }
 
@@ -85,37 +85,36 @@ struct BaseScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000; args.distribution = FemShape;
-        args.young = 5e6; args.poisson = 0.45; args.material = Stable_NeoHooke;
+        args.young = 1e7; args.poisson = 0.45; args.material = Stable_NeoHooke;
         args.damping = 5e-6;
         args.iteration = 1; args.sub_iteration = 1  ;
         args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::right();
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/saw.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/bunny_Q1.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(6, 6, 6);
+        Vector3I cells(32, 8, 8);
 
-        Vector3 size(1, 1, 1);
-        //args.mesh_file = "1_Hexa_16_16_64_2x2x8_400.vtk";
-        //args.mesh_type = "vtk";
-        //build_mesh_entity(Vector3(-1,-1.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args);
-        //args.mesh_type = "";
+        Vector3 size(4, 1, 1);
+        args.mesh_file = "1_Hexa27_32_8_8_4x1x1_2249.vtk";
+        args.mesh_type = "vtk";
+        build_mesh_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args);
+        args.mesh_type = "";
 
         args.damping = 5e-6;
         args.biased = false;
-        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,-4), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true);
+        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true);
 
-        size = Vector3I(1, 1, 1);
-        args.iteration = 1;
-        args.sub_iteration = 100;
-        args.damping = 5;
+        args.iteration = 3750;
+        args.sub_iteration = 1;
+        build_vbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0., true);
         args.refine = 0;
         //for(int i = 1; i <= 4; ++i) {
             //args.sub_iteration = 120 + i*20;
             //args.material = Stable_NeoHooke; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
 
-        build_xpbd_entity(Vector3(0,1,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
+        //build_xpbd_entity(Vector3(0,1,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
         //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, false);
 
         //args.sub_iteration = 100; build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra20, args, true, false);
@@ -127,8 +126,6 @@ struct BaseScene final : Scene
         //args.sub_iteration = 20; args.material = Stable_NeoHooke; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
         //args.sub_iteration = 50; args.material = Stable_NeoHooke; build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
             //build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true);
-        //build_vbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0., true);
-
         //}
 
         //build_xpbd_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
