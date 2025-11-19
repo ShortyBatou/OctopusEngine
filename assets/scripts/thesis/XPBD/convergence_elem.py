@@ -47,11 +47,12 @@ L = 0
 plt.figure(figsize=(8,6))
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim(1e-5, 1e-1, )
+plt.xlim(5E-02, 2)
+plt.ylim(1e-5, 1e-1)
 x = np.logspace(-2, 1, 200)
 
 for i in range(len(h)):
-    plt.plot(h_mean[i], error[i], label=elem[i], linewidth=2, color=colors[i])
+    plt.plot(h[i], error[i], label=elem[i], linewidth=2, color=colors[i])
     plt.plot(x, slope[i]*x**(order[i]), '--', color=colors[i], label=r"$O(H^{%d})$" % (L+order[i]))
 
 # Légendes et axes
