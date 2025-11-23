@@ -12,14 +12,20 @@
 struct Cuda_ParticleSystem_Dynamics : Component, ParticleSystemDynamics_Getters
 {
     Cuda_ParticleSystem_Dynamics(const int sub_iterations, const scalar density)
-        : _density(density), _sub_iterations(sub_iterations), _gpu_ps(nullptr), _mesh(nullptr) { }
+        : _density(density), _sub_iterations(sub_iterations), _gpu_ps(nullptr), _gpu_integrator(nullptr), _mesh(nullptr)
+    {}
 
     void init() override;
     void update() override;
 
     [[nodiscard]] GPU_ParticleSystem* get_particle_system() const { return _gpu_ps;}
+    [[nodiscard]] GPU_Integrator* get_integrator() const { return _gpu_integrator;}
 
-    ~Cuda_ParticleSystem_Dynamics() override { delete _gpu_ps; }
+    ~Cuda_ParticleSystem_Dynamics() override
+    {
+        delete _gpu_ps;
+        delete _gpu_integrator;
+    }
 
     [[nodiscard]] std::vector<Vector3> get_positions() override;
     [[nodiscard]] std::vector<Vector3> get_last_positions() override;
@@ -33,15 +39,21 @@ struct Cuda_ParticleSystem_Dynamics : Component, ParticleSystemDynamics_Getters
     [[nodiscard]] std::vector<scalar> get_velocity_norm() override;
 
 protected:
-    virtual GPU_ParticleSystem* create_particle_system()
+    virtual GPU_ParticleSystem* create_particle_system(std::vector<scalar>& masses)
     {
-        const std::vector<scalar> masses(_mesh->nb_vertices(), _density);
-        return new GPU_ParticleSystem(_mesh->geometry(), masses, new GPU_SemiExplicit(), _sub_iterations);
+        return new GPU_ParticleSystem(_mesh->geometry(), masses);
     }
+
+    virtual GPU_Integrator* create_integrator()
+    {
+        return new GPU_SemiExplicit();
+    }
+
     virtual void build_dynamics() { }
 
     scalar _density;
     int _sub_iterations;
     GPU_ParticleSystem* _gpu_ps;
+    GPU_Integrator* _gpu_integrator;
     Mesh* _mesh;
 };

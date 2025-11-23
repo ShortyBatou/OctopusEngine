@@ -7,7 +7,10 @@
 void Cuda_ParticleSystem_Dynamics::init()
 {
     _mesh = this->entity()->get_component<Mesh>();
-    _gpu_ps = create_particle_system();
+    int n = _mesh->geometry().size();
+    std::vector<scalar> masses(n, _density / n);
+    _gpu_ps = create_particle_system(masses);
+    _gpu_integrator = create_integrator();
     build_dynamics();
 }
 
@@ -16,7 +19,7 @@ void Cuda_ParticleSystem_Dynamics::update()
     Time::Tic();
     const scalar sub_dt = Time::Fixed_DeltaTime() / static_cast<scalar>(_sub_iterations);
     for(int i = 0; i < _sub_iterations; i++)
-        _gpu_ps->step(sub_dt);
+        _gpu_integrator->step(_gpu_ps, sub_dt);
     cudaDeviceSynchronize();
     const scalar t = Time::Tac() * 1000.f;
     _gpu_ps->get_position(_mesh->geometry());

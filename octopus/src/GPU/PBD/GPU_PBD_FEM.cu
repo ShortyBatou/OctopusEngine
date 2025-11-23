@@ -209,12 +209,73 @@ __global__ void kernel_XPBD_V1(
 
 // MUST BE ELSEWERE
 void GPU_PBD_FEM::build_graph_color(Element element, const Mesh::Topology &topology, std::vector<int>& colors) {
-
     Graph d_graph(element, topology, V_Dual);
     auto [nb_color, l_colors] = GraphColoration::DSAT(d_graph);
+    colors = l_colors;
     d_thread->nb_kernel = nb_color;
     std::cout << "NB COLORS: " << nb_color << std::endl;
-    colors = l_colors;
+
+
+    int nb_verts = *std::max_element(topology.begin(), topology.end()) + 1;
+    int nb_verts_element = elem_nb_vertices(element);
+
+    const int t_color = nb_color / 2;
+    // for each vertice get the element that are in conflict
+    std::vector<std::set<int>> v_conflicts(nb_verts);
+    int total_conflict = 0;
+    for(int eid = 0; eid < l_colors.size(); ++eid)
+    {
+        if(l_colors[eid] < t_color) continue;
+
+        std::vector<int> nb_conflict(t_color, 0);
+        std::vector<std::set<int>> c_conflict(t_color);
+        for(int eid2 : d_graph.adj[eid])
+        {
+            int c = l_colors[eid2];
+            if(c >= t_color) continue;
+            c_conflict[c].insert(eid2);
+            // count the number of links between two elements
+            // on a besoin de compter ici le nombre réel de split !
+            nb_conflict[c] += d_graph.edge_count(eid, eid2);
+        }
+
+        auto it = std::min_element(nb_conflict.begin(), nb_conflict.end());
+        int cid = std::distance(nb_conflict.begin(), it);
+
+        l_colors[eid] = cid;
+        total_conflict += nb_conflict[cid];
+        std::set<int> e_vertices;
+
+        int offset = eid * nb_verts_element;
+        for(int i = 0; i < nb_verts_element; ++i)
+            e_vertices.insert(topology[offset + i]);
+
+        for(int eid2 : c_conflict[cid])
+        {
+            const int offset2 = eid2 * nb_verts_element;
+            for(int i = 0; i < nb_verts_element; ++i)
+            {
+                int vid = topology[offset2+i];
+                if(e_vertices.find(vid) == e_vertices.end()) continue;
+                v_conflicts[vid].insert(eid);
+                v_conflicts[vid].insert(eid2);
+            }
+        }
+    }
+    // on créé les groupes en fonction des splits (on essaye de regrouper les éléments qui ont pas la même couleur)
+    // donc on a une nouvelle topologie et nouvelle géométrie
+    // avec pour chaque point fantome le nombre et la liste des sommets conserné (avec l'offset pour le GPU)
+    int t = 0;
+    for(int i = 0; i < nb_verts; ++i)
+    {
+        if(v_conflicts[i].size() == 0) continue;
+        std::vector<int> c_conflict(t_color,0);
+        for(const int eid : v_conflicts[i])
+            c_conflict[l_colors[eid]]++;
+
+        t += *std::max_element(c_conflict.begin(), c_conflict.end());
+    }
+    std::cout << total_conflict << " " << t << std::endl;
 }
 
 void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {

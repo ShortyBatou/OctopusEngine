@@ -7,16 +7,14 @@
 #include "GPU/GPU_ParticleSystem.h"
 #include "GPU/GPU_Dynamic.h"
 
-struct GPU_PBD final : GPU_ParticleSystem
+struct GPU_PBD final : GPU_Integrator
 {
-    GPU_PBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int sub_iteration,
-            const scalar global_damping = 0.f)
-        : GPU_ParticleSystem(positions, masses, new GPU_SemiExplicit(), sub_iteration),
-            _global_damping(global_damping)
+    GPU_PBD(const scalar global_damping = 0.f)
+        : _global_damping(global_damping)
     {
     }
 
-    void step(scalar dt) override;
+    void step(GPU_ParticleSystem* ps, scalar dt) override;
 
     scalar _global_damping;
     ~GPU_PBD() override = default;

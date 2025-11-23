@@ -14,10 +14,8 @@ struct Cuda_VBD_FEM_Dynamic : Cuda_FEM_Dynamic
         : Cuda_FEM_Dynamic(sub_iteration, density, m_distrib, young, poisson, material, damping), _rho(rho), _iteration(iteration)
     { }
 
-
-    GPU_ParticleSystem* create_particle_system() override;
+    GPU_Integrator* Cuda_VBD_FEM_Dynamic::create_integrator() override;
     void build_dynamics() override;
-
     void update() override;
 
     ~Cuda_VBD_FEM_Dynamic() override = default;

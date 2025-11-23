@@ -20,7 +20,7 @@ struct Cuda_XPBD_FEM_Dynamic final : Cuda_FEM_Dynamic
 
     void update() override;
 
-    GPU_ParticleSystem* create_particle_system() override;
+    GPU_Integrator* create_integrator() override;
     void build_dynamics() override;
 
 private:

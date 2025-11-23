@@ -6,14 +6,15 @@
 #include "Tools/Random.h"
 #include <Manager/Debug.h>
 #include <set>
-#include <GPU/VBD/GPU_Mixed_VBD.h>
 #include <Manager/Input.h>
 
 
-GPU_ParticleSystem* Cuda_VBD_FEM_Dynamic::create_particle_system()
+
+GPU_Integrator* Cuda_VBD_FEM_Dynamic::create_integrator()
 {
-    return new GPU_VBD(_mesh->geometry(), get_fem_masses(), _iteration, _sub_iterations, _rho);
+    return new GPU_VBD(_gpu_ps, _iteration, _rho);
 }
+
 
 void Cuda_VBD_FEM_Dynamic::build_dynamics()
 {
@@ -21,7 +22,7 @@ void Cuda_VBD_FEM_Dynamic::build_dynamics()
         if(topo.empty()) continue;
         GPU_FEM* fem = new GPU_VBD_FEM(e, topo, _mesh->geometry(), _material, _young, _poisson, _damping);
         _gpu_fems[e] = fem;
-        _gpu_ps->add_dynamics(fem);
+        _gpu_integrator->add_dynamics(fem);
         break;
     }
 }

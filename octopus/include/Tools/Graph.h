@@ -28,7 +28,7 @@ struct Graph {
         }
     }
 
-    explicit Graph(const std::vector<std::set<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
+    explicit Graph(const std::vector<std::multiset<int>>& adjacence) : n(adjacence.size()), adj(adjacence) {
         degree.resize(n);
         for(int i = 0; i < adj.size(); ++i) {
             degree[i] = adj[i].size();
@@ -169,6 +169,11 @@ struct Graph {
         return n - 1;
     }
 
+    int edge_count(int a, int b)
+    {
+        return adj.at(a).count(b);
+    }
+
     Mesh::Topology convert_to_topology() const
     {
         using Edge = std::pair<int, int>;
@@ -193,7 +198,7 @@ struct Graph {
 
     int n;
     std::vector<int> degree;
-    std::vector<std::set<int>> adj;
+    std::vector<std::multiset<int>> adj;
 };
 
 struct Coloration {

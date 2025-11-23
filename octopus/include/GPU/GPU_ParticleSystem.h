@@ -1,8 +1,6 @@
 #pragma once
 #include "Core/Base.h"
 #include "GPU/Cuda_Buffer.h"
-#include "GPU_Dynamic.h"
-#include "GPU_Integrator.h"
 
 // struct used as parameter for cuda kernels
 struct GPU_ParticleSystem_Parameters
@@ -39,7 +37,7 @@ struct GPU_ParticleSystem_Data final
     Cuda_Buffer<scalar>* _cb_inv_mass;
     Cuda_Buffer<int>* _cb_mask;
 
-    virtual ~GPU_ParticleSystem_Data()
+    ~GPU_ParticleSystem_Data()
     {
         delete _cb_position;
         delete _cb_prev_position;
@@ -53,14 +51,9 @@ struct GPU_ParticleSystem_Data final
 };
 
 
-
 struct GPU_ParticleSystem
 {
-    GPU_ParticleSystem(const std::vector<Vector3>& positions, const std::vector<scalar>& masses,
-                       GPU_Integrator* integrator, int _sub_iteration);
-
-    virtual void step(scalar dt);
-
+    GPU_ParticleSystem(const std::vector<Vector3>& positions, const std::vector<scalar>& masses);
     [[nodiscard]] int nb_particles() const { return _data->_nb_particles; }
     void get_position(std::vector<Vector3>& p) const { _data->_cb_position->get_data(p); }
     void get_prev_position(std::vector<Vector3>& p) const { _data->_cb_prev_position->get_data(p); }
@@ -73,20 +66,8 @@ struct GPU_ParticleSystem
 
     [[nodiscard]] GPU_ParticleSystem_Parameters get_parameters() const;
 
-    virtual void add_dynamics(GPU_Dynamic* dynamic) { _dynamics.push_back(dynamic); }
-    virtual void add_constraint(GPU_Dynamic* constraint) { _constraints.push_back(constraint); }
-
     virtual ~GPU_ParticleSystem()
-    {
-        delete _integrator;
-        for(const GPU_Dynamic* dynamic: _dynamics) delete dynamic;
-        for(const GPU_Dynamic* dynamic: _constraints) delete dynamic;
-    }
+    {}
 
-
-    int _sub_iteration;
-    GPU_Integrator* _integrator;
-    std::vector<GPU_Dynamic*> _dynamics;
-    std::vector<GPU_Dynamic*> _constraints;
     GPU_ParticleSystem_Data* _data;
 };

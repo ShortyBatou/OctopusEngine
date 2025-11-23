@@ -1,12 +1,12 @@
 #pragma once
-#include <GPU/Explicit/GPU_Explicit.h>
+#include <GPU/Explicit/GPU_FEM_Explicit.h>
 
 #include "Core/Base.h"
 #include "Cuda_ParticleSystem_Dynamic.h"
 #include "Script/Dynamic/FEM_Dynamic.h"
 #include "Manager/TimeManager.h"
 
-struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynamic_Getters
+struct Cuda_FEM_Dynamic : Cuda_ParticleSystem_Dynamics, FEM_Dynamic_Getters
 {
     explicit Cuda_FEM_Dynamic(int sub_it,
         const scalar density, const Mass_Distribution m_distrib,
@@ -15,19 +15,24 @@ struct Cuda_FEM_Dynamic : public Cuda_ParticleSystem_Dynamics, public FEM_Dynami
               _young(young), _poisson(poisson), _material(material), _damping(damping)
     {}
 
-    GPU_ParticleSystem* create_particle_system() override
+    void Cuda_FEM_Dynamic::init() override
     {
-        return new GPU_ParticleSystem(_mesh->geometry(), get_fem_masses(), new GPU_SemiExplicit(), _sub_iterations);
+        _mesh = this->entity()->get_component<Mesh>();
+        std::vector<scalar> masses = get_fem_masses();
+        _gpu_ps = create_particle_system(masses);
+        _gpu_integrator = create_integrator();
+        build_dynamics();
     }
+
 
     void build_dynamics() override
     {
         for(auto&[e, topo] : _mesh->topologies()) {
             if(topo.empty()) continue;
             // create CUDA FEM Explicit
-            auto* fem = new GPU_Explicit_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, _damping);
+            auto* fem = new GPU_FEM_Explicit(e, _mesh->geometry(), topo, _young, _poisson, _material, _damping);
             _gpu_fems[e] = fem;
-            _gpu_ps->add_dynamics(fem);
+            _gpu_integrator->add_dynamics(fem);
         }
     }
 

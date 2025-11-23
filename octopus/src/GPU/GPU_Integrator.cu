@@ -5,6 +5,25 @@
 #include <Manager/Dynamic.h>
 #include <algorithm>
 
+void GPU_Integrator::init_dynamics(GPU_ParticleSystem *ps, scalar dt)
+{
+    for(GPU_Dynamic* dynamic : _dynamics)
+        if(dynamic->active) dynamic->start(ps, dt);
+}
+
+void GPU_Integrator::eval_dynamics(GPU_ParticleSystem *ps, scalar dt)
+{
+    for(GPU_Dynamic* dynamic : _dynamics)
+        if(dynamic->active) dynamic->step(ps, dt);
+}
+
+void GPU_Integrator::eval_constraints(GPU_ParticleSystem *ps, scalar dt)
+{
+    for(GPU_Dynamic* constraint : _constraints)
+        if(constraint->active) constraint->step(ps, dt);
+}
+
+
 __global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, const Vector3 g, GPU_ParticleSystem_Parameters ps) {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
@@ -14,54 +33,65 @@ __global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, con
     ps.f[i] *= 0;
 }
 
-
-GPU_ParticleSystem::GPU_ParticleSystem(const std::vector<Vector3>& positions, const std::vector<scalar>& masses,
-                                       GPU_Integrator* integrator, int sub_iteration)
-        : _sub_iteration(sub_iteration), _integrator(integrator)
-{
-    const int nb_particle = static_cast<int>(positions.size());
-    _data = new GPU_ParticleSystem_Data();
-    _data->_nb_particles = nb_particle;
-    std::vector inv_mass(masses);
-    std::for_each(inv_mass.begin(), inv_mass.end(), [](scalar& n) { n = 1.f / n; });
-
-    _data->_cb_position = new Cuda_Buffer(positions);
-    _data->_cb_prev_position = new Cuda_Buffer(positions);
-    _data->_cb_init_position = new Cuda_Buffer(positions);
-    _data->_cb_velocity = new Cuda_Buffer(std::vector(nb_particle, Unit3D::Zero()));
-    _data->_cb_forces = new Cuda_Buffer(std::vector(nb_particle, Unit3D::Zero()));
-    _data->_cb_mass = new Cuda_Buffer(masses);
-    _data->_cb_inv_mass = new Cuda_Buffer(inv_mass);
-    _data->_cb_mask = new Cuda_Buffer(std::vector(nb_particle, 1));
-}
-
-GPU_ParticleSystem_Parameters GPU_ParticleSystem::get_parameters() const
-{
-    GPU_ParticleSystem_Parameters params{};
-    params.nb_particles = _data->_nb_particles;
-    params.f = _data->_cb_forces->buffer;
-    params.init_p = _data->_cb_init_position->buffer;
-    params.w =_data-> _cb_inv_mass->buffer;
-    params.mask = _data->_cb_mask->buffer;
-    params.m = _data->_cb_mass->buffer;
-    params.p = _data->_cb_position->buffer;
-    params.last_p = _data->_cb_prev_position->buffer;
-    params.v = _data->_cb_velocity->buffer;
-    return params;
-}
-
-
-void GPU_ParticleSystem::step(const scalar dt)
-{
-    for(GPU_Dynamic* dynamic : _dynamics)
-        if(dynamic->active) dynamic->step(this, dt);
-    _integrator->step(this, dt);
-    for(GPU_Dynamic* constraint : _constraints)
-        if(constraint->active) constraint->step(this, dt);
-
-}
-
 void GPU_SemiExplicit::step(GPU_ParticleSystem *ps, const scalar dt) {
+
+    eval_dynamics(ps, dt);
     const int n = ps->nb_particles();
     kenerl_semi_exicit_integration<<<(n+31) / 32, 32>>>(n, dt, Dynamic::gravity(), ps->get_parameters());
+    if(apply_constraints) eval_constraints(ps, dt);
 }
+
+
+__global__ void kernel_explicit_rk(const int n, const scalar dt, const Vector3 g, int order, GPU_ParticleSystem_Parameters ps, RK_Data k) {
+    const int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id >= n) return;
+    if(k.step == 0)
+    {
+        ps.last_p[id] = ps.p[id];
+    }
+    if(k.step == 0 && k.step < order -1)
+    {
+        k.v[id] = ps.v[id];
+        k.x[id] = ps.p[id];
+        k.dv[id] = Vector3(0,0,0);
+        k.dx[id] = Vector3(0,0,0);
+    }
+
+    Vector3 k_dv = g + ps.f[id] * ps.w[id];
+    Vector3 k_dx = ps.v[id];
+
+    if(k.step < order-1)
+    {
+        k.dv[id] += k.w2 * (g + ps.f[id] * ps.w[id]);
+        k.dx[id] += k.w2 * ps.v[id];
+    }
+    else
+    {
+        k_dv = k.dv[id] + k.w2 * (g + ps.f[id] * ps.w[id]);
+        k_dx = k.dx[id] + k.w2 * (ps.v[id]);
+    }
+
+    ps.v[id] = k.v[id] + k.w1 * k_dv * dt;
+    ps.p[id] = k.x[id] + k.w1 * k_dx * dt;
+    ps.f[id] *= 0;
+}
+
+
+void GPU_Explicit_RK::step(GPU_ParticleSystem* ps, scalar dt)
+{
+
+    RK_Data data = {
+        cb_x->buffer, cb_v->buffer, 0,0,0, cb_kv->buffer, cb_kx->buffer
+    };
+
+    const int n = ps->nb_particles();
+    for(int i = 0; i < order; ++i)
+    {
+        data.w1 = w1[i]; data.w2 = w2[i]; data.step = i;
+        eval_dynamics(ps, dt * w2[i]);
+        kernel_explicit_rk<<<(n+31)/32,32>>>(n, dt, Dynamic::gravity(), order, ps->get_parameters(), data);
+    }
+
+    if(apply_constraints) eval_constraints(ps,dt);
+}
+

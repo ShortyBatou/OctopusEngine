@@ -1,8 +1,8 @@
-#include "GPU/Explicit/GPU_Explicit.h"
+#include "GPU/Explicit/GPU_FEM_Explicit.h"
 #include "GPU/GPU_FEM_Material.h"
 #include <GPU/CUMatrix.h>
 
-__global__ void kernel_explicit_fem_eval_force(
+__global__ void kernel_fem_eval_force(
     // nb_thread, nb quadrature per elements, nb vertices in element
     const int n, const scalar damping,
     const Material_Data mt,
@@ -72,16 +72,7 @@ __global__ void kernel_explicit_fem_eval_force(
     }
 }
 
-void GPU_Explicit::step(const scalar dt)
-{
-    for (GPU_Dynamic* dynamic : _dynamics)
-        if(dynamic->active)
-            dynamic->step(this, dt);
-
-    _integrator->step(this, dt);
-}
-
-GPU_Explicit_FEM::GPU_Explicit_FEM(const Element element, const Mesh::Geometry& geometry, const Mesh::Topology& topology, // mesh
+GPU_FEM_Explicit::GPU_FEM_Explicit(const Element element, const Mesh::Geometry& geometry, const Mesh::Topology& topology, // mesh
                                    const scalar young, const scalar poisson, const Material material, const scalar damping)
     : GPU_FEM(element, geometry, topology, young, poisson, material), _damping(damping)
 {
@@ -124,9 +115,9 @@ GPU_Explicit_FEM::GPU_Explicit_FEM(const Element element, const Mesh::Geometry& 
     d_owners->cb_ref_vid = new Cuda_Buffer(ref_id);
 }
 
-void GPU_Explicit_FEM::step(GPU_ParticleSystem* ps, scalar dt)
+void GPU_FEM_Explicit::step(GPU_ParticleSystem* ps, scalar dt)
 {
-    kernel_explicit_fem_eval_force<<<d_thread->grid_size[0], d_thread->block_size[0]>>>(
+    kernel_fem_eval_force<<<d_thread->grid_size[0], d_thread->block_size[0]>>>(
         d_thread->nb_threads[0], _damping,
         *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
     );

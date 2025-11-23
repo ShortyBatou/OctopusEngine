@@ -1,6 +1,7 @@
 #include "GPU/PBD/GPU_PBD.h"
 
 #include <Manager/Debug.h>
+#include <Manager/Dynamic.h>
 #include <Manager/Input.h>
 
 // global device function
@@ -16,17 +17,10 @@ __global__ void kernel_velocity_update(const int n, const float dt, const scalar
     }
 }
 
-void GPU_PBD::step(const scalar dt)  {
-    _integrator->step(this, dt);
-    for(GPU_Dynamic* dynamic : _dynamics) {
-        if(dynamic->active)
-            dynamic->step(this, dt);
-    }
-    for(GPU_Dynamic* constraint : _constraints) {
-        if(constraint->active)
-            constraint->step(this, dt);
-    }
-
-    kernel_velocity_update<<<(_data->_nb_particles + 255) / 256, 256>>>(_data->_nb_particles, dt, _global_damping, get_parameters());
-
+void GPU_PBD::step(GPU_ParticleSystem* ps, const scalar dt)  {
+    int n = ps->nb_particles();
+    kenerl_semi_exicit_integration<<<(n+31) / 32, 32>>>(n, dt, Dynamic::gravity(), ps->get_parameters());
+    eval_dynamics(ps, dt);
+    eval_constraints(ps, dt);
+    kernel_velocity_update<<<(n + 31) / 32, 32>>>(n, dt, _global_damping, ps->get_parameters());
 }

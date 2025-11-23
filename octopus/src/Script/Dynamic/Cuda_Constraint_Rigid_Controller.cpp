@@ -13,11 +13,11 @@ void Cuda_Constraint_Rigid_Controller::late_init() {
     _crush = new GPU_Crush(); _crush->active = false;
     _random_sphere = new GPU_RandomSphere(mesh->geometry(), 1); _random_sphere->active = false;
     _high_stretch = new GPU_HighStretch(mesh, 20, 0.75f); _high_stretch->active = false;
-    cuda_dynamic->get_particle_system()->add_constraint(_fixation);
-    cuda_dynamic->get_particle_system()->add_constraint(_crush);
-    cuda_dynamic->get_particle_system()->add_constraint(_random_sphere);
-    cuda_dynamic->get_particle_system()->add_constraint(_high_stretch);
-    cuda_dynamic->get_particle_system()->add_constraint(new GPU_Box_Limit(Vector3(-10,0,-10), Vector3(10,5,10)));
+    cuda_dynamic->get_integrator()->add_constraint(_fixation);
+    cuda_dynamic->get_integrator()->add_constraint(_crush);
+    cuda_dynamic->get_integrator()->add_constraint(_random_sphere);
+    cuda_dynamic->get_integrator()->add_constraint(_high_stretch);
+    cuda_dynamic->get_integrator()->add_constraint(new GPU_Box_Limit(Vector3(-10,-5,-10), Vector3(10,5,10)));
     _timer = _event_rate;
     _smooth_step = _smooth_iterations;
 }

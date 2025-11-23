@@ -10,25 +10,26 @@
 #include "GPU/GPU_ParticleSystem.h"
 #include "GPU/VBD/GPU_VBD_FEM.h"
 
-struct GPU_VBD : GPU_ParticleSystem
+struct GPU_VBD : GPU_Integrator
 {
-    GPU_VBD(const std::vector<Vector3>& positions, const std::vector<scalar>& masses, const int it, const int sub_it,
-            const scalar rho)
-        : GPU_ParticleSystem(positions, masses, nullptr, sub_it), iteration(it), _rho(rho)
+    GPU_VBD(GPU_ParticleSystem* ps, const int it, const scalar rho)
+        : GPU_Integrator(), iteration(it), _rho(rho)
     {
+        std::vector<Vector3> positions;
+        ps->get_position(positions);
         y = new Cuda_Buffer(positions);
         prev_it_p = new Cuda_Buffer(positions);
         prev_it2_p = new Cuda_Buffer(positions);
         prev_prev_p = new Cuda_Buffer(positions);
     }
 
-    void step(scalar dt) override;
+    void step(GPU_ParticleSystem* ps, scalar dt) override;
 
     void add_dynamics(GPU_Dynamic* dynamic) override
     {
         GPU_VBD_FEM* _fem = dynamic_cast<GPU_VBD_FEM*>(dynamic);
         if (_fem != nullptr) _fem->y = y; // ugly as fuck
-        GPU_ParticleSystem::add_dynamics(dynamic);
+        GPU_Integrator::add_dynamics(dynamic);
     }
 
     int iteration;

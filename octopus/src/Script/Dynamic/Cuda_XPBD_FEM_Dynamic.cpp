@@ -13,9 +13,9 @@
 #include <Manager/Input.h>
 
 
-GPU_ParticleSystem* Cuda_XPBD_FEM_Dynamic::create_particle_system()
+GPU_Integrator* Cuda_XPBD_FEM_Dynamic::create_integrator()
 {
-   return new GPU_PBD(_mesh->geometry(), get_fem_masses(), _sub_iterations, _damping);
+   return new GPU_PBD(_damping);
 }
 
 void Cuda_XPBD_FEM_Dynamic::build_dynamics()
@@ -29,7 +29,7 @@ void Cuda_XPBD_FEM_Dynamic::build_dynamics()
            _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
         _gpu_fems[e] = _gpu_xpbd_fems[e];
         // create CUDA PBD Gauss-Seidel
-        _gpu_ps->add_dynamics(_gpu_fems[e]);
+        _gpu_integrator->add_dynamics(_gpu_fems[e]);
     }
 }
 

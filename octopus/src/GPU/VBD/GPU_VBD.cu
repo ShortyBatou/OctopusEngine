@@ -35,36 +35,28 @@ __global__ void kernel_chebychev_acceleration(const int it, const scalar omega, 
 }
 
 
-void GPU_VBD::step(const scalar dt) {
-    const int n = nb_particles();
+void GPU_VBD::step(GPU_ParticleSystem* ps, const scalar dt) {
+    const int n = ps->nb_particles();
     scalar omega = 1;
 
-    for(GPU_Dynamic* dynamic : _dynamics)
-        if(dynamic->active)
-            dynamic->start(this, dt);
+    init_dynamics(ps, dt);
 
     // integration / first guess
     kernel_integration<<<(n + 31)/32, 32>>>(dt,Dynamic::gravity(),
-        get_parameters(),y->buffer, prev_it_p->buffer);
+        ps->get_parameters(),y->buffer, prev_it_p->buffer);
 
     for(int j = 0; j < iteration; ++j) {
-        // solve
-        for(GPU_Dynamic* dynamic : _dynamics)
-            if(dynamic->active)
-                dynamic->step(this, dt);
-
-        for(GPU_Dynamic * constraint : _constraints)
-            if(constraint->active)
-                constraint->step(this, dt);
+        eval_dynamics(ps, dt);
+        eval_constraints(ps, dt);
 
         // Acceleration (Chebychev)
         if(_rho > eps) {
             if(j == 1) omega = 2.f / (2.f - _rho * _rho);
             else if(j > 1) omega = 4.f / (4.f - _rho * _rho * omega);
-            kernel_chebychev_acceleration<<<(n + 31)/32, 32>>>(j, omega, get_parameters(), prev_it_p->buffer, prev_it2_p->buffer);
+            kernel_chebychev_acceleration<<<(n + 31)/32, 32>>>(j, omega, ps->get_parameters(), prev_it_p->buffer, prev_it2_p->buffer);
         }
     }
     // velocity update
-    kernel_velocity_update<<<(n + 31)/32, 32>>>(dt,get_parameters());
+    kernel_velocity_update<<<(n + 31)/32, 32>>>(dt,ps->get_parameters());
 
 }
