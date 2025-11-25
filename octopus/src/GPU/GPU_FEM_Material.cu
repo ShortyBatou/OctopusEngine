@@ -249,40 +249,20 @@ __device__ void eval_hessian_sym(const Material material, const scalar lambda, c
 
 __device__ Matrix3x3 assemble_sub_hessian_sym(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[6])
 {
-    Matrix3x3 H;
+    Matrix3x3 H(0);
     for (int j = 0; j < 3; ++j) {
-        for (int i = 0; i < 3; ++i) {
-            Matrix3x3 H_kl;
-            H_kl[0][0] = d2W_dF2[0][i][j];
-            H_kl[1][0] = d2W_dF2[1][i][j];
-            H_kl[2][0] = d2W_dF2[2][i][j];
-            H_kl[1][1] = d2W_dF2[3][i][j];
-            H_kl[2][1] = d2W_dF2[4][i][j];
-            H_kl[2][2] = d2W_dF2[5][i][j];
-
-            // symmetry
-            H_kl[0][1] = d2W_dF2[1][j][i];
-            H_kl[0][2] = d2W_dF2[2][j][i];
-            H_kl[1][2] = d2W_dF2[4][j][i];
-            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V;
-        }
-    }
-    return H;
+    for (int i = 0; i < 3; ++i) {
+        H += dF_dx[i] * dF_dx[j] * d2W_dF2[max(i,j)][min(i,j)];
+    }}
+    return H * V;
 }
 
 __device__ Matrix3x3 assemble_sub_hessian(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[9])
 {
-    Matrix3x3 H;
+    Matrix3x3 H(0);
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < 3; ++i) {
-            Matrix3x3 H_kl;
-            for(int l = 0; l < 3; ++l) {
-                for(int k = 0; k < 3; ++k) {
-                    H_kl[k][l] = d2W_dF2[k+l*3][i][j];
-                }
-            }
-            H[i][j] = glm::dot(dF_dx, H_kl * dF_dx) * V;
-        }
-    }
-    return H;
+            H += dF_dx[i] * dF_dx[j] * d2W_dF2[i][j];
+        }}
+    return H * V;
 }

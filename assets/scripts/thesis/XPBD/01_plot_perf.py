@@ -102,10 +102,10 @@ for ax in axes:
     ax.grid(False)
     ax.set_yscale("log")
     if(i == 0 or i == 2):
-        ax.set_ylabel("Erreur")
-    ax.set_xlabel("coût (ms)")
-    ax.legend()
-    ax.set_title(titles[i])
+        ax.set_ylabel("Erreur", fontsize=16)
+    ax.set_xlabel("coût (ms)", fontsize=16)
+    ax.legend(fontsize=16)
+    ax.set_title(titles[i], fontsize=16)
     i = i + 1
     
 # Echelles log

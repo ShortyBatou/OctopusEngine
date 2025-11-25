@@ -30,7 +30,7 @@ ax.set_yscale("log")
 ax.set_ylabel("MSE")
 ax.set_xlim(1.5e-06, 1.05e-05)
 ax.set_ylim(1.0e-12, 5e-09)
-ax.set_xlabel(r"k_d")
+ax.set_xlabel(r"coefficient d\'atténuation")
 
 x_val = 6.5e-6
 ax.axvline(x=x_val, color='r', linestyle='--', linewidth=1)
