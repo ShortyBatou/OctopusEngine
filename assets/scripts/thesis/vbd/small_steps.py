@@ -118,13 +118,14 @@ time = [
      ]
 ]
 
+
 order = [0,2,3,1,4,5]
 
 fig, axes = plt.subplots(3, 2, figsize=(11, 13))
 labels = [ "Base", "Base + Ch", "10it + Ch", "5it + Ch", "2it", "1it" ]
 colors = ["#2c3e50", "#8e44ad","#e74c3c", "#f1c40f", "#16a085", "#3498db"]
 
-titles = [r"P1 (64x64x16, E=1e7, v=0.45)", r"P2 (32x8x8, E=1e7, v=0.45)", r"P1 (64x16x16, E=1e6, v=0.35)", r"P1 (32x8x8, E=1e7, v=0.45)", r"Q1 (64x16x16, E=1e7, v=0.45)", "Q2 (32x8x8, E=1e7, v=0.45)"]
+titles = [r"P1 ($64 \times 16 \times 16, \ E = 10MPa, \ \nu = 0.45$)", r"P2 ($32 \times 8 \times 8, \ E = 10MPa, \ \nu = 0.45$)", r"P1 ($64 \times 16 \times 16, \ E = 1MPa, \ \nu = 0.35$)", r"P1 (32x8x8, \ E=10MPa, \ \nu=0.45)", r"Q1 ($64 \times 16 \times 16, \ E = 10MPa, \ \nu = 0.45$)", r"Q2 ($32 \times 8 \times 8, \ E = 10MPa, \ \nu = 0.45$)"]
 limx = [[2,30], [3.5,60], [1,7], [0.6,4.5] , [3.1,55], [12.5,121]]
 limy = [[0,3], [0,3], [0,2.5], [0,2.5], [0,2.5], [0,3]]
 
@@ -135,9 +136,9 @@ for i in range(len(error)):
      axes[a][b].grid()
      if(i == 2 or i == 5):
           axes[a][b].set_xlabel('coût (ms)', fontfamily="Times New Roman", fontsize=14)
-     if(i / 3 == 0):
+     if(int(i / 3) == 0):
           axes[a][b].set_ylabel(r'$\sqrt{MSE}$', fontfamily="Times New Roman", fontsize=14)
-     axes[a][b].set_title(titles[id], fontsize=18)
+     axes[a][b].set_title(titles[id], fontsize=15)
      axes[a][b].set_xlim(limx[id])
      axes[a][b].set_ylim(limy[id])
      for j in range(len(error[id])):

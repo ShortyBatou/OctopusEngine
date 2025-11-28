@@ -46,7 +46,7 @@ def display(axe, performance, error):
     axe.axhline(y=1e-4, color='r', linestyle='--', linewidth=1)
         #axe.plot(x_smooth, y_smooth, linewidth=2, color = colors[i], linestyle="-")
 
-titles = ["Convergence : Test de flexion", "GPU"]
+titles = ["Convergence pour le test de flexion", "GPU"]
 display(axes, performance, error)
 axes.set_xlim(0, 13)
 axes.grid(False)

@@ -46,8 +46,8 @@ __global__ void kernel_fem_eval_force(
 
     // assemble hessian
     Matrix3x3 d2W_dF2[6];
-    eval_hessian(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
-    const Matrix3x3 H = assemble_sub_hessian(dF_dx, fem.V[qe_off], d2W_dF2);
+    eval_hessian_sym(mt.material, mt.lambda, mt.mu, F, d2W_dF2);
+    const Matrix3x3 H = assemble_sub_hessian_sym(dF_dx, fem.V[qe_off], d2W_dF2);
 
     //Matrix3x3 H2 = glm::outerProduct(fi, fi);
     fi -= damping * H * ps.v[vid];/**/
@@ -56,16 +56,7 @@ __global__ void kernel_fem_eval_force(
     __shared__ Vector3 s_f_H[256]; // size = block_size * 3 * sizeof(float)
     s_f_H[tid] = fi;
 
-    __syncthreads();
-    const int t = size_of_block;
-    int i,b;
-    for(i=t/2, b=(t+1)/2; i > 0; b=(b+1)/2, i/=2) {
-        if(tid < i) {
-            s_f_H[tid] += s_f_H[tid+b];
-            __syncthreads();
-        }
-        i = (b>i) ? b : i;
-    }
+    all_reduction<Vector3>(threadIdx.x, size_of_block, 0, 1,  s_f_H);
 
     if (threadIdx.x == 0) {
         ps.f[vid] = Vector3(s_f_H[0]);

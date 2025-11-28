@@ -36,7 +36,7 @@ __device__ Matrix3x3 snh_stress(const Matrix3x3 &F, const scalar lambda, const s
 }
 
 
-__device__ void hooke_hessian(const Matrix3x3 &F, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
+__device__ void hooke_hessian(const Matrix3x3 &, const scalar lambda, const scalar mu,Matrix3x3 d2W_dF2[9]) {
     for(int i = 0; i < 9; ++i)
         d2W_dF2[i] = Matrix3x3(0.f);
 
@@ -242,7 +242,7 @@ __device__ void eval_hessian_sym(const Material material, const scalar lambda, c
     switch (material) {
         case Hooke : hooke_hessian_sym(F, lambda, mu, d2W_dF2); break;
         case StVK : stvk_hessian_sym(F, lambda, mu, d2W_dF2); break;
-        case NeoHooke : snh_hessian_sym(F, lambda, mu, d2W_dF2); break;
+        case NeoHooke : nh_hessian_sym(F, lambda, mu, d2W_dF2); break;
         case Stable_NeoHooke : snh_hessian_sym(F, lambda, mu, d2W_dF2); break;
     }
 }
@@ -250,19 +250,24 @@ __device__ void eval_hessian_sym(const Material material, const scalar lambda, c
 __device__ Matrix3x3 assemble_sub_hessian_sym(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[6])
 {
     Matrix3x3 H(0);
-    for (int j = 0; j < 3; ++j) {
-    for (int i = 0; i < 3; ++i) {
-        H += dF_dx[i] * dF_dx[j] * d2W_dF2[max(i,j)][min(i,j)];
-    }}
+    H += dF_dx[1] * dF_dx[0] * (d2W_dF2[1] + glm::transpose(d2W_dF2[1]));
+    H += dF_dx[2] * dF_dx[0] * (d2W_dF2[2] + glm::transpose(d2W_dF2[2]));
+    H += dF_dx[2] * dF_dx[1] * (d2W_dF2[4] + glm::transpose(d2W_dF2[4]));
+
+    H += dF_dx[0] * dF_dx[0] * d2W_dF2[0];
+    H += dF_dx[1] * dF_dx[1] * d2W_dF2[3];
+    H += dF_dx[2] * dF_dx[2] * d2W_dF2[5];
     return H * V;
 }
 
 __device__ Matrix3x3 assemble_sub_hessian(const Vector3& dF_dx, const scalar& V, Matrix3x3 d2W_dF2[9])
 {
     Matrix3x3 H(0);
+
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < 3; ++i) {
-            H += dF_dx[i] * dF_dx[j] * d2W_dF2[i][j];
+            const int id = i + j * 3;
+            H += dF_dx[i] * dF_dx[j] * d2W_dF2[id];
         }}
     return H * V;
 }

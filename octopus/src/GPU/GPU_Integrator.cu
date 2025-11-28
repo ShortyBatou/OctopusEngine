@@ -33,8 +33,8 @@ __global__ void kenerl_semi_exicit_integration(const int n, const scalar dt, con
     ps.f[i] *= 0;
 }
 
-void GPU_SemiExplicit::step(GPU_ParticleSystem *ps, const scalar dt) {
-
+void GPU_SemiExplicit::step(GPU_ParticleSystem *ps, const scalar dt)
+{
     eval_dynamics(ps, dt);
     const int n = ps->nb_particles();
     kenerl_semi_exicit_integration<<<(n+31) / 32, 32>>>(n, dt, Dynamic::gravity(), ps->get_parameters());

@@ -75,7 +75,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        //root->add_behaviour(new MeshDiff_MSE(1,{2,3}));
+        root->add_behaviour(new MeshDiff_MSE(1,{2}));
         //root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 8));
     }
 
@@ -84,16 +84,16 @@ struct BaseScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000; args.distribution = FemShape;
-        args.young = 1e7; args.poisson = 0.35; args.material = Stable_NeoHooke;
+        args.young = 1e7; args.poisson = 0.45; args.material = Stable_NeoHooke;
         args.damping = 5e-6;
         args.iteration = 1; args.sub_iteration = 1  ;
-        args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::up();
+        args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::right();
         args.display = FEM_DataDisplay::Type::Displacement;
-        args.mesh_file = "mesh/vtk/bunny_low_P1.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/bunny_low_P1.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(16, 4, 4);
+        Vector3I cells(64, 16, 16);
 
         Vector3 size(4, 1, 1);
         /*args.mesh_file = "1_Hexa27_32_8_8_4x1x1_2249.vtk";
@@ -101,17 +101,23 @@ struct BaseScene final : Scene
         build_mesh_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args);
         args.mesh_type = "";*/
 
-        args.damping = 5e-6;
+        args.damping = 1e-6;
         args.biased = false;
-        //args.sub_iteration = 150; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, Explicit);
+        args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, Explicit);
         //args.sub_iteration = 100; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, RK2);
         //args.sub_iteration = 50; build_fem_entity(Vector3(0,0.,2), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, RK4);
 
-        args.sub_iteration = 50;
-        args.iteration = 1;
-        //build_vbd_entity(Vector3(0,0 ,3), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, 0.0, true);
+        /*for(int i = 0; i < 5; ++i) {
+            args.sub_iteration = 1;
+            args.iteration = 20 + i * 20;
+            build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, 0.95, true);
+        }*/
+        args.sub_iteration = 1;
+        args.iteration = 676;
+        build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, 0.95, true);
+
         //build_vbd_entity(Vector3(0,-0.01 ,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, 0.95, true);
-        build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
+        //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const bool biased) {
