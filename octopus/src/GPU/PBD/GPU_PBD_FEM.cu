@@ -472,9 +472,10 @@ void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
 
         const int n = ps->nb_particles();
         kernel_XPBD_phamtoms_init<<<(n+31)/32, 32>>>(
-        n, ps_parm,
-        p, w,
-        cb_f_ids->buffer, cb_f_nb->buffer, cb_f_offset->buffer);
+            n, ps_parm,
+            p, w,
+            cb_f_ids->buffer, cb_f_nb->buffer, cb_f_offset->buffer
+            );
     }
     else
     {
@@ -493,8 +494,9 @@ void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         if(d_fem->nb_element == 4)
         {
             kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
-            d_thread->nb_threads[j], d_thread->offsets[j], dt,
-            cb_eid->buffer, *d_material, p, w, fem_pameters, cb_lambda->buffer);
+                d_thread->nb_threads[j], d_thread->offsets[j], dt,
+                cb_eid->buffer, *d_material, p, w, fem_pameters, cb_lambda->buffer
+                );
         }
         else
         {
@@ -513,6 +515,9 @@ void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
             p,
             cb_f_ids->buffer, cb_f_nb->buffer, cb_f_offset->buffer);
     }
+
+
+
     /*scalar p, d;
     get_residuals(ps, dt,p, d);
     DebugUI::Begin("XPBD  residual");
