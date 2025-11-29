@@ -9,7 +9,7 @@
 #include <Tools/Graph.h>
 
 
-__device__ scalar xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, const scalar* inv_mass, const int* topology, Vector3* p, const int* mask)
+__device__ scalar xpbd_solve(const int nb_vert_elem, const scalar stiffness, const scalar dt, const scalar& C, const Vector3* grad_C, const scalar* inv_mass, const int* topology, Vector3* p)
 {
     scalar sum_norm_grad = 0.f;
     for (int i = 0; i < nb_vert_elem; ++i) {
@@ -20,7 +20,7 @@ __device__ scalar xpbd_solve(const int nb_vert_elem, const scalar stiffness, con
     const scalar dt_lambda = -C / (sum_norm_grad + alpha);
     for (int i = 0; i < nb_vert_elem; ++i) {
         const int vid = topology[i];
-        if(mask[vid] == 1) p[vid] += dt_lambda * inv_mass[vid] * grad_C[i];
+        p[vid] += dt_lambda * inv_mass[vid] * grad_C[i];
     }
     return dt_lambda;
 }
@@ -58,7 +58,7 @@ __device__ void xpbd_convert_to_constraint(const int nb_vert_elem, scalar& C, Ve
 __global__ void kernel_XPBD_V0(
     const int n, const int offset, const scalar dt, const int* eids,
     Material_Data mt,
-    GPU_ParticleSystem_Parameters ps,
+    Vector3* p, scalar* w,
     GPU_FEM_Pameters fem, scalar* lambda)
 {
 
@@ -79,13 +79,13 @@ __global__ void kernel_XPBD_V0(
             Matrix3x3 JX_inv = fem.JX_inv[qid + q];
             scalar V = fem.V[qid + q];
             const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
-            xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, C, grad_C);
+            xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, p, topology, C, grad_C);
         }
 
         xpbd_convert_to_constraint(fem.elem_nb_vert, C, grad_C);
         //if(C < 1e-12f) continue;
 
-        const scalar dt_lambda = xpbd_solve(fem.elem_nb_vert,(m==0) ? mt.lambda : mt.mu, dt, C, grad_C, ps.w, topology, ps.p, ps.mask);
+        const scalar dt_lambda = xpbd_solve(fem.elem_nb_vert,(m==0) ? mt.lambda : mt.mu, dt, C, grad_C, w, topology, p);
         lambda[eid * 2 + m] = dt_lambda;
     }
 }
@@ -141,7 +141,7 @@ __global__ void kernel_XPBD_constraint_residuals(
 __global__ void kernel_XPBD_V1(
     const int n, const int offset, const scalar dt, const int* eids,
     Material_Data mt,
-    GPU_ParticleSystem_Parameters ps,
+    Vector3* p, scalar* w,
     GPU_FEM_Pameters fem)
 {
     if (blockIdx.x >= n) return;
@@ -167,7 +167,7 @@ __global__ void kernel_XPBD_V1(
         const Matrix3x3 JX_inv = fem.JX_inv[q_off + q];
         const scalar V = fem.V[q_off + q];
         const Vector3* dN = fem.dN + q * fem.elem_nb_vert;
-        xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, ps.p, topology, _C, _grad_C);
+        xpbd_constraint_fem_eval(mt.material, m, mt.lambda, mt.mu, fem.elem_nb_vert, JX_inv, V, dN, p, topology, _C, _grad_C);
 
         s_C[q] = _C;
         for(int i = 0; i < fem.elem_nb_vert; ++i) {
@@ -189,7 +189,7 @@ __global__ void kernel_XPBD_V1(
         {
             const int id = q + fem.nb_quadrature * i;
             if(id >= fem.elem_nb_vert) continue;
-            s_C[id] = glm::dot(s_grad_C[id] * C_inv, s_grad_C[id] * C_inv) * ps.w[topology[id]];
+            s_C[id] = glm::dot(s_grad_C[id] * C_inv, s_grad_C[id] * C_inv) * w[topology[id]];
         }
 
         all_reduction<scalar>(q, fem.elem_nb_vert, 0, 1,  s_C);
@@ -201,9 +201,44 @@ __global__ void kernel_XPBD_V1(
             const int id = q + fem.nb_quadrature * i;
             if(id >= fem.elem_nb_vert) continue;
             const int vid = topology[id];
-            if(ps.mask[vid] == 1) ps.p[vid] += dt_lambda * ps.w[vid] * C_inv * s_grad_C[id]  ;
+            p[vid] += dt_lambda * w[vid] * C_inv * s_grad_C[id]  ;
         }
     }
+}
+
+__global__ void kernel_XPBD_phamtoms_init(
+    const int n, GPU_ParticleSystem_Parameters ps,
+    Vector3* f_p, scalar* f_w,
+    const int* f_ids, const int* f_nb, const int* f_off
+    ) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x; // thread it
+    if (i >= n) return;
+    const int nb = f_nb[i];
+    const int off = f_off[i];
+    const int* ids = f_ids + off;
+    for(int j = 0; j < nb; ++j)
+    {
+        f_p[ids[j]] = ps.p[i];
+        f_w[ids[j]] = ps.w[i];
+    }
+}
+
+__global__ void kernel_XPBD_phamtoms_mean(
+    const int n, GPU_ParticleSystem_Parameters ps,
+    const Vector3* f_p,
+    const int* f_ids, const int* f_nb, const int* f_off
+    ) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x; // thread it
+    if (i >= n) return;
+    const int nb = f_nb[i];
+    const int off = f_off[i];
+    const int* ids = f_ids + off;
+    Vector3 p(0,0,0);
+    for(int j = 0; j < nb; ++j)
+    {
+        p += f_p[ids[j]];
+    }
+    ps.p[i] = p * (1.f / nb);
 }
 
 
@@ -211,71 +246,126 @@ __global__ void kernel_XPBD_V1(
 void GPU_PBD_FEM::build_graph_color(Element element, const Mesh::Topology &topology, std::vector<int>& colors) {
     Graph d_graph(element, topology, V_Dual);
     auto [nb_color, l_colors] = GraphColoration::DSAT(d_graph);
-    colors = l_colors;
-    d_thread->nb_kernel = nb_color;
+
     std::cout << "NB COLORS: " << nb_color << std::endl;
 
-
-    int nb_verts = *std::max_element(topology.begin(), topology.end()) + 1;
-    int nb_verts_element = elem_nb_vertices(element);
-
+    if(!use_phantom)
+    {
+        colors = l_colors;
+        d_thread->nb_kernel = nb_color;
+        return;
+    }
+    /// RECOLOR
     const int t_color = nb_color / 2;
-    // for each vertice get the element that are in conflict
-    std::vector<std::set<int>> v_conflicts(nb_verts);
+    // change the coloration to match t_color and try to minimise splitting
     int total_conflict = 0;
     for(int eid = 0; eid < l_colors.size(); ++eid)
     {
+        // if the color is too high
         if(l_colors[eid] < t_color) continue;
 
-        std::vector<int> nb_conflict(t_color, 0);
-        std::vector<std::set<int>> c_conflict(t_color);
+        // get for each color the number of split that it will create and with witch element
+        std::vector<int> nb_split(t_color, 0); // nb split per color
+        std::vector<std::set<int>> c_conflict(t_color); // elements in conflict for each cikir
         for(int eid2 : d_graph.adj[eid])
         {
-            int c = l_colors[eid2];
+            const int c = l_colors[eid2];
             if(c >= t_color) continue;
             c_conflict[c].insert(eid2);
-            // count the number of links between two elements
-            // on a besoin de compter ici le nombre réel de split !
-            nb_conflict[c] += d_graph.edge_count(eid, eid2);
+            // the number of edges in dual graph gives
+            //its not the exact number of split
+            //(if there is already a conflit with another element, this may not create a new split)
+            //(but this is a good approximation of the worst case)
+            nb_split[c] += d_graph.edge_count(eid, eid2);
         }
 
-        auto it = std::min_element(nb_conflict.begin(), nb_conflict.end());
-        int cid = std::distance(nb_conflict.begin(), it);
+        // get color with minimal split
+        const auto it = std::min_element(nb_split.begin(), nb_split.end());
+        const int cid = std::distance(nb_split.begin(), it);
 
         l_colors[eid] = cid;
-        total_conflict += nb_conflict[cid];
-        std::set<int> e_vertices;
+        total_conflict += nb_split[cid];
+    }
+    colors = l_colors;
+    d_thread->nb_kernel = t_color;
+}
 
-        int offset = eid * nb_verts_element;
-        for(int i = 0; i < nb_verts_element; ++i)
-            e_vertices.insert(topology[offset + i]);
+void GPU_PBD_FEM::build_phantom_particles(Element element, const Mesh::Topology &topology, std::vector<int>& colors)
+{
+    const int t_color = *std::max_element(colors.begin(), colors.end()) + 1;
+    const int nb_verts = *std::max_element(topology.begin(), topology.end()) + 1;
+    const int nb_verts_element = elem_nb_vertices(element);
+    /// SPLIT
+    Mesh::Topology new_topology(topology);
+    int new_nb_verts = nb_verts;
+    std::vector<int> f_particles;
+    std::vector<int> f_offset;
+    std::vector<int> f_nb;
 
-        for(int eid2 : c_conflict[cid])
-        {
-            const int offset2 = eid2 * nb_verts_element;
-            for(int i = 0; i < nb_verts_element; ++i)
-            {
-                int vid = topology[offset2+i];
-                if(e_vertices.find(vid) == e_vertices.end()) continue;
-                v_conflicts[vid].insert(eid);
-                v_conflicts[vid].insert(eid2);
-            }
+    std::set<std::set<int>> v_conflict;
+    std::vector<std::vector<int>> e_owners(nb_verts);
+    std::vector<std::vector<int>> e_ref_id(nb_verts);
+    // for each vertice get all its owner element
+    for (int i = 0; i < topology.size(); i += d_fem->elem_nb_vert) {
+        for (int j = 0; j < d_fem->elem_nb_vert; ++j) {
+            e_owners[topology[i + j]].push_back(i / d_fem->elem_nb_vert);
+            e_ref_id[topology[i+j]].push_back(j);
         }
     }
-    // on créé les groupes en fonction des splits (on essaye de regrouper les éléments qui ont pas la même couleur)
-    // donc on a une nouvelle topologie et nouvelle géométrie
-    // avec pour chaque point fantome le nombre et la liste des sommets conserné (avec l'offset pour le GPU)
-    int t = 0;
-    for(int i = 0; i < nb_verts; ++i)
-    {
-        if(v_conflicts[i].size() == 0) continue;
-        std::vector<int> c_conflict(t_color,0);
-        for(const int eid : v_conflicts[i])
-            c_conflict[l_colors[eid]]++;
 
-        t += *std::max_element(c_conflict.begin(), c_conflict.end());
+    int f_off = 0;
+    for (int i = 0; i < nb_verts; ++i)
+    {
+        std::vector<int> c_count(t_color,0);
+        std::vector<std::vector<std::pair<int, int>>> e_conflict(t_color);
+        int max_conflict = 0;
+        // get all color element around the vertex
+        for(int j = 0; j < e_owners[i].size(); ++j)
+        {
+            const int eid = e_owners[i][j];
+            const int rid = e_ref_id[i][j];
+            const int c = colors[eid];
+            e_conflict[c].push_back({eid, rid});
+            max_conflict = std::max(max_conflict, static_cast<int>(e_conflict[c].size()));
+        }
+
+        f_particles.push_back(i);
+        f_nb.push_back(max_conflict);
+        f_offset.push_back(f_off);
+        f_off += max_conflict;
+
+        // if there is duplicate colors around
+        if(max_conflict == 1) continue;
+
+        // groups element
+        std::vector<std::vector<std::pair<int, int>>> e_groups(max_conflict);
+        for(std::vector<std::pair<int, int>>& c : e_conflict)
+        {
+            for(int j = 0; j < c.size(); j++)
+            {
+                e_groups[j].push_back(c[j]);
+            }
+        }
+
+
+        for(int j = 1; j < e_groups.size(); j++)
+        {
+            for( auto [eid, rid] : e_groups[j])
+            {
+                int e_off = eid * nb_verts_element;
+                new_topology[e_off + rid] = new_nb_verts;
+
+            }
+            f_particles.push_back(new_nb_verts);
+            new_nb_verts++;
+        }
     }
-    std::cout << total_conflict << " " << t << std::endl;
+    cb_f_topology = new Cuda_Buffer<int>(new_topology);
+    cb_f_ids = new Cuda_Buffer<int>(f_particles);
+    cb_f_position = new Cuda_Buffer<Vector3>(new_nb_verts);
+    cb_f_inv_mass = new Cuda_Buffer<scalar>(new_nb_verts);
+    cb_f_offset = new Cuda_Buffer<int>(f_offset);
+    cb_f_nb = new Cuda_Buffer<int>(f_nb);
 }
 
 void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {
@@ -307,10 +397,14 @@ void GPU_PBD_FEM::build_thread_by_color(const std::vector<int>& colors) {
 
 
 GPU_PBD_FEM::GPU_PBD_FEM(const Element element, const Mesh::Geometry &geometry, const Mesh::Topology &topology, // mesh
-                         const scalar young, const scalar poisson, const Material material)
-        : GPU_FEM(element, geometry, topology, young, poisson, material), cb_eid(nullptr)// materials
+                         const scalar young, const scalar poisson, const Material material, const bool use_phantom)
+        : GPU_FEM(element, geometry, topology, young, poisson, material), cb_eid(nullptr), use_phantom(use_phantom)// materials
 {
     build_graph_color(element, topology, colors);
+    if(use_phantom)
+    {
+        build_phantom_particles( element, topology, colors);
+    }
     build_thread_by_color(colors);
 
     int s_max = 0;
@@ -366,6 +460,31 @@ void GPU_PBD_FEM::get_residuals(GPU_ParticleSystem* ps, const scalar dt, scalar&
 
 void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
 
+    GPU_FEM_Pameters fem_pameters = get_fem_parameters();
+    GPU_ParticleSystem_Parameters ps_parm = ps->get_parameters();
+    Vector3* p;
+    scalar* w;
+    if(use_phantom)
+    {
+        p = cb_f_position->buffer;
+        w = cb_f_inv_mass->buffer;
+        fem_pameters.topology = cb_f_topology->buffer;
+
+        const int n = ps->nb_particles();
+        kernel_XPBD_phamtoms_init<<<(n+31)/32, 32>>>(
+        n, ps_parm,
+        p, w,
+        cb_f_ids->buffer, cb_f_nb->buffer, cb_f_offset->buffer);
+    }
+    else
+    {
+        p = ps_parm.p;
+        w = ps_parm.w;
+    }
+
+
+
+
     for (int j = 0; j < d_thread->nb_kernel; ++j) {
         /*kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
@@ -375,15 +494,24 @@ void GPU_PBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
         {
             kernel_XPBD_V0<<<d_thread->nb_threads[j] / 32 + 1, 32>>>(
             d_thread->nb_threads[j], d_thread->offsets[j], dt,
-            cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), cb_lambda->buffer);
+            cb_eid->buffer, *d_material, p, w, fem_pameters, cb_lambda->buffer);
         }
         else
         {
             kernel_XPBD_V1<<<d_thread->grid_size[j], d_thread->block_size[j], shared_size>>>(
                d_thread->nb_threads[j], d_thread->offsets[j], dt,
-               cb_eid->buffer, *d_material, ps->get_parameters(), get_fem_parameters()
+               cb_eid->buffer, *d_material, p, w, fem_pameters
            );
         }/**/
+    }
+
+    if(use_phantom)
+    {
+        int n = ps->nb_particles();
+        kernel_XPBD_phamtoms_mean<<<(n+31)/32, 32>>>(
+            n, ps->get_parameters(),
+            p,
+            cb_f_ids->buffer, cb_f_nb->buffer, cb_f_offset->buffer);
     }
     /*scalar p, d;
     get_residuals(ps, dt,p, d);

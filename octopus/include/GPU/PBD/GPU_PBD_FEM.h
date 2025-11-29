@@ -13,7 +13,7 @@ struct GPU_PBD_FEM : GPU_FEM
     std::vector<int> colors; // mesh coloration (used for debug)
 
     GPU_PBD_FEM(Element element, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar young,
-                scalar poisson, Material material);
+                scalar poisson, Material material, bool use_phantom = false);
 
     ~GPU_PBD_FEM() override = default;
 
@@ -26,7 +26,17 @@ protected:
     Cuda_Buffer<scalar>* cb_lambda;
     Cuda_Buffer<Vector3>* cb_internia_residual;
     Cuda_Buffer<scalar>* cb_constraint_residual;
+
+    bool use_phantom;
+    bool init = false;
+    Cuda_Buffer<int>* cb_f_topology;
+    Cuda_Buffer<int>* cb_f_ids;
+    Cuda_Buffer<Vector3>* cb_f_position;
+    Cuda_Buffer<scalar>* cb_f_inv_mass;
+    Cuda_Buffer<int>* cb_f_offset;
+    Cuda_Buffer<int>* cb_f_nb;
     void build_graph_color(Element element, const Mesh::Topology &topology, std::vector<int>& colors);
+    void build_phantom_particles(Element element, const Mesh::Topology &topology, std::vector<int>& colors);
     void build_thread_by_color(const std::vector<int>& colors);
 };
 

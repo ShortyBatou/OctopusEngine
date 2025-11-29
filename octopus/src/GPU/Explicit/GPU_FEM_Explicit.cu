@@ -53,13 +53,13 @@ __global__ void kernel_fem_eval_force(
     fi -= damping * H * ps.v[vid];/**/
 
     // shared variable : f, H
-    __shared__ Vector3 s_f_H[256]; // size = block_size * 3 * sizeof(float)
-    s_f_H[tid] = fi;
+    extern __shared__ Vector3 s_f[]; // size = block_size * 3 * sizeof(float)
+    s_f[tid] = fi;
 
-    all_reduction<Vector3>(threadIdx.x, size_of_block, 0, 1,  s_f_H);
+    all_reduction<Vector3>(threadIdx.x, size_of_block, 0, 1,  s_f);
 
     if (threadIdx.x == 0) {
-        ps.f[vid] = Vector3(s_f_H[0]);
+        ps.f[vid] = Vector3(s_f[0]);
     }
 }
 
@@ -108,7 +108,8 @@ GPU_FEM_Explicit::GPU_FEM_Explicit(const Element element, const Mesh::Geometry& 
 
 void GPU_FEM_Explicit::step(GPU_ParticleSystem* ps, scalar dt)
 {
-    kernel_fem_eval_force<<<d_thread->grid_size[0], d_thread->block_size[0]>>>(
+    int s = d_thread->block_size[0] * 3 * sizeof(scalar);
+    kernel_fem_eval_force<<<d_thread->grid_size[0], d_thread->block_size[0], s>>>(
         d_thread->nb_threads[0], _damping,
         *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
     );

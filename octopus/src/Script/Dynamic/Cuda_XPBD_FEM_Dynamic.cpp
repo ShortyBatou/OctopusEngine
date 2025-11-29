@@ -26,7 +26,18 @@ void Cuda_XPBD_FEM_Dynamic::build_dynamics()
         if(_coupled_fem)
             _gpu_xpbd_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson, _material);
         else
-           _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material);
+        {
+            if(_entity->id()== 1)
+            {
+                _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, true);
+            }
+            else
+            {
+                _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, false);
+            }
+
+        }
+
         _gpu_fems[e] = _gpu_xpbd_fems[e];
         // create CUDA PBD Gauss-Seidel
         _gpu_integrator->add_dynamics(_gpu_fems[e]);
