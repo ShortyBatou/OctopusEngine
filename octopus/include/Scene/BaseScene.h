@@ -93,7 +93,7 @@ struct BaseScene final : Scene
         //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(16, 4, 4);
+        Vector3I cells(8, 2, 2);
 
         Vector3 size(4, 1, 1);
         /*args.mesh_file = "1_Hexa27_32_8_8_4x1x1_2249.vtk";
@@ -101,7 +101,7 @@ struct BaseScene final : Scene
         build_mesh_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args);
         args.mesh_type = "";*/
 
-        args.damping = 20;
+        args.damping = 100;
         args.biased = false;
         //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, Explicit);
         //args.sub_iteration = 100; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, RK2);
@@ -112,13 +112,14 @@ struct BaseScene final : Scene
             args.iteration = 20 + i * 20;
             build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, 0.95, true);
         }*/
-        args.sub_iteration = 50;
+        args.sub_iteration = 10;
         args.iteration = 1;
         //build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, 0.95, true);
 
         //build_vbd_entity(Vector3(0,-0.01 ,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, 0.95, true);
         build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
-        build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, false);
+        args.damping = 1e-5;
+        args.sub_iteration = 250; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, Explicit);
     }
 
     Mesh* get_beam_mesh(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Element element, const bool biased) {

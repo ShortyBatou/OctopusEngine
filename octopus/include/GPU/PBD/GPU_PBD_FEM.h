@@ -29,15 +29,19 @@ protected:
 
     bool use_phantom;
     bool init = false;
+
     Cuda_Buffer<int>* cb_f_topology;
     Cuda_Buffer<int>* cb_f_ids;
     Cuda_Buffer<Vector3>* cb_f_position;
     Cuda_Buffer<scalar>* cb_f_inv_mass;
+    Cuda_Buffer<int>* cb_f_mask;
     Cuda_Buffer<int>* cb_f_offset;
     Cuda_Buffer<int>* cb_f_nb;
+
     void build_graph_color(Element element, const Mesh::Topology &topology, std::vector<int>& colors);
     void build_phantom_particles(Element element, const Mesh::Topology &topology, std::vector<int>& colors);
     void build_thread_by_color(const std::vector<int>& colors);
+    void build_jaboci(Element element, const Mesh::Topology &topology);
 };
 
 __device__ void xpbd_convert_to_constraint(int nb_vert_elem, scalar& C, Vector3* grad_C);

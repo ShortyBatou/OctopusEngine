@@ -27,15 +27,7 @@ void Cuda_XPBD_FEM_Dynamic::build_dynamics()
             _gpu_xpbd_fems[e] = new GPU_PBD_FEM_Coupled(e, _mesh->geometry(), topo, _young, _poisson, _material);
         else
         {
-            if(_entity->id()== 1)
-            {
-                _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, true);
-            }
-            else
-            {
-                _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, false);
-            }
-
+            _gpu_xpbd_fems[e] = new GPU_PBD_FEM(e, _mesh->geometry(), topo, _young, _poisson, _material, true);
         }
 
         _gpu_fems[e] = _gpu_xpbd_fems[e];
