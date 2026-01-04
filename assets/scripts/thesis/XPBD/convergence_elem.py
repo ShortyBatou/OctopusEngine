@@ -56,9 +56,9 @@ for i in range(len(h)):
     plt.plot(x, slope[i]*x**(order[i]), '--', color=colors[i], label=r"$O(H^{%d})$" % (L+order[i]))
 
 # Légendes et axes
-plt.xlabel("h")
-plt.ylabel("error")
-plt.legend(loc='upper left', fontsize=12)
+plt.xlabel("h", fontsize=14)
+plt.ylabel("error", fontsize=14)
+plt.legend(loc='upper left', fontsize=16)
 
 # Sortie PDF
 plt.tight_layout()

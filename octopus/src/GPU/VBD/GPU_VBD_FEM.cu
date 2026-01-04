@@ -550,11 +550,11 @@ std::vector<Vector3> GPU_VBD_FEM::get_forces(const GPU_ParticleSystem *ps, const
         scalar s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
         kernel_vbd_compute_residual<<<d_thread->grid_size[c] * d_fem->nb_quadrature, d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
             d_thread->nb_threads[c], damping, dt, d_thread->offsets[c],
-             y->buffer, r->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
+             cb_y->buffer, cb_r->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
         );
     }
     std::vector<Vector3> residual(ps->nb_particles());
-    r->get_data(residual);
+    cb_r->get_data(residual);
     return residual;
 }
 
@@ -562,13 +562,13 @@ std::vector<Vector3> GPU_VBD_FEM::get_forces(const GPU_ParticleSystem *ps, const
 GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology, const Mesh::Geometry &geometry,
                          const Material& material, const scalar &young, const scalar &poisson, const scalar& damping,
                          const VBD_Version& v) :
-    GPU_FEM(element, geometry, topology, young, poisson, material), version(v), y(nullptr)
+    GPU_FEM(element, geometry, topology, young, poisson, material), version(v), cb_y(nullptr)
 {
     const int nb_vertices = static_cast<int>(geometry.size());
     this->damping = damping;
     d_owners = new GPU_Owners_Data();
     d_blocks = new GPU_Block_Data();
-    r = new Cuda_Buffer(nb_vertices, Vector3(0.f));
+    cb_r = new Cuda_Buffer(nb_vertices, Vector3(0.f));
     std::cout << "#ELEMENT = " << topology.size() / elem_nb_vertices(element) << std::endl;
     std::cout << "#VERTEX = " << nb_vertices << std::endl;
     std::cout << "#QUADRATURE " << d_fem->nb_quadrature << std::endl;
@@ -576,24 +576,22 @@ GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology,
     std::vector<std::vector<int>> e_ref_id;
     build_owner_data(nb_vertices, topology, e_owners, e_ref_id);
     Coloration coloration = build_graph_color(element, topology); // get coloration
-    create_buffers(element, topology, coloration, e_owners, e_ref_id);
+    create_buffers(coloration, e_owners, e_ref_id);
 
     std::vector<scalar> data(coloration.colors.size());
     for(int i = 0; i < data.size(); ++i) data[i] = coloration.colors[i];
     std::map<Element, Mesh::Topology> topologies;
     topologies[element] = topology;
 
-    /*VTK_Formater vtk;
+    VTK_Formater vtk;
     vtk.open("vbd_mesh_coloration_" + element_name(element) + "_" + std::to_string(coloration.nb_color));
     vtk.save_mesh(geometry, topologies);
     vtk.start_point_data();
     vtk.add_scalar_data(data, "colors");
-    vtk.close();*/
+    vtk.close();
 }
 
 void GPU_VBD_FEM::create_buffers(
-    const Element element,
-    const Mesh::Topology& topology,
     Coloration& coloration,
     std::vector<std::vector<int>>& e_owners,
     std::vector<std::vector<int>>& e_ref_id)
@@ -614,29 +612,14 @@ void GPU_VBD_FEM::create_buffers(
     std::vector<int> nb_sub_block;      // nb sub_block in block
     std::vector<int> sub_block_size;    // size of one sub block
     std::vector<int> block_offset;      // first vertice id in block
-
-    // need to remake topology and geometry to take in count ghost particles
-    // get the mapping between the modified mesh and the true mesh
-    if(version >= Better_Coloration) {
-        Graph p_graph(element, topology); // redondant with coloration
-        GraphReduction::MinimalColorationConflict(element, topology, p_graph, coloration, e_owners, e_ref_id);
-        p_new = new Cuda_Buffer<Vector3>(std::vector<Vector3>(coloration.colors.size(), Unit3D::Zero()));
-        std::map<int, int> _t_conflict = GraphColoration::Get_Conflict(p_graph, coloration);
-        int nb_conflict = 0;
-        for(auto [_, nb] : _t_conflict) {
-            nb_conflict += nb;
-        }
-        std::cout << "NB CONFLICT : " << nb_conflict << std::endl;
-        std::cout << "Coloration : nb = " << coloration.nb_color << std::endl;
-    }
+    std::vector<int> vids;
 
     int total_thread = 0;
-    int total_merge_thread = 0;
     // reorder data to match coloration and get multi-threading data
     for(int c = 0; c < coloration.nb_color; ++c) {
         int n_max = 1; // max block size
         int nb_block = 0; // nb vert in color
-        int offset = static_cast<int>(version == Block_Merge ? nb_sub_block.size() : nb_owners.size()); // nb vertices
+        int offset = nb_owners.size(); // nb vertices
 
         // get all ids in coloration and get the max block size
         std::vector<int> ids; // block id
@@ -651,54 +634,8 @@ void GPU_VBD_FEM::create_buffers(
         // the max block size depends on the largest block in color and needs to be a multiple of 32 (NVidia)
         int vmax = n_max;
 
-        if(version == Block_Merge) {
-            // on devrait avoir une taille par bloc !
-            // s'il y a  32 thread qui font rien, le bloc est terminé extrèmement vite
-            vmax = (n_max * d_fem->nb_quadrature / 32 + (n_max * d_fem->nb_quadrature % 32 == 0 ? 0 : 1)) * 32;
-            nb_block = 0;
-            // sort id by nb_owners
-            std::sort(ids.begin(), ids.end(),
-                 [&](const int& a, const int& b) {
-                     return e_owners[a].size() < e_owners[b].size();
-                 }
-            );
-
-            // create the block merge data
-            std::cout << "C = " << c << "   MAX = " << vmax << std::endl;
-            int off = nb_owners.size();
-            for(int i = 0; i < ids.size(); ++i) {
-                const int v = e_owners[ids[i]].size() * d_fem->nb_quadrature; // block size
-                // nb block that have the same size
-                int nb = 1;
-                while(i+1 < ids.size() && e_owners[ids[i+1]].size() * d_fem->nb_quadrature == v) {
-                    nb++; i++;
-                }
-                // how we merge the block depending on the max block size
-                const int max_block = vmax / v; // max size sub_group
-                const int nb_group = nb / max_block; // how many sub group
-                const int rest = (nb - max_block * nb_group) * v;  // nb thread that can't be totally merge
-                for(int j = 0; j < nb_group; ++j) {
-                    nb_sub_block.push_back(max_block);
-                    sub_block_size.push_back(v);
-                    block_offset.push_back(off);
-                    off += max_block;
-                    nb_block++;
-                }
-                if(rest != 0) {
-                    nb_sub_block.push_back(nb - max_block * nb_group);
-                    sub_block_size.push_back(v);
-                    block_offset.push_back(off);
-                    off += nb - max_block * nb_group;
-                    nb_block++;
-                }
-                std::cout << v << " x " << nb << " => " << nb_group << "x(" << max_block << "x" << v << ") + (" << rest / v << "x" << v << ")" << std::endl;
-            }
-            total_merge_thread += n_max * nb_block;
-            std::cout << std::endl;
-            vmax /= d_fem->nb_quadrature;
-        }
-
         for(const int id : ids) {
+            vids.push_back(id);
             nb_owners.push_back(static_cast<int>(e_owners[id].size()));
             owners_offset.push_back(static_cast<int>(owners.size()));
             owners.insert(owners.end(), e_owners[id].begin(), e_owners[id].end());
@@ -728,6 +665,13 @@ void GPU_VBD_FEM::create_buffers(
     d_blocks->cb_nb_sub_block = new Cuda_Buffer<int>(nb_sub_block);
     d_blocks->cb_offset = new Cuda_Buffer<int>(block_offset);
     d_blocks->cb_sub_block_size = new Cuda_Buffer<int>(sub_block_size);
+
+    // need to remake topology and geometry to take in count ghost particles
+    // get the mapping between the modified mesh and the true mesh
+    if(version >= Better_Coloration) {
+        cb_p_new = new Cuda_Buffer<Vector3>(std::vector<Vector3>(coloration.colors.size(), Unit3D::Zero()));
+        cb_vids = new Cuda_Buffer<int>(vids);
+    }
 }
 
 void GPU_VBD_FEM::build_owner_data(
@@ -745,37 +689,25 @@ void GPU_VBD_FEM::build_owner_data(
     }
 }
 
-
 Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Topology &topology)
 {
     Graph p_graph(element, topology);
-    //Graph d_graph(element, topology, false);
-    //Coloration coloration = GraphColoration::Primal_Dual_Element(element, topology, *p_graph, *d_graph);
-    Coloration coloration = GraphColoration::DSAT(p_graph);
-    /*
-    std::vector<int> count(coloration.nb_color,0);
-    for(int c : coloration.colors) {
-        count[c]++;
-    }
 
-    const int new_nb_color = coloration.nb_color/2;
-    for(int i = 0; i < coloration.colors.size(); ++i) {
-        if(coloration.colors[i] > new_nb_color ) {
-            int i_min_c = 0;
-            for(int j = 1; j < new_nb_color; ++j) {
-                if(count[j] < count[i_min_c]) {
-                    i_min_c = j;
-                }
-            }
-            coloration.colors[i] = i_min_c;
-        }
-    }
-    coloration.nb_color = new_nb_color;*/
-    std::cout <<"!!!DATA : " << element_name(element) << " " << p_graph.n << " " << topology.size() / elem_nb_vertices(element) << " " << coloration.nb_color << std::endl;
+    //Graph d_graph(element, topology, F_Dual);
+    //Coloration coloration = GraphColoration::Primal_Dual_Element_2(element, topology, p_graph, d_graph);
+    //f_dual = d_graph;
+    Coloration coloration = GraphColoration::DSAT(p_graph);
+    colors = coloration;
+    if(version == VBD_Version::Better_Coloration)
+        GraphReduction::ColorReduction(p_graph, coloration,4);
+
+    std::cout <<"Data [" << element_name(element) << "], [n = " << p_graph.n << "], [e = " << topology.size() / elem_nb_vertices(element) << "]" << std::endl;
+    std::map<int, int> _t_conflict = GraphColoration::Get_Conflict(p_graph, coloration);
+    int nb_conflict = 0; for(auto [_, nb] : _t_conflict) nb_conflict += nb;
+    std::cout << "NB CONFLICT : " << nb_conflict << std::endl;
+    std::cout << "Coloration : nb = " << coloration.nb_color << std::endl;
     return coloration;
 }
-
-
 
 void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::vector<int> kernels(d_thread->nb_kernel);
@@ -784,47 +716,39 @@ void GPU_VBD_FEM::step(GPU_ParticleSystem* ps, const scalar dt) {
     std::shuffle(kernels.begin(), kernels.end(), std::mt19937(seed));
     unsigned int s;
 
-
     for(const int c : kernels) {
         switch(version) {
             case Base :
                 s = d_thread->block_size[c] * 12 * sizeof(scalar);
                 kernel_vbd_solve_v1<<<d_thread->grid_size[c], d_thread->block_size[c], s>>>(
                     d_thread->nb_threads[c], damping, dt, d_thread->offsets[c],
-                      y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters());
+                      cb_y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters());
             break;
             case Threaded_Quadrature :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 12 * sizeof(scalar);
                 kernel_vbd_solve_v2<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                     y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
+                     cb_y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
                 );
             break;
             case Reduction_Symmetry :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
                 kernel_vbd_solve_v3<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                    y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
+                    cb_y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
                 );
             break;
             case Better_Coloration :
                 s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
                 kernel_vbd_solve_v4<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
                     d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                    y->buffer, p_new->buffer, *d_material,
+                    cb_y->buffer, cb_p_new->buffer, *d_material,
                     ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
                 );
+
                 kernel_copy_in_position<<<d_thread->grid_size[c] / 32 + 1, 32>>>(
-                    d_thread->grid_size[c], d_thread->offsets[c], p_new->buffer,
+                    d_thread->grid_size[c], d_thread->offsets[c], cb_p_new->buffer,
                     ps->get_parameters(), get_fem_parameters(), get_owners_parameters()
-                );
-                break;
-            case Block_Merge :
-                break;
-                s = d_thread->block_size[c] * d_fem->nb_quadrature * 9 * sizeof(scalar);
-                kernel_vbd_solve_v5<<<d_thread->grid_size[c], d_thread->block_size[c] * d_fem->nb_quadrature, s>>>(
-                    d_thread->nb_threads[c] * d_fem->nb_quadrature, damping, dt, d_thread->offsets[c],
-                    y->buffer, *d_material, ps->get_parameters(), get_fem_parameters(), get_owners_parameters(), get_block_parameters()
                 );
                 break;
         }

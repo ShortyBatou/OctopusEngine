@@ -34,13 +34,16 @@ def plot_all_lagrange_orders(max_order=3):
         print(color_list)
         # Tracer la somme des fonctions de base
         ax.plot(x_plot, sum_plot, '--', color='red', linewidth=1)
-        ax.axis([-1, 1, -0.5,1.5])
+        ax.axis([-1, 1, -0.5,1.5],  )
         ax.set_title(f'{orders[idx]}', fontsize=18)
         ax.set_xlabel('x', fontsize=16)
         if(idx == 0):
             ax.set_ylabel('$N_i(x)$', fontsize=16)
         ax.axhline(0, color='gray', linewidth=1)
         ax.grid(False)
+        # Augmenter la taille des valeurs sur les axes ici
+        ax.tick_params(axis='both', labelsize=14) # Ajustez la taille selon vos préférences
+        
         for i, (label, color) in enumerate(zip(label_list, color_list)):
             ax.text(
                 x=0.5 - 0.15 * order * 0.5 + i * 0.15, y=0.85 ,
@@ -50,7 +53,7 @@ def plot_all_lagrange_orders(max_order=3):
                 ha='center',
                 transform=ax.transAxes
             )
-            
+
         ax.text(
                 x=0.09, y=0.8 ,
                 s=r'$\sum N_i(x)$',
@@ -59,7 +62,6 @@ def plot_all_lagrange_orders(max_order=3):
                 ha='center',
                 transform=ax.transAxes
             )
-    
     plt.tight_layout()
     plt.savefig('lagrange.png', dpi=200)
     plt.show()

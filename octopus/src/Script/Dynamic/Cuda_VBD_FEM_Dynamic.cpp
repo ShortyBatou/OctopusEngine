@@ -20,7 +20,7 @@ void Cuda_VBD_FEM_Dynamic::build_dynamics()
 {
     for(auto&[e, topo] : _mesh->topologies()) {
         if(topo.empty()) continue;
-        GPU_FEM* fem = new GPU_VBD_FEM(e, topo, _mesh->geometry(), _material, _young, _poisson, _damping);
+        GPU_FEM* fem = new GPU_VBD_FEM(e, topo, _mesh->geometry(), _material, _young, _poisson, _damping, _version);
         _gpu_fems[e] = fem;
         _gpu_integrator->add_dynamics(fem);
         break;

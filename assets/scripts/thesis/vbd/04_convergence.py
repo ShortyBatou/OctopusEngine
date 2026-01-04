@@ -53,6 +53,8 @@ axes.grid(False)
 axes.set_yscale("log")
 axes.set_ylabel("erreur", fontsize=16)
 axes.set_xlabel("coût (ms)", fontsize=16)
+axes.tick_params(axis='x', labelsize=14) 
+axes.tick_params(axis='y', labelsize=14) 
 axes.legend(fontsize=16)
 axes.set_title(titles[0], fontsize=16)
 """

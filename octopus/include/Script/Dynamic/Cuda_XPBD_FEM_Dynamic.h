@@ -12,9 +12,9 @@ struct Cuda_XPBD_FEM_Dynamic final : Cuda_FEM_Dynamic
     explicit Cuda_XPBD_FEM_Dynamic(
         const scalar density, const Mass_Distribution m_distrib,
         const scalar young, const scalar poisson, const Material material,
-        const int sub_it = 30, const scalar damping = 0.f, const bool coupled = false)
+        const int sub_it = 30, const scalar damping = 0.f, const bool coupled = false, XPBD_FEM_VERSION _version = XPBD_FEM_VERSION::OptiShared)
         : Cuda_FEM_Dynamic(sub_it, density, m_distrib, young, poisson, material, damping),
-            _coupled_fem(coupled)
+            _coupled_fem(coupled), version(_version)
     { }
 
 
@@ -24,6 +24,7 @@ struct Cuda_XPBD_FEM_Dynamic final : Cuda_FEM_Dynamic
     void build_dynamics() override;
 
 private:
+    XPBD_FEM_VERSION version;
     std::map<Element, std::vector<Color>> _display_colors;
     std::map<Element, GPU_PBD_FEM*> _gpu_xpbd_fems;
     bool _coupled_fem;

@@ -28,7 +28,7 @@ struct GPU_VBD : GPU_Integrator
     void add_dynamics(GPU_Dynamic* dynamic) override
     {
         GPU_VBD_FEM* _fem = dynamic_cast<GPU_VBD_FEM*>(dynamic);
-        if (_fem != nullptr) _fem->y = y; // ugly as fuck
+        if (_fem != nullptr) _fem->cb_y = y; // ugly as fuck
         GPU_Integrator::add_dynamics(dynamic);
     }
 
@@ -49,8 +49,9 @@ struct GPU_VBD : GPU_Integrator
     }
 };
 
-__global__ void kernel_integration(scalar dt, Vector3 g, GPU_ParticleSystem_Parameters ps, Vector3* y,
-                                   Vector3* prev_it_p, Vector3* prev_prev_p);
+__global__ void kernel_integration( int n, const scalar dt, const Vector3 g,
+        Vector3* p, Vector3* last_p, Vector3* f, scalar* w,
+        Vector3* y, Vector3* prev_it_p);
 __global__ void kernel_velocity_update(scalar dt, GPU_ParticleSystem_Parameters ps);
 __global__ void kernel_chebychev_acceleration(int it, scalar omega, GPU_ParticleSystem_Parameters ps,
                                               Vector3* prev_it_p, Vector3* prev_it2_p);

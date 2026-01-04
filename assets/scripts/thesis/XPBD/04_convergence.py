@@ -41,10 +41,10 @@ def display(axe, performance, error):
 
         # Régression polynomiale dans l’espace log-log
         logx, logy = np.log10(x), np.log10(y)
-        coeffs = np.polyfit(logx, logy, deg=2)  # polynôme de degré 2ee<ee
+        coeffs = np.polyfit(logx, logy, deg=2)  # polynôme de degré 2
         poly = np.poly1d(coeffs)
 
-        # Courbe lissée
+        # Courbe lissée (not used in current plot, but kept for context if needed)
         x_smooth = np.linspace(x.min(), x.max(), 300)
         y_smooth = 10**poly(np.log10(x_smooth))
 
@@ -55,21 +55,27 @@ def display(axe, performance, error):
         #axe.plot(x_smooth, y_smooth, linewidth=2, color = colors[i], linestyle="-")
 
 display(axes[0], CPU_performance, CPU_error)
-axes[0].set_xlim(-10, 600)
+# Increased xlim to accommodate potential new label sizes without clipping
+axes[0].set_xlim(-50, 600)
 display(axes[1], GPU_performance, GPU_error)
-axes[1].set_xlim(-0.5, 30)
+# Increased xlim to accommodate potential new label sizes without clipping
+axes[1].set_xlim(-1, 30)
+
 titles = ["CPU", "GPU"]
 i = 0
 for ax in axes:
     ax.grid(False)
     ax.set_yscale("log")
     if(i == 0):
-        ax.set_ylabel("erreur")
-    ax.set_xlabel("coût (ms)")
-    ax.legend()
-    ax.set_title(titles[i])
+        ax.set_ylabel("erreur", fontsize=14) # Increased by 2px (default is often 10)
+    ax.set_xlabel("coût (ms)", fontsize=14) # Increased by 2px
+    ax.legend(fontsize=14) # Increased by 2px (default is often 8)
+    ax.set_title(titles[i], fontsize=16) # Increased by 2px (default is often 12)
+    # Increase tick label sizes
+    ax.tick_params(axis='x', labelsize=14) # Increased by 2px
+    ax.tick_params(axis='y', labelsize=14) # Increased by 2px
     i = i + 1
-    
+
 # Echelles log
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.savefig("01_plot.png")

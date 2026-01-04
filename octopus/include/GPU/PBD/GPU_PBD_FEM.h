@@ -8,12 +8,16 @@
 #include "cuda_runtime.h"
 #include "GPU/GPU_FEM.h"
 
+enum XPBD_FEM_VERSION {
+    XPBD, Quadrature, OptiShared, OptiGroup
+};
+
 struct GPU_PBD_FEM : GPU_FEM
 {
     std::vector<int> colors; // mesh coloration (used for debug)
 
     GPU_PBD_FEM(Element element, const Mesh::Geometry& geometry, const Mesh::Topology& topology, scalar young,
-                scalar poisson, Material material, bool use_phantom = false);
+                scalar poisson, Material material, XPBD_FEM_VERSION _version = OptiShared);
 
     ~GPU_PBD_FEM() override = default;
 
@@ -29,6 +33,8 @@ protected:
 
     bool use_phantom;
     bool init = false;
+
+    XPBD_FEM_VERSION version = OptiShared;
 
     Cuda_Buffer<int>* cb_f_topology;
     Cuda_Buffer<int>* cb_f_ids;

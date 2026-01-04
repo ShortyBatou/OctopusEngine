@@ -11,7 +11,7 @@
 #include <Tools/Graph.h>
 
 enum VBD_Version {
-    Base, Threaded_Quadrature, Reduction_Symmetry, Better_Coloration, Block_Merge
+    Base, Threaded_Quadrature, Reduction_Symmetry, Better_Coloration
 };
 
 struct GPU_BLock_Parameters {
@@ -62,7 +62,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
                 const scalar& young, const scalar& poisson, const scalar& damping,
-                const VBD_Version& v = VBD_Version::Reduction_Symmetry);
+                const VBD_Version& v = VBD_Version::Better_Coloration);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
@@ -70,8 +70,7 @@ struct GPU_VBD_FEM : GPU_FEM
 
     Coloration build_graph_color(Element element, const Mesh::Topology& topology);
 
-    void create_buffers(Element element,
-        const Mesh::Topology& topology,
+    void create_buffers(
         Coloration& coloration,
         std::vector<std::vector<int>>& e_owners,
         std::vector<std::vector<int>>& e_ref_id
@@ -101,18 +100,24 @@ struct GPU_VBD_FEM : GPU_FEM
     ~GPU_VBD_FEM() override {
         delete d_owners;
         delete d_blocks;
-        delete r;
+        delete cb_vids;
+        delete cb_r;
     }
+
+    Coloration colors;
 
     GPU_Owners_Data* d_owners;
     GPU_Block_Data* d_blocks;
 
+    Graph f_dual;
+
     VBD_Version version;
     scalar damping;
 
-    Cuda_Buffer<Vector3>* p_new;
-    Cuda_Buffer<Vector3>* r;
-    Cuda_Buffer<Vector3>* y; // gets ot from VBD solve
+    Cuda_Buffer<Vector3>* cb_p_new;
+    Cuda_Buffer<int>* cb_vids;
+    Cuda_Buffer<Vector3>* cb_r;
+    Cuda_Buffer<Vector3>* cb_y; // gets ot from VBD solve
 };
 
 __global__ void kernel_vbd_solve_v1(
