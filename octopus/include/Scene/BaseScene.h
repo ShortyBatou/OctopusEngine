@@ -89,29 +89,31 @@ struct BaseScene final : Scene
         args.iteration = 1; args.sub_iteration = 1;
         args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::right();
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/armadillo4.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/armadillo4.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(56, 14, 14);
-
         Vector3 size(4, 1, 1);
+
+        Vector3I cells(48, 12, 12);
+
 
         args.biased = false;
         args.damping = 5e-6;
-        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, Explicit);
+        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, Explicit);
 
-        args.sub_iteration = 200;
+        args.sub_iteration = 100;
         args.damping = 10;
-        for(int i = 1; i <= 16; ++i)
+        for(int i = 11; i <= 11; ++i)
         {
             cells = Vector3I(i*4,i,i);
-            //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra20, args, true, false, XPBD_FEM_VERSION::OptiShared);
+            build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::XPBD);
+            //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::OptiShared);
         }
 
         args.sub_iteration = 22;
         args.iteration = 2;
-        build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Reduction_Symmetry);
+        //build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Reduction_Symmetry);
 
         //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, false, XPBD_FEM_VERSION::OptiShared);
 
