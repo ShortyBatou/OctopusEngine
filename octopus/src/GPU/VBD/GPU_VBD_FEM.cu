@@ -561,8 +561,8 @@ std::vector<Vector3> GPU_VBD_FEM::get_forces(const GPU_ParticleSystem *ps, const
 
 GPU_VBD_FEM::GPU_VBD_FEM(const Element &element, const Mesh::Topology &topology, const Mesh::Geometry &geometry,
                          const Material& material, const scalar &young, const scalar &poisson, const scalar& damping,
-                         const VBD_Version& v) :
-    GPU_FEM(element, geometry, topology, young, poisson, material), version(v), cb_y(nullptr)
+                         const VBD_Version& v, const int& _target_color) :
+    GPU_FEM(element, geometry, topology, young, poisson, material), version(v), cb_y(nullptr), target_color(_target_color)
 {
     const int nb_vertices = static_cast<int>(geometry.size());
     this->damping = damping;
@@ -699,7 +699,7 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     Coloration coloration = GraphColoration::DSAT(p_graph);
     colors = coloration;
     if(version == VBD_Version::Better_Coloration)
-        GraphReduction::ColorReduction(p_graph, coloration,4);
+        GraphReduction::ColorReduction(p_graph, coloration,target_color);
 
     std::cout <<"Data [" << element_name(element) << "], [n = " << p_graph.n << "], [e = " << topology.size() / elem_nb_vertices(element) << "]" << std::endl;
     std::map<int, int> _t_conflict = GraphColoration::Get_Conflict(p_graph, coloration);

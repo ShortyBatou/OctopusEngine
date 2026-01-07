@@ -75,7 +75,7 @@ struct BaseScene final : Scene
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
         root->add_behaviour(new OpenGLManager(Color(1.0f,1.0f,1.0f,1.f)));
-        //root->add_behaviour(new MeshDiff_MSE(1,{2}));
+        root->add_behaviour(new MeshDiff_MSE(1,{2,3}));
         //root->add_behaviour(new Beam_MSE_Sampling(1, {2}, 8));
     }
 
@@ -94,27 +94,24 @@ struct BaseScene final : Scene
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
         Vector3 size(4, 1, 1);
-
-        Vector3I cells(48, 12, 12);
-
+        Vector3I cells(68, 17, 17);
+        Element elem = Tetra;
 
         args.biased = false;
         args.damping = 5e-6;
-        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Hexa, args, true, Explicit);
+        args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,0), cells, size, Color(0.8,.2,0.8,0), elem, args, true, Explicit);
+        args.iteration = 2;
+        args.sub_iteration = 63;
+        build_vbd_entity(Vector3(0,0 ,1), cells, size, Color(0.8,.2,0.8,0), elem, args, 0, true, VBD_Version::Better_Coloration, 2);
+        //build_vbd_entity(Vector3(0,0 ,2), cells, size, Color(0.8,.2,0.8,0), elem, args, 0, true, VBD_Version::Better_Coloration, 3);
+        //build_vbd_entity(Vector3(0,0 ,3), cells, size, Color(0.8,.2,0.8,0), elem, args, 0, true, VBD_Version::Better_Coloration, 4);
+        build_vbd_entity(Vector3(0,0 ,2), cells, size, Color(0.8,.2,0.8,0), elem, args, 0, true, VBD_Version::Reduction_Symmetry, -1);
 
-        args.sub_iteration = 100;
-        args.damping = 10;
-        for(int i = 11; i <= 11; ++i)
-        {
-            cells = Vector3I(i*4,i,i);
-            build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::XPBD);
-            //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::OptiShared);
-        }
-
-        args.sub_iteration = 22;
+        args.sub_iteration = 5;
         args.iteration = 2;
         //build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Reduction_Symmetry);
-
+        //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::XPBD);
+        //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, false, XPBD_FEM_VERSION::OptiShared);
         //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, false, XPBD_FEM_VERSION::OptiShared);
 
     }
@@ -290,10 +287,10 @@ struct BaseScene final : Scene
         add_fem_base(e, pos, cells, size, color, element, args, gpu);
     }
 
-    void build_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const float rho, bool gpu, VBD_Version version) {
+    void build_vbd_entity(const Vector3& pos, const Vector3I& cells, const Vector3& size, const Color& color, const Element element, const SimulationArgs& args, const float rho, bool gpu, VBD_Version version, int target_color) {
         Entity* e = Engine::CreateEnity();
         add_fem_mesh(e, pos, cells, size, element, args);
-        if(gpu) e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho, version));
+        if(gpu) e->add_component(new Cuda_VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material, args.iteration, args.sub_iteration, args.damping, rho, version, target_color));
         else e->add_component(new VBD_FEM_Dynamic(args.density, args.distribution, args.young, args.poisson, args.material,args.iteration, args.sub_iteration, args.damping, rho));
         add_fem_base(e, pos, cells, size, color, element, args, gpu);
     }

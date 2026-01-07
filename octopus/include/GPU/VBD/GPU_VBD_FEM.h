@@ -62,7 +62,7 @@ struct GPU_VBD_FEM : GPU_FEM
     GPU_VBD_FEM(const Element& element, const Mesh::Topology& topology, const Mesh::Geometry& geometry,
                 const Material& material,
                 const scalar& young, const scalar& poisson, const scalar& damping,
-                const VBD_Version& v = VBD_Version::Better_Coloration);
+                const VBD_Version& v = VBD_Version::Better_Coloration, const int& _target_color = -1);
 
     void step(GPU_ParticleSystem* ps, scalar dt) override;
 
@@ -104,6 +104,7 @@ struct GPU_VBD_FEM : GPU_FEM
         delete cb_r;
     }
 
+    int target_color;
     Coloration colors;
 
     GPU_Owners_Data* d_owners;
