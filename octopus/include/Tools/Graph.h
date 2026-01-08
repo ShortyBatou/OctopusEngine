@@ -590,8 +590,6 @@ public:
         std::vector<int> colors(n,-1);
         std::set<int> v_conflict;
 
-
-
         // get the graph of the reference element and coloration
         const Graph e_graph(Line, get_ref_element_edges(lin_element));
         std::vector<int> elem_color(e_nb_lin,0);
@@ -754,11 +752,8 @@ public:
             // if there is no possible coloration, let it to -1
             if(nb_color == 0) continue;
 
-            // else, we pick a random color in available colors
-            auto it = std::begin(availables[id]);
-            const int r = Random::Range(0, static_cast<int>(availables[id].size()-1));
-            std::advance(it, r);
-            int ci = *it;
+            // else, we pick the smallest color
+            int ci = *availables[id].begin();
 
             local_coloration[id] = ci;
 

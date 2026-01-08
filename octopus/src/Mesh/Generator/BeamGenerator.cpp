@@ -98,6 +98,7 @@ void beam_hexa_to_tetra5(const Mesh::Geometry& geometry,std::map<Element, Mesh::
     const Graph p_graph(Hexa, hexa);
     const Graph d_graph(Hexa, hexa, F_Dual);
     Coloration col = GraphColoration::Primal_Dual_Element_2(Hexa, hexa, p_graph, d_graph, false);
+    std::cout << "FIRST COLOR" << col.colors[0] << std::endl;
     static int tetras5[20]{0,1,3,4,1,2,3,6,1,3,4,6,1,4,5,6,3,4,6,7};
     for(int i = 0; i < hexa.size(); i+=8) {
         int c[8];
