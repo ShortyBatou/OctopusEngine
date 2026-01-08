@@ -70,7 +70,7 @@ struct BaseScene final : Scene
     void build_root(Entity* root) override
     {
         root->add_behaviour(new TimeManager(1.f / 60.f));
-        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*1.f,0.)));
+        root->add_behaviour(new DynamicManager(Vector3(0.,-9.81*0.f,0.)));
         root->add_behaviour(new InputManager());
         root->add_behaviour(new CameraManager());
         root->add_behaviour(new DebugManager(true));
@@ -84,22 +84,31 @@ struct BaseScene final : Scene
     {
         SimulationArgs args{};
         args.density = 1000; args.distribution = FemShape;
-        args.young = 1e6; args.poisson = 0.35; args.material = Stable_NeoHooke;
+        args.young = 1e7; args.poisson = 0.45; args.material = Stable_NeoHooke;
         args.damping = 5e-6;
         args.iteration = 1; args.sub_iteration = 1;
-        args.scenario_1 = 0; args.scenario_2 = -1; args.dir = Unit3D::right();
+        args.scenario_1 = 11; args.scenario_2 = -1; args.dir = Unit3D::up();
         args.display = FEM_DataDisplay::Type::BaseColor;
-        args.mesh_file = "mesh/vtk/armadillo4.vtk";
-        args.mesh_type = "vtk";
+        //args.mesh_file = "mesh/vtk/dice_P1.vtk";
+        //args.mesh_type = "vtk";
         //args.mesh_file = "mesh/msh/bar_tetra_1300.msh";
         //args.mesh_type = "msh";
-        Vector3I cells(56, 14, 14);
+        Vector3I cells(6, 6, 6);
 
-        Vector3 size(4, 1, 1);
+        Vector3 size(1, 1, 1);
 
         args.biased = false;
         args.damping = 5e-6;
-        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Tetra, args, true, Explicit);
+        //args.sub_iteration = 500; build_fem_entity(Vector3(0,0.,1), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, true, Explicit);
+        args.sub_iteration = 100;
+        args.iteration = 2;
+        cells = Vector3I(12,12,12);
+        build_vbd_entity(Vector3(0,0.05 ,0), cells, size, Color(0.8,.2,0.8,0), Tetra, args, 0, true, VBD_Version::Better_Coloration);
+        build_vbd_entity(Vector3(0,0.05 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa, args, 0, true, VBD_Version::Better_Coloration);
+        cells = Vector3I(6,6,6);
+        build_vbd_entity(Vector3(0,0.05 ,0), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, 0, true, VBD_Version::Better_Coloration);
+        build_vbd_entity(Vector3(0,0.05 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Better_Coloration);
+        //build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Reduction_Symmetry);
 
         args.sub_iteration = 200;
         args.damping = 10;
@@ -109,9 +118,6 @@ struct BaseScene final : Scene
             //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra20, args, true, false, XPBD_FEM_VERSION::OptiShared);
         }
 
-        args.sub_iteration = 22;
-        args.iteration = 2;
-        build_vbd_entity(Vector3(0,0 ,0), cells, size, Color(0.8,.2,0.8,0), Hexa27, args, 0, true, VBD_Version::Reduction_Symmetry);
 
         //build_xpbd_entity(Vector3(0,0,0), cells, size, Color(0.8,.2,0.8,0), Tetra10, args, true, false, XPBD_FEM_VERSION::OptiShared);
 

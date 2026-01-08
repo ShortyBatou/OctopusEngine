@@ -15,7 +15,7 @@ x = np.linspace(-1, 1, 400)
 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 axs = axs.ravel()
 
-labels = ["$f(x) = 2x + 1$", "$f(x) = 3x^2 + 2x + 1$", "$f(x) = 4x^3 + 3x^2 + 2x + 1$", "$f(x) = 5x^4 + 4x^3 + 3x^2 + 2x + 1$"]
+labels = ["$f(x) = 3x^2 + 2x + 1$", "$f(x) = 4x^3 + 3x^2 + 2x + 1$", "$f(x) = 5x^4 + 4x^3 + 3x^2 + 2x + 1$"]
 
 for i, deg in enumerate(degrees):
     # Crée un polynôme aléatoire de degré `deg` avec des coefficients simples

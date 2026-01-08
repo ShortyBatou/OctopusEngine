@@ -699,7 +699,7 @@ Coloration GPU_VBD_FEM::build_graph_color(const Element element, const Mesh::Top
     Coloration coloration = GraphColoration::DSAT(p_graph);
     colors = coloration;
     if(version == VBD_Version::Better_Coloration)
-        GraphReduction::ColorReduction(p_graph, coloration,4);
+        GraphReduction::ColorReduction(p_graph, coloration,1);
 
     std::cout <<"Data [" << element_name(element) << "], [n = " << p_graph.n << "], [e = " << topology.size() / elem_nb_vertices(element) << "]" << std::endl;
     std::map<int, int> _t_conflict = GraphColoration::Get_Conflict(p_graph, coloration);
